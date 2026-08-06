@@ -346,6 +346,7 @@ crates/
 
 - 样本 benchmark。
 - P95 处理耗时统计。
+- 本地性能测试机，包括 synthetic fixture 生成器和 benchmark runner。
 - 稳定的 JSON 输出结构。
 - 错误码和退出码规范。
 - 核心模块单元测试。
@@ -353,6 +354,7 @@ crates/
 
 ### 验收标准
 
+- 生成的大规模 synthetic fixture 和本地 benchmark 结果不进入 Git。
 - 对 5k 到 50k spans 的样本，解析、建图和核心分析 P95 小于 2 秒。
 - `validate`、`summary`、`tree`、`critical-path`、`detect` 有端到端测试。
 - JSON 输出包含 `schema_version`。

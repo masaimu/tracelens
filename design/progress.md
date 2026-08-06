@@ -15,15 +15,15 @@
 ## 当前快照
 
 - 更新时间：2026-08-06
-- 当前基线提交：`765557d`
-- 当前阶段：第四期 M4-A 服务耗时与 self time 分析完成后
-- 当前整体进度：`52%`
+- 当前基线提交：`1d2b540`
+- 当前阶段：第五期本地性能测试机完成后
+- 当前整体进度：`53%`
 
 ```text
-[##########----------] 52%
+[###########---------] 53%
 ```
 
-这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档，以及服务维度 self time 分析；但关键路径、并发分类、错误传播、N+1、可视化、性能基准和发布分发，还没有完成。
+这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、服务维度 self time 分析，以及本地性能测试机；但关键路径、并发分类、错误传播、N+1、可视化、完整性能基线和发布分发，还没有完成。
 
 ## 计算规则
 
@@ -54,20 +54,20 @@
 | M4：耗时分析与关键路径 | 18% | 35% | 6.3% | 已完成 M4-A：wall-clock/root duration、span self time、服务维度 self time、`services` 命令；尚未完成 critical path、并发分类、client/server 与 async 标注 |
 | M5：模式检测 | 12% | 0% | 0.0% | 未开始 |
 | M6：终端可视化 | 8% | 0% | 0.0% | 未开始 |
-| M7：性能、稳定性与自动化接口 | 7% | 25% | 1.8% | 已有测试和 JSON 输出；尚未有 benchmark、P95 样本验证、稳定退出码规范文档 |
+| M7：性能、稳定性与自动化接口 | 7% | 40% | 2.8% | 已有测试、JSON 输出、本地 synthetic fixture 生成器和 benchmark runner；尚未完成 5k-50k 完整 P95 基线、稳定退出码规范文档 |
 | M8：HTML 报告 | 3% | 0% | 0.0% | 未开始 |
 | M9：发布与分发 | 2% | 10% | 0.2% | CLI 有版本号，已有英文/中文 README 和基础安装使用说明；尚未有 release artifact、checksum、发布流程 |
 
 当前合计：
 
 ```text
-5.0 + 12.8 + 11.3 + 14.3 + 6.3 + 0 + 0 + 1.8 + 0 + 0.2 = 51.7%
+5.0 + 12.8 + 11.3 + 14.3 + 6.3 + 0 + 0 + 2.8 + 0 + 0.2 = 52.7%
 ```
 
 四舍五入后记录为：
 
 ```text
-52%
+53%
 ```
 
 ## 原始需求满足度
@@ -93,7 +93,7 @@
 | 单页 HTML report | 0% | 未开始 |
 | 子命令式真实 CLI | 75% | `validate/summary/list-traces/tree/services` 已完成；后续还需要 `critical-path/detect/report` |
 | 核心单元测试 | 65% | 已有 17 个单元测试和 15 个 CLI 端到端测试；后续 critical path、detect、可视化还需要继续补 |
-| P95 样本处理耗时小于 2 秒 | 0% | 尚未建立 benchmark 和 5k-50k spans 样本验证 |
+| P95 样本处理耗时小于 2 秒 | 25% | 已有 synthetic fixture 生成器和 benchmark runner，并完成 5k smoke；尚未跑完整 5k-50k 多轮 P95 矩阵 |
 | 可脚本化 JSON 输出 | 60% | 基础命令和 `services` 已有 `--output json` 与 `schema_version: "0.1"`；schema 尚未稳定 |
 | 远程下载使用 | 8% | 有版本号、本地构建、README 安装说明和使用示例；尚未发布 release artifact |
 
@@ -160,6 +160,16 @@ tracelens services <file> --trace-id <id>
 - 服务维度 span time、child covered time、span count、error span count。
 - `services` 文本输出包含中文字段说明。
 
+当前性能验证能力：
+
+- synthetic OTLP JSON fixture 生成器。
+- synthetic OTLP JSONL fixture 生成器。
+- 本地 benchmark runner。
+- wall time 统计。
+- Unix/macOS max RSS 统计。
+- JSON 和 Markdown benchmark 报告。
+- `perf-data/` 和 `perf-results/` 被 `.gitignore` 忽略。
+
 当前开源展示能力：
 
 - 默认英文 README。
@@ -189,7 +199,7 @@ tracelens services <file> --trace-id <id>
 
 - M5：慢请求、错误传播链、N+1 检测。
 - M6：ASCII timeline/flame graph。
-- M7：benchmark、P95 性能目标、稳定 JSON schema、退出码规范。
+- M7：完整 5k-50k 多轮 P95 性能基线、稳定 JSON schema、退出码规范。
 - M8：HTML report。
 - M9：GitHub Releases、跨平台 artifact、checksum、发布流程。
 

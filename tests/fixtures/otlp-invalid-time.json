@@ -1,0 +1,36 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "checkout-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.checkout"
+          },
+          "spans": [
+            {
+              "traceId": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+              "spanId": "7777777777777777",
+              "name": "GET /checkout",
+              "kind": 2,
+              "startTimeUnixNano": "2000000000",
+              "endTimeUnixNano": "1000000000",
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

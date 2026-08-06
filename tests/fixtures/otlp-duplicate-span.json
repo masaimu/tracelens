@@ -1,0 +1,47 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "checkout-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.checkout"
+          },
+          "spans": [
+            {
+              "traceId": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+              "spanId": "6666666666666666",
+              "name": "GET /checkout",
+              "kind": 2,
+              "startTimeUnixNano": "1000000000",
+              "endTimeUnixNano": "1020000000",
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+              "spanId": "6666666666666666",
+              "name": "GET /checkout duplicate",
+              "kind": 2,
+              "startTimeUnixNano": "1030000000",
+              "endTimeUnixNano": "1040000000",
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

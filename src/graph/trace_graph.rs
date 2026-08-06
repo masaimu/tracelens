@@ -146,6 +146,21 @@ impl TraceGraph {
                 .then(spans[*left].span_id.cmp(&spans[*right].span_id))
         });
 
+        if root_indices.len() > 1 {
+            diagnostics.push(
+                Diagnostic::warning(
+                    "multiple_root_spans",
+                    format!("trace has {} root spans", root_indices.len()),
+                )
+                .with_trace_id(trace_id.clone()),
+            );
+        } else if root_indices.is_empty() && !spans.is_empty() {
+            diagnostics.push(
+                Diagnostic::warning("no_root_span", "trace has no root span")
+                    .with_trace_id(trace_id.clone()),
+            );
+        }
+
         Self {
             trace_id,
             spans,
@@ -213,6 +228,48 @@ mod tests {
                 .diagnostics
                 .iter()
                 .any(|diagnostic| diagnostic.code == "duplicate_span_id")
+        );
+    }
+
+    #[test]
+    fn detects_multiple_roots() {
+        let data = parse_otlp_file(Path::new("tests/fixtures/otlp-multiple-roots.json"))
+            .expect("fixture should parse");
+        let collection = TraceCollection::build(data);
+
+        assert!(
+            collection
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "multiple_root_spans")
+        );
+    }
+
+    #[test]
+    fn detects_no_root() {
+        let data = parse_otlp_file(Path::new("tests/fixtures/otlp-no-root.json"))
+            .expect("fixture should parse");
+        let collection = TraceCollection::build(data);
+
+        assert!(
+            collection
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "no_root_span")
+        );
+    }
+
+    #[test]
+    fn detects_child_outside_parent() {
+        let data = parse_otlp_file(Path::new("tests/fixtures/otlp-child-outside-parent.json"))
+            .expect("fixture should parse");
+        let collection = TraceCollection::build(data);
+
+        assert!(
+            collection
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "child_outside_parent")
         );
     }
 }

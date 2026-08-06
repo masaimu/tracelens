@@ -2,11 +2,13 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result};
 use serde_json::Value;
 
 use crate::model::diagnostic::Diagnostic;
-use crate::model::span::{CanonicalSpan, SPAN_ID_LEN, TRACE_ID_LEN, normalize_hex_id};
+use crate::model::span::{
+    CanonicalSpan, SPAN_ID_LEN, SpanEvent, SpanLink, TRACE_ID_LEN, normalize_hex_id,
+};
 
 #[derive(Clone, Debug)]
 pub struct ParsedTraceData {
@@ -34,33 +36,42 @@ pub fn parse_otlp_file(path: &Path) -> Result<ParsedTraceData> {
 
     match serde_json::from_str::<Value>(&contents) {
         Ok(value) => Ok(parse_otlp_value(&value, None)),
-        Err(json_error) => parse_jsonl(&contents)
-            .with_context(|| format!("input is not valid OTLP JSON: {json_error}")),
+        Err(json_error) => Ok(parse_jsonl(&contents, &json_error)),
     }
 }
 
-fn parse_jsonl(contents: &str) -> Result<ParsedTraceData> {
-    let non_empty_lines: Vec<(usize, &str)> = contents
-        .lines()
-        .enumerate()
-        .filter_map(|(index, line)| {
-            let trimmed = line.trim();
-            (!trimmed.is_empty()).then_some((index + 1, trimmed))
-        })
-        .collect();
-
-    if non_empty_lines.len() <= 1 {
-        return Err(anyhow!("input is not JSON Lines"));
-    }
-
+fn parse_jsonl(contents: &str, json_error: &serde_json::Error) -> ParsedTraceData {
     let mut data = ParsedTraceData::empty();
-    for (line_number, line) in non_empty_lines {
-        let value = serde_json::from_str::<Value>(line)
-            .with_context(|| format!("failed to parse JSONL line {line_number}"))?;
-        data.merge(parse_otlp_value(&value, Some(line_number)));
+    let mut saw_line = false;
+
+    for (index, line) in contents.lines().enumerate() {
+        let line_number = index + 1;
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        saw_line = true;
+        match serde_json::from_str::<Value>(trimmed) {
+            Ok(value) => data.merge(parse_otlp_value(&value, Some(line_number))),
+            Err(error) => data.diagnostics.push(
+                Diagnostic::error(
+                    "malformed_jsonl_line",
+                    format!("failed to parse JSONL line {line_number}: {error}"),
+                )
+                .with_location(format!("line {line_number}")),
+            ),
+        }
     }
 
-    Ok(data)
+    if !saw_line {
+        data.diagnostics.push(Diagnostic::error(
+            "empty_input",
+            format!("input is empty or not valid OTLP JSON: {json_error}"),
+        ));
+    }
+
+    data
 }
 
 fn parse_otlp_value(value: &Value, line_number: Option<usize>) -> ParsedTraceData {
@@ -113,6 +124,17 @@ fn parse_otlp_value(value: &Value, line_number: Option<usize>) -> ParsedTraceDat
             let scope_location = format!(
                 "{location_prefix}.resourceSpans[{resource_index}].scopeSpans[{scope_index}]"
             );
+            let scope_name = scope_span
+                .get("scope")
+                .and_then(|scope| scope.get("name"))
+                .and_then(Value::as_str)
+                .map(ToString::to_string);
+            let scope_version = scope_span
+                .get("scope")
+                .and_then(|scope| scope.get("version"))
+                .and_then(Value::as_str)
+                .map(ToString::to_string);
+
             let Some(spans) = scope_span.get("spans").and_then(Value::as_array) else {
                 data.diagnostics.push(
                     Diagnostic::warning("missing_spans", "scopeSpan is missing spans array")
@@ -128,6 +150,9 @@ fn parse_otlp_value(value: &Value, line_number: Option<usize>) -> ParsedTraceDat
                 if let Some(span) = parse_span(
                     span_value,
                     &service_name,
+                    &resource_attributes,
+                    scope_name.clone(),
+                    scope_version.clone(),
                     &span_location,
                     &mut data.diagnostics,
                 ) {
@@ -143,6 +168,9 @@ fn parse_otlp_value(value: &Value, line_number: Option<usize>) -> ParsedTraceDat
 fn parse_span(
     value: &Value,
     service_name: &str,
+    resource_attributes: &BTreeMap<String, String>,
+    scope_name: Option<String>,
+    scope_version: Option<String>,
     location: &str,
     diagnostics: &mut Vec<Diagnostic>,
 ) -> Option<CanonicalSpan> {
@@ -237,6 +265,11 @@ fn parse_span(
             .get("attributes")
             .map(parse_attributes)
             .unwrap_or_default(),
+        resource_attributes: resource_attributes.clone(),
+        scope_name,
+        scope_version,
+        events: value.get("events").map(parse_events).unwrap_or_default(),
+        links: value.get("links").map(parse_links).unwrap_or_default(),
     })
 }
 
@@ -297,6 +330,52 @@ fn parse_attributes(value: &Value) -> BTreeMap<String, String> {
     }
 
     attributes
+}
+
+fn parse_events(value: &Value) -> Vec<SpanEvent> {
+    let Some(items) = value.as_array() else {
+        return Vec::new();
+    };
+
+    items
+        .iter()
+        .map(|item| SpanEvent {
+            name: item
+                .get("name")
+                .and_then(Value::as_str)
+                .unwrap_or("<unnamed>")
+                .to_string(),
+            time_unix_nano: item.get("timeUnixNano").and_then(parse_u64),
+            attributes: item
+                .get("attributes")
+                .map(parse_attributes)
+                .unwrap_or_default(),
+        })
+        .collect()
+}
+
+fn parse_links(value: &Value) -> Vec<SpanLink> {
+    let Some(items) = value.as_array() else {
+        return Vec::new();
+    };
+
+    items
+        .iter()
+        .map(|item| SpanLink {
+            trace_id: item
+                .get("traceId")
+                .and_then(Value::as_str)
+                .map(|value| value.trim().to_ascii_lowercase()),
+            span_id: item
+                .get("spanId")
+                .and_then(Value::as_str)
+                .map(|value| value.trim().to_ascii_lowercase()),
+            attributes: item
+                .get("attributes")
+                .map(parse_attributes)
+                .unwrap_or_default(),
+        })
+        .collect()
 }
 
 fn any_value_to_string(value: &Value) -> Option<String> {
@@ -377,6 +456,60 @@ mod tests {
             data.diagnostics
                 .iter()
                 .any(|diagnostic| diagnostic.code == "invalid_time_range")
+        );
+    }
+
+    #[test]
+    fn parses_jsonl_and_preserves_scope_events_and_links() {
+        let data = parse_otlp_file(Path::new("tests/fixtures/otlp-basic.jsonl"))
+            .expect("fixture should parse");
+
+        assert_eq!(data.spans.len(), 2);
+        assert!(data.diagnostics.is_empty());
+
+        let root = data
+            .spans
+            .iter()
+            .find(|span| span.span_id == "8888888888888888")
+            .expect("root span should exist");
+        assert_eq!(root.scope_name.as_deref(), Some("test.frontend"));
+        assert_eq!(root.scope_version.as_deref(), Some("1.0.0"));
+        assert_eq!(
+            root.resource_attributes.get("service.name").unwrap(),
+            "frontend-service"
+        );
+        assert_eq!(root.events.len(), 1);
+
+        let child = data
+            .spans
+            .iter()
+            .find(|span| span.span_id == "9999999999999999")
+            .expect("child span should exist");
+        assert_eq!(child.links.len(), 1);
+    }
+
+    #[test]
+    fn parses_jsonl_with_empty_lines() {
+        let data = parse_otlp_file(Path::new(
+            "tests/fixtures/otlp-jsonl-with-empty-lines.jsonl",
+        ))
+        .expect("fixture should parse");
+
+        assert_eq!(data.spans.len(), 2);
+        assert!(data.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn reports_jsonl_invalid_line_and_keeps_valid_spans() {
+        let data = parse_otlp_file(Path::new("tests/fixtures/otlp-jsonl-invalid-line.jsonl"))
+            .expect("fixture should parse with diagnostics");
+
+        assert_eq!(data.spans.len(), 2);
+        assert!(
+            data.diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "malformed_jsonl_line"
+                    && diagnostic.location.as_deref() == Some("line 2"))
         );
     }
 }

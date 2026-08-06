@@ -1,0 +1,5 @@
+
+{"resourceSpans":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"frontend-service"}}]},"scopeSpans":[{"scope":{"name":"test.frontend"},"spans":[{"traceId":"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE","spanId":"8888888888888888","name":"GET /frontend","kind":2,"startTimeUnixNano":"1000000000","endTimeUnixNano":"1120000000","status":{"code":1}}]}]}]}
+
+{"resourceSpans":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"backend-service"}}]},"scopeSpans":[{"scope":{"name":"test.backend"},"spans":[{"traceId":"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE","spanId":"9999999999999999","parentSpanId":"8888888888888888","name":"GET /backend","kind":3,"startTimeUnixNano":"1020000000","endTimeUnixNano":"1100000000","status":{"code":1}}]}]}]}
+

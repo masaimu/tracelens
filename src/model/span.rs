@@ -4,6 +4,20 @@ pub const TRACE_ID_LEN: usize = 32;
 pub const SPAN_ID_LEN: usize = 16;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SpanEvent {
+    pub name: String,
+    pub time_unix_nano: Option<u64>,
+    pub attributes: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SpanLink {
+    pub trace_id: Option<String>,
+    pub span_id: Option<String>,
+    pub attributes: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CanonicalSpan {
     pub trace_id: String,
     pub span_id: String,
@@ -15,6 +29,11 @@ pub struct CanonicalSpan {
     pub end_ns: u64,
     pub status_code: Option<i64>,
     pub attributes: BTreeMap<String, String>,
+    pub resource_attributes: BTreeMap<String, String>,
+    pub scope_name: Option<String>,
+    pub scope_version: Option<String>,
+    pub events: Vec<SpanEvent>,
+    pub links: Vec<SpanLink>,
 }
 
 impl CanonicalSpan {
@@ -33,6 +52,25 @@ impl CanonicalSpan {
                 .attributes
                 .get("rpc.grpc.status_code")
                 .is_some_and(|value| value != "0")
+    }
+
+    pub fn kind_label(&self) -> &'static str {
+        match self.kind {
+            Some(1) => "internal",
+            Some(2) => "server",
+            Some(3) => "client",
+            Some(4) => "producer",
+            Some(5) => "consumer",
+            _ => "unknown",
+        }
+    }
+
+    pub fn status_label(&self) -> &'static str {
+        match self.status_code {
+            Some(1) => "ok",
+            Some(2) => "error",
+            _ => "unset",
+        }
     }
 }
 

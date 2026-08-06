@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 use std::fmt::Write;
 use std::path::Path;
 
-use crate::analysis::summary::FileSummary;
+use crate::analysis::summary::{FileSummary, TraceSummary};
 use crate::graph::trace_graph::{TraceCollection, TraceGraph};
 use crate::model::diagnostic::{Diagnostic, Severity};
 use crate::model::span::CanonicalSpan;
@@ -63,7 +63,7 @@ pub fn format_summary(path: &Path, summary: &FileSummary, collection: &TraceColl
     if !summary.slowest_traces.is_empty() {
         writeln!(output).expect("write to string");
         writeln!(output, "Slowest traces:").expect("write to string");
-        for (index, trace) in summary.slowest_traces.iter().enumerate() {
+        for (index, trace) in summary.slowest_traces.iter().take(10).enumerate() {
             writeln!(
                 output,
                 "{}. {}  {}  {} spans  {} services  {} errors",
@@ -76,6 +76,38 @@ pub fn format_summary(path: &Path, summary: &FileSummary, collection: &TraceColl
             )
             .expect("write to string");
         }
+    }
+
+    output
+}
+
+pub fn format_list_traces(path: &Path, traces: &[TraceSummary], limit: usize) -> String {
+    let mut output = String::new();
+
+    writeln!(output, "File: {}", path.display()).expect("write to string");
+    writeln!(output, "Traces: {}", traces.len()).expect("write to string");
+    writeln!(output, "Limit: {}", limit).expect("write to string");
+    writeln!(output).expect("write to string");
+    writeln!(
+        output,
+        "trace_id  duration  spans  services  errors  roots  orphans  diagnostics"
+    )
+    .expect("write to string");
+
+    for trace in traces.iter().take(limit) {
+        writeln!(
+            output,
+            "{}  {}  {}  {}  {}  {}  {}  {}",
+            trace.trace_id,
+            format_optional_duration(trace.duration_ns),
+            trace.span_count,
+            trace.service_count,
+            trace.error_span_count,
+            trace.root_count,
+            trace.orphan_count,
+            trace.diagnostics_count
+        )
+        .expect("write to string");
     }
 
     output
@@ -165,6 +197,11 @@ fn format_span_line(span: &CanonicalSpan) -> String {
         format_duration(span.duration_ns()),
         span.span_id
     );
+    line.push_str(&format!(
+        " kind={} status={}",
+        span.kind_label(),
+        span.status_label()
+    ));
 
     if span.is_error() {
         line.push_str(" ERROR");
@@ -182,6 +219,7 @@ fn write_diagnostics(output: &mut String, diagnostics: &[Diagnostic]) {
             diagnostic.severity, diagnostic.code, diagnostic.message
         )
         .expect("write to string");
+        write!(output, " scope={}", diagnostic.scope).expect("write to string");
 
         if let Some(trace_id) = &diagnostic.trace_id {
             write!(output, " trace_id={trace_id}").expect("write to string");

@@ -1,0 +1,47 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "checkout-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.checkout"
+          },
+          "spans": [
+            {
+              "traceId": "12121212121212121212121212121212",
+              "spanId": "1212121212121212",
+              "name": "GET /checkout",
+              "kind": 2,
+              "startTimeUnixNano": "1000000000",
+              "endTimeUnixNano": "1050000000",
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "12121212121212121212121212121212",
+              "spanId": "3434343434343434",
+              "name": "async cleanup",
+              "kind": 1,
+              "startTimeUnixNano": "1060000000",
+              "endTimeUnixNano": "1080000000",
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

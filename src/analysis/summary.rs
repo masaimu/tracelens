@@ -19,6 +19,9 @@ pub struct TraceSummary {
     pub span_count: usize,
     pub service_count: usize,
     pub error_span_count: usize,
+    pub root_count: usize,
+    pub orphan_count: usize,
+    pub diagnostics_count: usize,
     pub start_ns: Option<u64>,
     pub end_ns: Option<u64>,
     pub duration_ns: Option<u64>,
@@ -47,8 +50,6 @@ pub fn summarize(collection: &TraceCollection) -> FileSummary {
             .cmp(&left.duration_ns)
             .then(left.trace_id.cmp(&right.trace_id))
     });
-    trace_summaries.truncate(10);
-
     FileSummary {
         trace_count: collection.traces.len(),
         span_count: collection.span_count(),
@@ -66,6 +67,9 @@ fn summarize_trace(trace: &TraceGraph) -> TraceSummary {
         span_count: trace.spans.len(),
         service_count: trace.service_names().len(),
         error_span_count: trace.error_span_count(),
+        root_count: trace.root_indices.len(),
+        orphan_count: trace.orphan_indices.len(),
+        diagnostics_count: trace.diagnostics.len(),
         start_ns: trace.start_ns(),
         end_ns: trace.end_ns(),
         duration_ns: trace.duration_ns(),

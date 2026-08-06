@@ -204,15 +204,8 @@ fn parse_span(
         .unwrap_or("<unnamed>")
         .to_string();
 
-    let Some(start_ns) =
-        parse_required_timestamp(value, "startTimeUnixNano", location, diagnostics)
-    else {
-        return None;
-    };
-    let Some(end_ns) = parse_required_timestamp(value, "endTimeUnixNano", location, diagnostics)
-    else {
-        return None;
-    };
+    let start_ns = parse_required_timestamp(value, "startTimeUnixNano", location, diagnostics)?;
+    let end_ns = parse_required_timestamp(value, "endTimeUnixNano", location, diagnostics)?;
 
     if end_ns < start_ns {
         diagnostics.push(

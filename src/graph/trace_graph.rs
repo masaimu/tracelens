@@ -101,17 +101,16 @@ impl TraceGraph {
                     .get(parent_span_id)
                     .and_then(|indices| indices.first())
                     .and_then(|parent_index| spans.get(*parent_index))
+                    && (span.start_ns < parent.start_ns || span.end_ns > parent.end_ns)
                 {
-                    if span.start_ns < parent.start_ns || span.end_ns > parent.end_ns {
-                        diagnostics.push(
-                            Diagnostic::warning(
-                                "child_outside_parent",
-                                "child span starts before parent or ends after parent",
-                            )
-                            .with_trace_id(trace_id.clone())
-                            .with_span_id(span.span_id.clone()),
-                        );
-                    }
+                    diagnostics.push(
+                        Diagnostic::warning(
+                            "child_outside_parent",
+                            "child span starts before parent or ends after parent",
+                        )
+                        .with_trace_id(trace_id.clone())
+                        .with_span_id(span.span_id.clone()),
+                    );
                 }
             } else {
                 orphan_indices.push(index);

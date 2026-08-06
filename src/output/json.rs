@@ -1,5 +1,6 @@
 use serde_json::{Value, json};
 
+use crate::analysis::duration::{RootSpanDuration, ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
 use crate::graph::trace_graph::{TraceCollection, TraceGraph};
 use crate::model::diagnostic::Diagnostic;
@@ -78,6 +79,47 @@ pub fn format_tree_json(trace: &TraceGraph) -> String {
         "nodes": tree_nodes_to_json(trace),
         "diagnostics": diagnostics_to_json(&trace.diagnostics),
     }))
+}
+
+pub fn format_services_json(analysis: &TraceDurationAnalysis, trace: &TraceGraph) -> String {
+    to_pretty(json!({
+        "schema_version": SCHEMA_VERSION,
+        "command": "services",
+        "trace": {
+            "trace_id": analysis.trace_id,
+            "wall_clock_duration_ns": analysis.wall_clock_duration_ns,
+            "root_span": analysis.root_span.as_ref().map(root_span_to_json),
+            "root_count": analysis.root_count,
+            "orphan_count": analysis.orphan_count,
+            "diagnostics_count": analysis.diagnostics_count,
+        },
+        "services": analysis
+            .services
+            .iter()
+            .map(service_duration_to_json)
+            .collect::<Vec<_>>(),
+        "diagnostics": diagnostics_to_json(&trace.diagnostics),
+    }))
+}
+
+fn root_span_to_json(root: &RootSpanDuration) -> Value {
+    json!({
+        "span_id": root.span_id,
+        "service_name": root.service_name,
+        "name": root.name,
+        "duration_ns": root.duration_ns,
+    })
+}
+
+fn service_duration_to_json(service: &ServiceDuration) -> Value {
+    json!({
+        "service_name": service.service_name,
+        "self_time_ns": service.self_time_ns,
+        "span_time_ns": service.span_time_ns,
+        "child_covered_time_ns": service.child_covered_time_ns,
+        "span_count": service.span_count,
+        "error_span_count": service.error_span_count,
+    })
 }
 
 fn tree_nodes_to_json(trace: &TraceGraph) -> Vec<Value> {

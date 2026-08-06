@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 use std::fmt::Write;
 use std::path::Path;
 
+use crate::analysis::duration::{ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
 use crate::graph::trace_graph::{TraceCollection, TraceGraph};
 use crate::model::diagnostic::{Diagnostic, Severity};
@@ -166,6 +167,136 @@ pub fn format_tree(trace: &TraceGraph) -> String {
     }
 
     output
+}
+
+pub fn format_services(analysis: &TraceDurationAnalysis, diagnostics: &[Diagnostic]) -> String {
+    let mut output = String::new();
+
+    writeln!(output, "Trace 耗时概览").expect("write to string");
+    writeln!(output, "trace_id: {}", analysis.trace_id).expect("write to string");
+    writeln!(
+        output,
+        "wall-clock duration: {}",
+        format_optional_duration(analysis.wall_clock_duration_ns)
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "说明：wall-clock duration 表示这条 trace 从最早 span 开始到最晚 span 结束的总时间。"
+    )
+    .expect("write to string");
+
+    match &analysis.root_span {
+        Some(root) => {
+            writeln!(
+                output,
+                "root span duration: {}  span_id={}  service={}  name={}",
+                format_duration(root.duration_ns),
+                root.span_id,
+                root.service_name,
+                root.name
+            )
+            .expect("write to string");
+            writeln!(
+                output,
+                "说明：root span duration 表示唯一 root span 的持续时间；它可能和 wall-clock duration 不一致。"
+            )
+            .expect("write to string");
+        }
+        None => {
+            writeln!(output, "root span duration: unknown").expect("write to string");
+            writeln!(
+                output,
+                "说明：只有存在唯一 root span 时才能确定 root span duration；当前 root 数量为 {}。",
+                analysis.root_count
+            )
+            .expect("write to string");
+        }
+    }
+
+    writeln!(output, "roots: {}", analysis.root_count).expect("write to string");
+    writeln!(output, "orphans: {}", analysis.orphan_count).expect("write to string");
+    writeln!(output, "diagnostics: {}", analysis.diagnostics_count).expect("write to string");
+
+    writeln!(output).expect("write to string");
+    writeln!(output, "服务耗时贡献").expect("write to string");
+    writeln!(
+        output,
+        "说明：下表按 self_time 从高到低排序。self_time 越高，表示该服务自身在这条 trace 中消耗越多。"
+    )
+    .expect("write to string");
+    write_service_table(&mut output, &analysis.services);
+
+    writeln!(output).expect("write to string");
+    writeln!(output, "字段说明：").expect("write to string");
+    writeln!(
+        output,
+        "- self_time：服务自身消耗的时间，已扣除直接子 span 覆盖的时间区间；不同服务并发执行时，各服务 self_time 相加可能大于 wall-clock duration。"
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "- span_time：该服务所有 span 的原始耗时总和；嵌套或并发 span 可能让它大于真实 wall-clock 时间。"
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "- child_covered_time：该服务 span 中被直接子 span 覆盖的时间，重叠 child 只计算一次。"
+    )
+    .expect("write to string");
+    writeln!(output, "- spans：该服务在当前 trace 中包含的 span 数量。").expect("write to string");
+    writeln!(
+        output,
+        "- errors：该服务中 status=error、HTTP 5xx 或 gRPC 非 0 的 span 数量。"
+    )
+    .expect("write to string");
+
+    if !diagnostics.is_empty() {
+        writeln!(output).expect("write to string");
+        writeln!(
+            output,
+            "数据诊断：下面的问题不会被静默忽略，耗时分析需要结合这些诊断一起看。"
+        )
+        .expect("write to string");
+        write_diagnostics(&mut output, diagnostics);
+    }
+
+    output
+}
+
+fn write_service_table(output: &mut String, services: &[ServiceDuration]) {
+    if services.is_empty() {
+        writeln!(output, "(no services)").expect("write to string");
+        return;
+    }
+
+    let service_width = services
+        .iter()
+        .map(|service| service.service_name.len())
+        .max()
+        .unwrap_or("service".len())
+        .max("service".len());
+
+    writeln!(
+        output,
+        "{:<service_width$}  {:>12}  {:>12}  {:>18}  {:>5}  {:>6}",
+        "service", "self_time", "span_time", "child_covered_time", "spans", "errors"
+    )
+    .expect("write to string");
+
+    for service in services {
+        writeln!(
+            output,
+            "{:<service_width$}  {:>12}  {:>12}  {:>18}  {:>5}  {:>6}",
+            service.service_name,
+            format_duration(service.self_time_ns),
+            format_duration(service.span_time_ns),
+            format_duration(service.child_covered_time_ns),
+            service.span_count,
+            service.error_span_count
+        )
+        .expect("write to string");
+    }
 }
 
 fn write_span_tree(

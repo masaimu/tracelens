@@ -40,6 +40,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - Strict validation mode with `--strict`.
 - Trace grouping by `trace_id`.
 - Parent-child span graph construction.
+- Service-level self time analysis.
 - Root span, orphan span, missing parent, duplicate span ID, multiple root, no root, and suspicious timing diagnostics.
 - Text output for humans.
 - JSON output for scripts with `--output json`.
@@ -52,6 +53,7 @@ tracelens validate <file>
 tracelens summary <file>
 tracelens list-traces <file>
 tracelens tree <file> --trace-id <id>
+tracelens services <file> --trace-id <id>
 ```
 
 ## Installation
@@ -102,6 +104,12 @@ Inspect one trace tree:
 tracelens tree tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D269B633813FC60C
 ```
 
+Explain service-level self time for one trace:
+
+```bash
+tracelens services tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D269B633813FC60C
+```
+
 Produce JSON output:
 
 ```bash
@@ -145,13 +153,13 @@ Implemented:
 - Foundation CLI.
 - OTLP JSON and JSONL parsing.
 - Basic trace graph construction.
+- Service-level self time analysis.
 - Validation diagnostics.
 - Text and JSON output.
 
 Not implemented yet:
 
 - Critical path analysis.
-- Service self time.
 - Serial versus concurrent span classification.
 - Slow request detection.
 - Error propagation analysis.

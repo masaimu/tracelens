@@ -40,6 +40,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - `--strict` 严格校验模式。
 - 按 `trace_id` 分组 trace。
 - 构建 parent-child span graph。
+- 服务维度 self time 分析。
 - 识别 root span、孤儿 span、缺失 parent、重复 span ID、多 root、无 root、可疑时间关系等问题。
 - 面向人的文本输出。
 - 面向脚本的 JSON 输出：`--output json`。
@@ -52,6 +53,7 @@ tracelens validate <file>
 tracelens summary <file>
 tracelens list-traces <file>
 tracelens tree <file> --trace-id <id>
+tracelens services <file> --trace-id <id>
 ```
 
 ## 安装
@@ -102,6 +104,12 @@ tracelens list-traces tests/fixtures/otlp-basic.json --limit 10
 tracelens tree tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D269B633813FC60C
 ```
 
+查看某条 trace 的服务维度 self time：
+
+```bash
+tracelens services tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D269B633813FC60C
+```
+
 输出 JSON：
 
 ```bash
@@ -145,13 +153,13 @@ tracelens validate tests/fixtures/otlp-basic.json --strict
 - 基础 CLI。
 - OTLP JSON 和 JSONL 解析。
 - 基础 trace graph 构建。
+- 服务维度 self time 分析。
 - validation diagnostics。
 - 文本和 JSON 输出。
 
 尚未实现：
 
 - 关键路径分析。
-- 服务维度 self time。
 - 串行/并发 span 分类。
 - 慢请求检测。
 - 错误传播分析。

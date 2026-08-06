@@ -259,6 +259,12 @@ crates/
 - client/server span pair 标注。
 - async work 和 linked span 标注。
 
+### 阶段拆分
+
+- M4-A：先实现 `services` 命令、wall-clock/root duration、span self time 和服务维度 self time 聚合。
+- M4-B：在 M4-A 的耗时模型上继续实现串行/并发/nested/suspicious 分类和 `critical-path` 命令。
+- M4-C：补充 client/server span pair、async work 和 linked span 的标注展示。
+
 ### 验收标准
 
 - child span 重叠时，self time 使用区间并集计算，不直接累加 child duration。

@@ -15,15 +15,15 @@
 ## 当前快照
 
 - 更新时间：2026-08-06
-- 当前基线提交：`dcf8947`
-- 当前阶段：第三期 README 文档迭代完成后
-- 当前整体进度：`45%`
+- 当前基线提交：`765557d`
+- 当前阶段：第四期 M4-A 服务耗时与 self time 分析完成后
+- 当前整体进度：`52%`
 
 ```text
-[#########-----------] 45%
+[##########----------] 52%
 ```
 
-这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出和开源 README 展示文档；但核心分析能力，如关键路径、服务 self time、并发分类、错误传播、N+1、可视化、性能基准和发布分发，还没有完成。
+这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档，以及服务维度 self time 分析；但关键路径、并发分类、错误传播、N+1、可视化、性能基准和发布分发，还没有完成。
 
 ## 计算规则
 
@@ -51,7 +51,7 @@
 | M1：OTLP 输入解析 | 15% | 85% | 12.8% | JSON/JSONL、canonical model、events/links、宽容/strict 基础能力已完成；尚未用 5k-50k spans 样本验证 |
 | M2：Trace 索引与图构建 | 15% | 75% | 11.3% | trace 分组、parent-child、root/orphan/duplicate/missing parent/时间异常 diagnostics 已完成；跨服务边尚未单独显式统计 |
 | M3：基础 CLI 分析命令 | 15% | 95% | 14.3% | `validate`、`summary`、`list-traces`、`tree`、`--output json` 已完成；JSON schema 仍处于 `0.1` 可调整阶段 |
-| M4：耗时分析与关键路径 | 18% | 0% | 0.0% | 未开始 |
+| M4：耗时分析与关键路径 | 18% | 35% | 6.3% | 已完成 M4-A：wall-clock/root duration、span self time、服务维度 self time、`services` 命令；尚未完成 critical path、并发分类、client/server 与 async 标注 |
 | M5：模式检测 | 12% | 0% | 0.0% | 未开始 |
 | M6：终端可视化 | 8% | 0% | 0.0% | 未开始 |
 | M7：性能、稳定性与自动化接口 | 7% | 25% | 1.8% | 已有测试和 JSON 输出；尚未有 benchmark、P95 样本验证、稳定退出码规范文档 |
@@ -61,13 +61,13 @@
 当前合计：
 
 ```text
-5.0 + 12.8 + 11.3 + 14.3 + 0 + 0 + 0 + 1.8 + 0 + 0.2 = 45.4%
+5.0 + 12.8 + 11.3 + 14.3 + 6.3 + 0 + 0 + 1.8 + 0 + 0.2 = 51.7%
 ```
 
 四舍五入后记录为：
 
 ```text
-45%
+52%
 ```
 
 ## 原始需求满足度
@@ -82,19 +82,19 @@
 | 处理缺失 `parent_span_id` | 80% | root span 和 missing parent diagnostics 已支持 |
 | 处理跨服务 span | 45% | span 保留 `service_name`，tree 可展示跨服务结构；尚未统计 cross-service edges |
 | 处理孤儿 span | 85% | orphan span 不丢失，并在 tree/diagnostics 中展示 |
-| 计算端到端 duration | 45% | trace duration 已用于 summary/list-traces/tree；尚未区分 wall-clock/root duration 的完整分析语义 |
+| 计算端到端 duration | 70% | `services` 已分开展示 wall-clock duration 与唯一 root span duration；后续 critical path 还需复用该语义 |
 | 计算 critical path | 0% | 未开始 |
-| 计算服务维度 self time | 0% | 未开始 |
+| 计算服务维度 self time | 65% | `services` 已按 service 聚合 self time，child 覆盖时间使用区间并集；后续需与 critical path 和可视化打通 |
 | 识别串行/并发 span | 0% | 未开始 |
 | 检测慢请求 | 20% | 当前只能按 trace duration 排序；尚未有 service latency distribution、p95/p99/p999 |
 | 检测错误传播链 | 15% | 当前有 error span count 和 status/error 标记；尚未推断传播链 |
 | 检测 N+1 调用模式 | 0% | 未开始 |
 | 终端 ASCII flame graph/timeline | 0% | 未开始 |
 | 单页 HTML report | 0% | 未开始 |
-| 子命令式真实 CLI | 70% | `validate/summary/list-traces/tree` 已完成；后续还需要 `services/critical-path/detect/report` |
-| 核心单元测试 | 60% | 已有 14 个单元测试和 13 个 CLI 端到端测试；后续分析算法需要继续补 |
+| 子命令式真实 CLI | 75% | `validate/summary/list-traces/tree/services` 已完成；后续还需要 `critical-path/detect/report` |
+| 核心单元测试 | 65% | 已有 17 个单元测试和 15 个 CLI 端到端测试；后续 critical path、detect、可视化还需要继续补 |
 | P95 样本处理耗时小于 2 秒 | 0% | 尚未建立 benchmark 和 5k-50k spans 样本验证 |
-| 可脚本化 JSON 输出 | 55% | 基础命令已有 `--output json` 和 `schema_version: "0.1"`；schema 尚未稳定 |
+| 可脚本化 JSON 输出 | 60% | 基础命令和 `services` 已有 `--output json` 与 `schema_version: "0.1"`；schema 尚未稳定 |
 | 远程下载使用 | 8% | 有版本号、本地构建、README 安装说明和使用示例；尚未发布 release artifact |
 
 ## 当前已具备的能力
@@ -106,6 +106,7 @@ tracelens validate <file>
 tracelens summary <file>
 tracelens list-traces <file>
 tracelens tree <file> --trace-id <id>
+tracelens services <file> --trace-id <id>
 ```
 
 当前输入能力：
@@ -147,6 +148,17 @@ tracelens tree <file> --trace-id <id>
 - trace duration 排序。
 - `list-traces --limit`。
 - `list-traces --sort duration|spans|errors`。
+- `services --output text|json`。
+
+当前耗时分析能力：
+
+- wall-clock duration。
+- 唯一 root span duration。
+- span self time。
+- child interval union，避免重叠 child span 重复扣减。
+- 服务维度 self time 聚合。
+- 服务维度 span time、child covered time、span count、error span count。
+- `services` 文本输出包含中文字段说明。
 
 当前开源展示能力：
 
@@ -160,20 +172,18 @@ tracelens tree <file> --trace-id <id>
 - `cargo test`。
 - `cargo clippy --all-targets -- -D warnings`。
 - `cargo build`。
-- 14 个单元测试。
-- 13 个 CLI 端到端测试。
+- 17 个单元测试。
+- 15 个 CLI 端到端测试。
 
 ## 当前主要缺口
 
-下一批最重要的缺口是 M4：
+下一批最重要的缺口仍在 M4：
 
-- 明确 wall-clock duration 与 root span duration。
-- 计算服务维度 self time。
-- 使用 child interval union，避免重叠 child span 重复计数。
 - 分类 serial、concurrent、nested、suspicious spans。
 - 设计 critical path 算法。
-- 实现 `services` 命令。
 - 实现 `critical-path` 命令。
+- 标注 client/server span pair。
+- 标注 async work 和 linked span。
 
 后续缺口：
 

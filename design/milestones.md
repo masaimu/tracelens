@@ -415,6 +415,7 @@ crates/
   - Windows x86_64。
 - 在远端平台发布可下载二进制包。
 - 提供 checksum，便于用户校验下载文件。
+- 提供默认英文 README 和中文 README。
 - 提供安装说明。
 - 提供基本使用示例。
 - 发布前运行完整测试和基础 benchmark。

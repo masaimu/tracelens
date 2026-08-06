@@ -15,15 +15,15 @@
 ## 当前快照
 
 - 更新时间：2026-08-06
-- 当前提交：`d1f1a16`
-- 当前阶段：第二期迭代完成后
+- 当前基线提交：`dcf8947`
+- 当前阶段：第三期 README 文档迭代完成后
 - 当前整体进度：`45%`
 
 ```text
 [#########-----------] 45%
 ```
 
-这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令和 JSON 输出；但核心分析能力，如关键路径、服务 self time、并发分类、错误传播、N+1、可视化、性能基准和发布分发，还没有完成。
+这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出和开源 README 展示文档；但核心分析能力，如关键路径、服务 self time、并发分类、错误传播、N+1、可视化、性能基准和发布分发，还没有完成。
 
 ## 计算规则
 
@@ -56,12 +56,12 @@
 | M6：终端可视化 | 8% | 0% | 0.0% | 未开始 |
 | M7：性能、稳定性与自动化接口 | 7% | 25% | 1.8% | 已有测试和 JSON 输出；尚未有 benchmark、P95 样本验证、稳定退出码规范文档 |
 | M8：HTML 报告 | 3% | 0% | 0.0% | 未开始 |
-| M9：发布与分发 | 2% | 5% | 0.1% | CLI 有版本号；尚未有 release artifact、安装说明、checksum、发布流程 |
+| M9：发布与分发 | 2% | 10% | 0.2% | CLI 有版本号，已有英文/中文 README 和基础安装使用说明；尚未有 release artifact、checksum、发布流程 |
 
 当前合计：
 
 ```text
-5.0 + 12.8 + 11.3 + 14.3 + 0 + 0 + 0 + 1.8 + 0 + 0.1 = 45.3%
+5.0 + 12.8 + 11.3 + 14.3 + 0 + 0 + 0 + 1.8 + 0 + 0.2 = 45.4%
 ```
 
 四舍五入后记录为：
@@ -95,7 +95,7 @@
 | 核心单元测试 | 60% | 已有 14 个单元测试和 13 个 CLI 端到端测试；后续分析算法需要继续补 |
 | P95 样本处理耗时小于 2 秒 | 0% | 尚未建立 benchmark 和 5k-50k spans 样本验证 |
 | 可脚本化 JSON 输出 | 55% | 基础命令已有 `--output json` 和 `schema_version: "0.1"`；schema 尚未稳定 |
-| 远程下载使用 | 5% | 有版本号和本地构建；尚未发布 release artifact |
+| 远程下载使用 | 8% | 有版本号、本地构建、README 安装说明和使用示例；尚未发布 release artifact |
 
 ## 当前已具备的能力
 
@@ -148,6 +148,13 @@ tracelens tree <file> --trace-id <id>
 - `list-traces --limit`。
 - `list-traces --sort duration|spans|errors`。
 
+当前开源展示能力：
+
+- 默认英文 README。
+- 中文 README。
+- 本地 SVG logo。
+- 当前能力、安装方式、使用示例和路线图说明。
+
 当前验证能力：
 
 - `cargo test`。
@@ -174,7 +181,7 @@ tracelens tree <file> --trace-id <id>
 - M6：ASCII timeline/flame graph。
 - M7：benchmark、P95 性能目标、稳定 JSON schema、退出码规范。
 - M8：HTML report。
-- M9：GitHub Releases、跨平台 artifact、checksum、安装说明。
+- M9：GitHub Releases、跨平台 artifact、checksum、发布流程。
 
 ## 更新规则
 

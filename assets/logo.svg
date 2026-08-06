@@ -1,0 +1,14 @@
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">tracelens logo</title>
+  <desc id="desc">A lens inspecting connected trace spans.</desc>
+  <rect width="240" height="240" rx="36" fill="#0F172A"/>
+  <circle cx="106" cy="102" r="58" fill="#12243F" stroke="#38BDF8" stroke-width="10"/>
+  <path d="M151 147L190 186" stroke="#38BDF8" stroke-width="16" stroke-linecap="round"/>
+  <path d="M68 116L95 88L123 111L145 72" stroke="#A7F3D0" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="68" cy="116" r="11" fill="#F8FAFC" stroke="#14B8A6" stroke-width="5"/>
+  <circle cx="95" cy="88" r="11" fill="#F8FAFC" stroke="#14B8A6" stroke-width="5"/>
+  <circle cx="123" cy="111" r="11" fill="#F8FAFC" stroke="#14B8A6" stroke-width="5"/>
+  <circle cx="145" cy="72" r="11" fill="#F8FAFC" stroke="#14B8A6" stroke-width="5"/>
+  <path d="M57 157C70 169 88 176 106 176C124 176 142 169 155 157" stroke="#475569" stroke-width="7" stroke-linecap="round"/>
+  <text x="120" y="216" text-anchor="middle" fill="#E2E8F0" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="24" font-weight="700" letter-spacing="0">tracelens</text>
+</svg>

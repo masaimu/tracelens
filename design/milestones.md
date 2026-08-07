@@ -271,7 +271,8 @@ crates/
 - wall-clock duration 和 root span duration 分开展示。
 - 多 root、孤儿 span、child 超出 parent 时间范围时有清晰 diagnostics；多 root 计算关键路径时必须展示被选中的 root span 信息。
 - client/server span pair 不被强行合并为一个耗时节点。
-- span links 不进入阻塞关键路径。
+- span links 不转换为 parent-child 边，也不因为 link 关系额外进入阻塞关键路径。
+- `tree` 和 `critical-path` 的文本与 JSON 输出应展示 client/server、async work 和 linked span 标注。
 
 ### 不做
 
@@ -353,6 +354,8 @@ crates/
 - P95 处理耗时统计。
 - 本地性能测试机，包括 synthetic fixture 生成器和 benchmark runner。
 - GitHub Actions CI 质量门禁。
+- GitHub Actions 依赖安全检查。
+- GitHub Actions 手动性能 smoke benchmark。
 - 稳定的 JSON 输出结构。
 - 错误码和退出码规范。
 - 核心模块单元测试。
@@ -363,6 +366,8 @@ crates/
 - 生成的大规模 synthetic fixture 和本地 benchmark 结果不进入 Git。
 - benchmark runner 应覆盖 `critical-path` 等核心分析命令，避免新增命令绕过性能验收。
 - GitHub Actions 在 push 和 pull request 时运行格式化检查、测试、clippy 和构建。
+- GitHub Actions 可以定期或手动运行依赖安全检查。
+- GitHub Actions 可以手动运行性能 smoke benchmark，并保存结果 artifact。
 - 对 5k 到 50k spans 的样本，解析、建图和核心分析 P95 小于 2 秒。
 - `validate`、`summary`、`tree`、`critical-path`、`detect` 有端到端测试。
 - JSON 输出包含 `schema_version`。

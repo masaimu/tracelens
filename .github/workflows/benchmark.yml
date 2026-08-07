@@ -1,0 +1,83 @@
+name: Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      spans:
+        description: Comma-separated span counts.
+        required: true
+        default: "5000"
+      traces:
+        description: Number of traces per generated fixture.
+        required: true
+        default: "20"
+      formats:
+        description: Comma-separated input formats.
+        required: true
+        default: json
+      shapes:
+        description: Comma-separated synthetic trace shapes.
+        required: true
+        default: balanced,overlap
+      commands:
+        description: Comma-separated tracelens commands.
+        required: true
+        default: validate,summary,list-traces,services,critical-path
+      iterations:
+        description: Iterations per benchmark case.
+        required: true
+        default: "1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmark-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Performance smoke benchmark
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: ${{ runner.os }}-cargo-benchmark-stable-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-benchmark-stable-
+
+      - name: Show Python version
+        run: python3 --version
+
+      - name: Run benchmark
+        run: |
+          python3 tools/run_perf_benchmark.py \
+            --spans "${{ inputs.spans }}" \
+            --traces "${{ inputs.traces }}" \
+            --formats "${{ inputs.formats }}" \
+            --shapes "${{ inputs.shapes }}" \
+            --commands "${{ inputs.commands }}" \
+            --iterations "${{ inputs.iterations }}"
+
+      - name: Upload benchmark reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: perf-results/
+          if-no-files-found: error

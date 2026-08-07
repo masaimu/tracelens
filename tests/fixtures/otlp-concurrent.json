@@ -1,0 +1,234 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "checkout-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.checkout"
+          },
+          "spans": [
+            {
+              "traceId": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+              "spanId": "0000000000000001",
+              "name": "GET /checkout",
+              "kind": 2,
+              "startTimeUnixNano": "1000000000",
+              "endTimeUnixNano": "2000000000",
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "cart-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.cart"
+          },
+          "spans": [
+            {
+              "traceId": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+              "spanId": "0000000000000002",
+              "parentSpanId": "0000000000000001",
+              "name": "GET /cart",
+              "kind": 3,
+              "startTimeUnixNano": "1100000000",
+              "endTimeUnixNano": "1400000000",
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "payment-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.payment"
+          },
+          "spans": [
+            {
+              "traceId": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+              "spanId": "0000000000000003",
+              "parentSpanId": "0000000000000001",
+              "name": "POST /charge",
+              "kind": 3,
+              "startTimeUnixNano": "1500000000",
+              "endTimeUnixNano": "1900000000",
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "postgres"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.postgres"
+          },
+          "spans": [
+            {
+              "traceId": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+              "spanId": "0000000000000004",
+              "parentSpanId": "0000000000000003",
+              "name": "SELECT payments",
+              "kind": 3,
+              "startTimeUnixNano": "1550000000",
+              "endTimeUnixNano": "1700000000",
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "redis"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.redis"
+          },
+          "spans": [
+            {
+              "traceId": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+              "spanId": "0000000000000005",
+              "parentSpanId": "0000000000000003",
+              "name": "SET cache",
+              "kind": 3,
+              "startTimeUnixNano": "1650000000",
+              "endTimeUnixNano": "1850000000",
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "inventory-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.inventory"
+          },
+          "spans": [
+            {
+              "traceId": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+              "spanId": "0000000000000006",
+              "parentSpanId": "0000000000000001",
+              "name": "GET /stock",
+              "kind": 3,
+              "startTimeUnixNano": "1500000000",
+              "endTimeUnixNano": "1800000000",
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "notify-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.notify"
+          },
+          "spans": [
+            {
+              "traceId": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+              "spanId": "0000000000000007",
+              "parentSpanId": "0000000000000001",
+              "name": "POST /notify",
+              "kind": 3,
+              "startTimeUnixNano": "1900000000",
+              "endTimeUnixNano": "2100000000",
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

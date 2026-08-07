@@ -1,5 +1,10 @@
 use serde_json::{Value, json};
 
+use crate::analysis::classification::{SpanClassification, TraceClassification};
+use crate::analysis::critical_path::{
+    CriticalPathAnalysis, CriticalPathRootSpan, CriticalPathSegment, CriticalPathSpanTotal,
+    CriticalPathStatus,
+};
 use crate::analysis::duration::{RootSpanDuration, ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
 use crate::graph::trace_graph::{TraceCollection, TraceGraph};
@@ -100,6 +105,103 @@ pub fn format_services_json(analysis: &TraceDurationAnalysis, trace: &TraceGraph
             .collect::<Vec<_>>(),
         "diagnostics": diagnostics_to_json(&trace.diagnostics),
     }))
+}
+
+pub fn format_critical_path_json(
+    duration: &TraceDurationAnalysis,
+    critical_path: &CriticalPathAnalysis,
+    classification: &TraceClassification,
+    trace: &TraceGraph,
+) -> String {
+    let (unavailable_reason, status_label) = match &critical_path.status {
+        CriticalPathStatus::Available => (None, critical_path.status.label()),
+        CriticalPathStatus::Unavailable { reason } => {
+            (Some(reason.as_str()), critical_path.status.label())
+        }
+    };
+
+    to_pretty(json!({
+        "schema_version": SCHEMA_VERSION,
+        "command": "critical-path",
+        "trace": {
+            "trace_id": duration.trace_id,
+            "wall_clock_duration_ns": duration.wall_clock_duration_ns,
+            "root_span": critical_path.root_span.as_ref().map(critical_path_root_span_to_json),
+            "root_count": duration.root_count,
+            "orphan_count": duration.orphan_count,
+            "diagnostics_count": duration.diagnostics_count,
+        },
+        "critical_path": {
+            "status": status_label,
+            "unavailable_reason": unavailable_reason,
+            "root_span_id": critical_path.root_span_id,
+            "root_span": critical_path.root_span.as_ref().map(critical_path_root_span_to_json),
+            "total_duration_ns": critical_path.total_duration_ns,
+            "segments": critical_path
+                .segments
+                .iter()
+                .map(critical_path_segment_to_json)
+                .collect::<Vec<_>>(),
+            "span_totals": critical_path
+                .span_totals
+                .iter()
+                .map(critical_path_span_total_to_json)
+                .collect::<Vec<_>>(),
+            "notes": critical_path.notes,
+        },
+        "classification": {
+            "counts": {
+                "serial": classification.counts.serial,
+                "concurrent": classification.counts.concurrent,
+                "nested": classification.counts.nested,
+                "suspicious": classification.counts.suspicious,
+            },
+            "spans": classification
+                .spans
+                .iter()
+                .map(span_classification_to_json)
+                .collect::<Vec<_>>(),
+        },
+        "diagnostics": diagnostics_to_json(&trace.diagnostics),
+    }))
+}
+
+fn critical_path_segment_to_json(segment: &CriticalPathSegment) -> Value {
+    json!({
+        "span_id": segment.span_id,
+        "service_name": segment.service_name,
+        "name": segment.name,
+        "offset_ns": segment.offset_ns,
+        "duration_ns": segment.duration_ns,
+    })
+}
+
+fn critical_path_span_total_to_json(total: &CriticalPathSpanTotal) -> Value {
+    json!({
+        "span_id": total.span_id,
+        "service_name": total.service_name,
+        "name": total.name,
+        "total_ns": total.total_ns,
+    })
+}
+
+fn critical_path_root_span_to_json(root: &CriticalPathRootSpan) -> Value {
+    json!({
+        "span_id": root.span_id,
+        "service_name": root.service_name,
+        "name": root.name,
+        "duration_ns": root.duration_ns,
+    })
+}
+
+fn span_classification_to_json(span: &SpanClassification) -> Value {
+    json!({
+        "span_id": span.span_id,
+        "service_name": span.service_name,
+        "name": span.name,
+        "sibling_relation": span.sibling_relation.label(),
+        "parent_relation": span.parent_relation.map(|relation| relation.label()),
+    })
 }
 
 fn root_span_to_json(root: &RootSpanDuration) -> Value {

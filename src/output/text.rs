@@ -2,6 +2,10 @@ use std::collections::BTreeSet;
 use std::fmt::Write;
 use std::path::Path;
 
+use crate::analysis::classification::{ParentRelation, SiblingRelation, TraceClassification};
+use crate::analysis::critical_path::{
+    CriticalPathAnalysis, CriticalPathSegment, CriticalPathSpanTotal, CriticalPathStatus,
+};
 use crate::analysis::duration::{ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
 use crate::graph::trace_graph::{TraceCollection, TraceGraph};
@@ -262,6 +266,243 @@ pub fn format_services(analysis: &TraceDurationAnalysis, diagnostics: &[Diagnost
     }
 
     output
+}
+
+pub fn format_critical_path(
+    duration: &TraceDurationAnalysis,
+    critical_path: &CriticalPathAnalysis,
+    classification: &TraceClassification,
+    trace: &TraceGraph,
+) -> String {
+    let mut output = String::new();
+
+    writeln!(output, "Trace 耗时概览").expect("write to string");
+    writeln!(output, "trace_id: {}", duration.trace_id).expect("write to string");
+    writeln!(
+        output,
+        "wall-clock duration: {}",
+        format_optional_duration(duration.wall_clock_duration_ns)
+    )
+    .expect("write to string");
+    match &critical_path.root_span {
+        Some(root) => {
+            writeln!(
+                output,
+                "root span duration: {}  span_id={}  service={}  name={}",
+                format_duration(root.duration_ns),
+                root.span_id,
+                root.service_name,
+                root.name
+            )
+            .expect("write to string");
+        }
+        None => {
+            writeln!(output, "root span duration: unknown").expect("write to string");
+        }
+    }
+
+    writeln!(output).expect("write to string");
+    writeln!(output, "关键路径").expect("write to string");
+    writeln!(
+        output,
+        "说明：关键路径把 root span 的时间区间完整切分到具体 span；并发 child 同时执行时，该窗口归因给结束最晚的 child。"
+    )
+    .expect("write to string");
+    for note in &critical_path.notes {
+        writeln!(output, "注意：{}", localize_critical_path_note(note)).expect("write to string");
+    }
+
+    match &critical_path.status {
+        CriticalPathStatus::Available => {
+            writeln!(
+                output,
+                "critical path duration: {}",
+                format_duration(critical_path.total_duration_ns)
+            )
+            .expect("write to string");
+            write_critical_path_segments(&mut output, &critical_path.segments);
+
+            writeln!(output).expect("write to string");
+            writeln!(output, "关键路径 span 汇总").expect("write to string");
+            writeln!(
+                output,
+                "说明：下表按 span 在关键路径上的累计时间从高到低排序，表示每个 span 对端到端阻塞的贡献。"
+            )
+            .expect("write to string");
+            write_critical_path_totals(&mut output, &critical_path.span_totals);
+        }
+        CriticalPathStatus::Unavailable { reason } => {
+            writeln!(output, "critical path: unavailable").expect("write to string");
+            writeln!(output, "原因：{}。", localize_critical_path_reason(reason))
+                .expect("write to string");
+        }
+    }
+
+    writeln!(output).expect("write to string");
+    writeln!(output, "Span 执行分类").expect("write to string");
+    writeln!(
+        output,
+        "serial: {}  concurrent: {}  nested: {}  suspicious: {}",
+        classification.counts.serial,
+        classification.counts.concurrent,
+        classification.counts.nested,
+        classification.counts.suspicious
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "说明：serial/concurrent 描述 span 与同层 sibling 的时间关系；nested/suspicious 描述 span 与 parent 的时间关系，suspicious 表示 span 超出了 parent 的时间范围。"
+    )
+    .expect("write to string");
+    write_classification_details(&mut output, classification);
+
+    if !trace.diagnostics.is_empty() {
+        writeln!(output).expect("write to string");
+        write_diagnostics(&mut output, &trace.diagnostics);
+    }
+
+    output
+}
+
+fn write_critical_path_segments(output: &mut String, segments: &[CriticalPathSegment]) {
+    if segments.is_empty() {
+        writeln!(output, "(no segments)").expect("write to string");
+        return;
+    }
+
+    let service_width = segments
+        .iter()
+        .map(|segment| segment.service_name.len())
+        .max()
+        .unwrap_or("service".len())
+        .max("service".len());
+    let name_width = segments
+        .iter()
+        .map(|segment| segment.name.len())
+        .max()
+        .unwrap_or("name".len())
+        .max("name".len());
+
+    writeln!(
+        output,
+        "{:>12}  {:>12}  {:<service_width$}  {:<name_width$}  span_id",
+        "offset", "duration", "service", "name"
+    )
+    .expect("write to string");
+
+    for segment in segments {
+        writeln!(
+            output,
+            "{:>12}  {:>12}  {:<service_width$}  {:<name_width$}  {}",
+            format_duration(segment.offset_ns),
+            format_duration(segment.duration_ns),
+            segment.service_name,
+            segment.name,
+            segment.span_id
+        )
+        .expect("write to string");
+    }
+}
+
+fn localize_critical_path_note(note: &str) -> String {
+    if let Some(count) = note.strip_prefix("trace has ").and_then(|remaining| {
+        remaining.strip_suffix(" root spans; the critical path only covers the longest root span")
+    }) {
+        return format!("trace 有 {count} 个 root span；关键路径只覆盖 duration 最长的 root span");
+    }
+
+    if note
+        == "wall-clock duration exceeds the root span interval; the critical path only covers the root span interval"
+    {
+        return "wall-clock duration 大于被选中 root span 的时间区间；关键路径只覆盖该 root span 区间".to_string();
+    }
+
+    note.to_string()
+}
+
+fn localize_critical_path_reason(reason: &str) -> String {
+    if reason == "trace has no root span" {
+        return "trace 没有 root span，无法计算关键路径".to_string();
+    }
+
+    reason.to_string()
+}
+
+fn write_critical_path_totals(output: &mut String, totals: &[CriticalPathSpanTotal]) {
+    if totals.is_empty() {
+        writeln!(output, "(no spans)").expect("write to string");
+        return;
+    }
+
+    let service_width = totals
+        .iter()
+        .map(|total| total.service_name.len())
+        .max()
+        .unwrap_or("service".len())
+        .max("service".len());
+    let name_width = totals
+        .iter()
+        .map(|total| total.name.len())
+        .max()
+        .unwrap_or("name".len())
+        .max("name".len());
+
+    writeln!(
+        output,
+        "{:>12}  {:<service_width$}  {:<name_width$}  span_id",
+        "total", "service", "name"
+    )
+    .expect("write to string");
+
+    for total in totals {
+        writeln!(
+            output,
+            "{:>12}  {:<service_width$}  {:<name_width$}  {}",
+            format_duration(total.total_ns),
+            total.service_name,
+            total.name,
+            total.span_id
+        )
+        .expect("write to string");
+    }
+}
+
+fn write_classification_details(output: &mut String, classification: &TraceClassification) {
+    let concurrent: Vec<_> = classification
+        .spans
+        .iter()
+        .filter(|span| span.sibling_relation == SiblingRelation::Concurrent)
+        .collect();
+    if !concurrent.is_empty() {
+        writeln!(output).expect("write to string");
+        writeln!(output, "并发 span：").expect("write to string");
+        for span in concurrent {
+            writeln!(
+                output,
+                "- [{}] {} span_id={}",
+                span.service_name, span.name, span.span_id
+            )
+            .expect("write to string");
+        }
+    }
+
+    let suspicious: Vec<_> = classification
+        .spans
+        .iter()
+        .filter(|span| span.parent_relation == Some(ParentRelation::Suspicious))
+        .collect();
+    if !suspicious.is_empty() {
+        writeln!(output).expect("write to string");
+        writeln!(output, "可疑 span（超出 parent 时间范围）：").expect("write to string");
+        for span in suspicious {
+            writeln!(
+                output,
+                "- [{}] {} span_id={}",
+                span.service_name, span.name, span.span_id
+            )
+            .expect("write to string");
+        }
+    }
 }
 
 fn write_service_table(output: &mut String, services: &[ServiceDuration]) {

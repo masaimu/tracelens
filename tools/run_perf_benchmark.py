@@ -29,7 +29,7 @@ def main() -> int:
     parser.add_argument("--attributes", type=int, default=2)
     parser.add_argument("--formats", default="json", help="Comma-separated: json,jsonl.")
     parser.add_argument("--shapes", default="balanced", help="Comma-separated benchmark shapes.")
-    parser.add_argument("--commands", default="validate,summary,list-traces,services")
+    parser.add_argument("--commands", default="validate,summary,list-traces,services,critical-path")
     parser.add_argument("--iterations", type=int, default=3)
     parser.add_argument("--no-build", action="store_true", help="Skip cargo build --release.")
     args = parser.parse_args()
@@ -176,6 +176,8 @@ def command_argv(binary: Path, command: str, fixture: Path) -> list[object]:
         return [binary, "list-traces", fixture, "--limit", "20"]
     if command == "services":
         return [binary, "services", fixture, "--trace-id", FIRST_TRACE_ID]
+    if command == "critical-path":
+        return [binary, "critical-path", fixture, "--trace-id", FIRST_TRACE_ID]
     if command == "tree":
         return [binary, "tree", fixture, "--trace-id", FIRST_TRACE_ID]
     raise ValueError(f"unsupported command: {command}")

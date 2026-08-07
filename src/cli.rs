@@ -16,6 +16,7 @@ use crate::output::json::{
     format_critical_path_json, format_list_traces_json, format_services_json, format_summary_json,
     format_tree_json, format_validate_json,
 };
+use crate::output::style::{ColorMode, TextStyle};
 use crate::output::text::{
     format_critical_path, format_list_traces, format_services, format_summary, format_tree,
     format_validate,
@@ -28,6 +29,10 @@ use crate::output::text::{
     about = "Local OpenTelemetry trace analysis CLI"
 )]
 struct Cli {
+    /// Colorize text output.
+    #[arg(long, value_enum, global = true, default_value_t = ColorChoice::Auto)]
+    color: ColorChoice,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -126,6 +131,23 @@ enum OutputFormat {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+enum ColorChoice {
+    Auto,
+    Always,
+    Never,
+}
+
+impl From<ColorChoice> for ColorMode {
+    fn from(value: ColorChoice) -> Self {
+        match value {
+            ColorChoice::Auto => Self::Auto,
+            ColorChoice::Always => Self::Always,
+            ColorChoice::Never => Self::Never,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
 enum TraceSort {
     Duration,
     Spans,
@@ -134,6 +156,7 @@ enum TraceSort {
 
 pub fn run() -> Result<ExitCode> {
     let cli = Cli::parse();
+    let text_style = TextStyle::from_mode(cli.color.into());
 
     match cli.command {
         Commands::Validate {
@@ -148,7 +171,12 @@ pub fn run() -> Result<ExitCode> {
                 .any(|diagnostic| diagnostic.severity == Severity::Error);
 
             match output {
-                OutputFormat::Text => print!("{}", format_validate(&file, &collection, strict)),
+                OutputFormat::Text => {
+                    print!(
+                        "{}",
+                        format_validate(&file, &collection, strict, text_style)
+                    )
+                }
                 OutputFormat::Json => print!("{}", format_validate_json(&collection, strict)),
             }
 
@@ -164,7 +192,12 @@ pub fn run() -> Result<ExitCode> {
             let summary = summarize(&collection);
 
             match output {
-                OutputFormat::Text => print!("{}", format_summary(&file, &summary, &collection)),
+                OutputFormat::Text => {
+                    print!(
+                        "{}",
+                        format_summary(&file, &summary, &collection, text_style)
+                    )
+                }
                 OutputFormat::Json => print!("{}", format_summary_json(&summary, &collection)),
             }
             Ok(ExitCode::SUCCESS)
@@ -184,7 +217,9 @@ pub fn run() -> Result<ExitCode> {
             let traces = sorted_trace_summaries(&collection, sort);
 
             match output {
-                OutputFormat::Text => print!("{}", format_list_traces(&file, &traces, limit)),
+                OutputFormat::Text => {
+                    print!("{}", format_list_traces(&file, &traces, limit, text_style))
+                }
                 OutputFormat::Json => print!("{}", format_list_traces_json(&traces, limit)),
             }
             Ok(ExitCode::SUCCESS)
@@ -204,7 +239,7 @@ pub fn run() -> Result<ExitCode> {
                 .ok_or_else(|| anyhow!("trace_id not found: {normalized_trace_id}"))?;
 
             match output {
-                OutputFormat::Text => print!("{}", format_tree(trace)),
+                OutputFormat::Text => print!("{}", format_tree(trace, text_style)),
                 OutputFormat::Json => print!("{}", format_tree_json(trace)),
             }
             Ok(ExitCode::SUCCESS)
@@ -229,7 +264,13 @@ pub fn run() -> Result<ExitCode> {
             match output {
                 OutputFormat::Text => print!(
                     "{}",
-                    format_critical_path(&duration, &critical_path, &classification, trace)
+                    format_critical_path(
+                        &duration,
+                        &critical_path,
+                        &classification,
+                        trace,
+                        text_style
+                    )
                 ),
                 OutputFormat::Json => print!(
                     "{}",
@@ -254,7 +295,10 @@ pub fn run() -> Result<ExitCode> {
             let analysis = analyze_trace_duration(trace);
 
             match output {
-                OutputFormat::Text => print!("{}", format_services(&analysis, &trace.diagnostics)),
+                OutputFormat::Text => print!(
+                    "{}",
+                    format_services(&analysis, &trace.diagnostics, text_style)
+                ),
                 OutputFormat::Json => print!("{}", format_services_json(&analysis, trace)),
             }
             Ok(ExitCode::SUCCESS)

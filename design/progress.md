@@ -15,15 +15,15 @@
 ## 当前快照
 
 - 更新时间：2026-08-07
-- 当前基线提交：`6f215f1`（远端 main；工作区包含第六期和第七期待提交改动）
-- 当前阶段：第七期 GitHub Actions CI 质量门禁完成后
-- 当前整体进度：`60%`
+- 当前基线提交：`060519c`（远端 main；工作区包含第八盒彩色终端输出待提交改动）
+- 当前阶段：第八期彩色终端输出完成后
+- 当前整体进度：`61%`
 
 ```text
-[############--------] 60%
+[############--------] 61%
 ```
 
-这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类，以及 GitHub Actions CI 质量门禁；但 client/server 与 async 标注、错误传播、N+1、可视化、完整性能基线和发布分发，还没有完成。
+这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、GitHub Actions CI 质量门禁，以及语义化彩色终端输出；但 client/server 与 async 标注、错误传播、N+1、ASCII timeline/flame graph、完整性能基线和发布分发，还没有完成。
 
 ## 计算规则
 
@@ -53,21 +53,21 @@
 | M3：基础 CLI 分析命令 | 15% | 95% | 14.3% | `validate`、`summary`、`list-traces`、`tree`、`--output json` 已完成；JSON schema 仍处于 `0.1` 可调整阶段 |
 | M4：耗时分析与关键路径 | 18% | 70% | 12.6% | 已完成 M4-A 和 M4-B：`services` 命令、wall-clock/root duration、span self time、服务维度 self time、串行/并发/nested/suspicious 分类、`critical-path` 命令；尚未完成 client/server span pair、async work 和 linked span 标注 |
 | M5：模式检测 | 12% | 0% | 0.0% | 未开始 |
-| M6：终端可视化 | 8% | 0% | 0.0% | 未开始 |
-| M7：性能、稳定性与自动化接口 | 7% | 50% | 3.5% | 已有测试、JSON 输出、本地 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path`，并新增 GitHub Actions CI 质量门禁；尚未完成 5k-50k 完整 P95 基线、稳定退出码规范文档 |
+| M6：终端可视化 | 8% | 15% | 1.2% | 已完成彩色终端输出语义层和 `--color` 控制；尚未实现 ASCII timeline/flame graph |
+| M7：性能、稳定性与自动化接口 | 7% | 53% | 3.7% | 已有测试、JSON 输出、本地 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path`，新增 GitHub Actions CI 质量门禁，并支持脚本友好的 `--color never`；尚未完成 5k-50k 完整 P95 基线、稳定退出码规范文档 |
 | M8：HTML 报告 | 3% | 0% | 0.0% | 未开始 |
 | M9：发布与分发 | 2% | 10% | 0.2% | CLI 有版本号，已有英文/中文 README 和基础安装使用说明；尚未有 release artifact、checksum、发布流程 |
 
 当前合计：
 
 ```text
-5.0 + 12.8 + 11.3 + 14.3 + 12.6 + 0 + 0 + 3.5 + 0 + 0.2 = 59.7%
+5.0 + 12.8 + 11.3 + 14.3 + 12.6 + 0 + 1.2 + 3.7 + 0 + 0.2 = 61.1%
 ```
 
 四舍五入后记录为：
 
 ```text
-60%
+61%
 ```
 
 ## 原始需求满足度
@@ -89,13 +89,13 @@
 | 检测慢请求 | 20% | 当前只能按 trace duration 排序；尚未有 service latency distribution、p95/p99/p999 |
 | 检测错误传播链 | 15% | 当前有 error span count 和 status/error 标记；尚未推断传播链 |
 | 检测 N+1 调用模式 | 0% | 未开始 |
-| 终端 ASCII flame graph/timeline | 0% | 未开始 |
+| 终端 ASCII flame graph/timeline | 10% | 已完成彩色终端输出基础设施和稳定颜色语义；ASCII timeline/flame graph 本体未开始 |
 | 单页 HTML report | 0% | 未开始 |
 | 子命令式真实 CLI | 85% | `validate/summary/list-traces/tree/services/critical-path` 已完成；后续还需要 `detect/report` |
-| 核心单元测试 | 78% | 已有 27 个单元测试和 21 个 CLI 端到端测试；后续 detect、可视化还需要继续补 |
+| 核心单元测试 | 80% | 已有 29 个单元测试和 25 个 CLI 端到端测试；后续 detect、可视化还需要继续补 |
 | CI 检查与工程化质量门禁 | 55% | 已新增 GitHub Actions CI，在 push、pull request 和手动触发时运行格式化检查、测试、clippy 和构建；尚未配置分支保护和 release workflow |
 | P95 样本处理耗时小于 2 秒 | 30% | 已有 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path`，并完成 5k critical-path smoke；尚未跑完整 5k-50k 多轮 P95 矩阵 |
-| 可脚本化 JSON 输出 | 62% | 基础命令、`services` 和 `critical-path` 已有 `--output json` 与 `schema_version: "0.1"`；schema 尚未稳定 |
+| 可脚本化 JSON 输出 | 65% | 基础命令、`services` 和 `critical-path` 已有 `--output json` 与 `schema_version: "0.1"`；`--output json` 不受彩色输出影响；schema 尚未稳定 |
 | 远程下载使用 | 8% | 有版本号、本地构建、README 安装说明和使用示例；尚未发布 release artifact |
 
 ## 当前已具备的能力
@@ -109,6 +109,7 @@ tracelens list-traces <file>
 tracelens tree <file> --trace-id <id>
 tracelens services <file> --trace-id <id>
 tracelens critical-path <file> --trace-id <id>
+tracelens --color auto|always|never <command>
 ```
 
 当前输入能力：
@@ -145,6 +146,9 @@ tracelens critical-path <file> --trace-id <id>
 当前输出能力：
 
 - 文本输出。
+- 语义化彩色文本输出。
+- `--color auto|always|never`。
+- `NO_COLOR=1` 下 `auto` 禁用颜色。
 - JSON 输出。
 - `schema_version: "0.1"`。
 - trace duration 排序。
@@ -202,8 +206,8 @@ tracelens critical-path <file> --trace-id <id>
 - `cargo test`。
 - `cargo clippy --all-targets -- -D warnings`。
 - `cargo build`。
-- 27 个单元测试。
-- 21 个 CLI 端到端测试。
+- 29 个单元测试。
+- 25 个 CLI 端到端测试。
 
 ## 当前主要缺口
 

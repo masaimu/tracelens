@@ -49,6 +49,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - Service-level self time analysis.
 - Root span, orphan span, missing parent, duplicate span ID, multiple root, no root, and suspicious timing diagnostics.
 - Text output for humans.
+- Semantic colored text output with `--color auto|always|never`.
 - JSON output for scripts with `--output json`.
 - Basic trace listing and sorting.
 
@@ -129,6 +130,13 @@ Produce JSON output:
 tracelens summary tests/fixtures/otlp-basic.json --output json
 ```
 
+Control terminal colors:
+
+```bash
+tracelens --color always critical-path tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+tracelens --color never summary tests/fixtures/otlp-basic.json
+```
+
 Validate JSONL:
 
 ```bash
@@ -170,7 +178,7 @@ Implemented:
 - Critical path analysis based on parent-child topology and time intervals.
 - Serial, concurrent, nested, and suspicious span classification.
 - Validation diagnostics.
-- Text and JSON output.
+- Semantic colored text output and JSON output.
 
 Not implemented yet:
 

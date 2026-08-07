@@ -49,6 +49,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - 服务维度 self time 分析。
 - 识别 root span、孤儿 span、缺失 parent、重复 span ID、多 root、无 root、可疑时间关系等问题。
 - 面向人的文本输出。
+- 语义化彩色文本输出：`--color auto|always|never`。
 - 面向脚本的 JSON 输出：`--output json`。
 - 基础 trace 列表和排序。
 
@@ -129,6 +130,13 @@ tracelens critical-path tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCC
 tracelens summary tests/fixtures/otlp-basic.json --output json
 ```
 
+控制终端颜色：
+
+```bash
+tracelens --color always critical-path tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+tracelens --color never summary tests/fixtures/otlp-basic.json
+```
+
 校验 JSONL：
 
 ```bash
@@ -170,7 +178,7 @@ tracelens validate tests/fixtures/otlp-basic.json --strict
 - 基于 parent-child 拓扑和时间区间的关键路径分析。
 - 串行、并发、nested、suspicious span 分类。
 - validation diagnostics。
-- 文本和 JSON 输出。
+- 语义化彩色文本输出和 JSON 输出。
 
 尚未实现：
 

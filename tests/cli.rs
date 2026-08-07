@@ -16,6 +16,10 @@ fn fixture(name: &str) -> String {
         .to_string()
 }
 
+fn contains_ansi(value: &str) -> bool {
+    value.contains("\x1b[")
+}
+
 #[test]
 fn validate_basic_fixture() {
     let fixture = fixture("otlp-basic.json");
@@ -468,4 +472,76 @@ fn critical_path_fails_for_unknown_trace_id() {
     assert!(!output.status.success());
     let stderr = String::from_utf8(output.stderr).expect("stderr should be utf8");
     assert!(stderr.contains("trace_id not found"));
+}
+
+#[test]
+fn color_always_adds_ansi_to_text_output() {
+    let fixture = fixture("otlp-basic.json");
+    let output = tracelens()
+        .args(["--color", "always", "validate", fixture.as_str()])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(contains_ansi(&stdout));
+    assert!(stdout.contains("\x1b[32mok\x1b[0m"));
+}
+
+#[test]
+fn color_never_keeps_text_output_plain() {
+    let fixture = fixture("otlp-concurrent.json");
+    let output = tracelens()
+        .args([
+            "--color",
+            "never",
+            "critical-path",
+            fixture.as_str(),
+            "--trace-id",
+            "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(!contains_ansi(&stdout));
+    assert!(stdout.contains("关键路径"));
+    assert!(stdout.contains("critical path duration: 1.000s"));
+}
+
+#[test]
+fn json_output_ignores_color_always() {
+    let fixture = fixture("otlp-basic.json");
+    let output = tracelens()
+        .args([
+            "--color",
+            "always",
+            "validate",
+            fixture.as_str(),
+            "--output",
+            "json",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(!contains_ansi(&stdout));
+    let value: Value = serde_json::from_str(&stdout).expect("stdout should be valid json");
+    assert_eq!(value["command"], "validate");
+}
+
+#[test]
+fn no_color_disables_auto_color() {
+    let fixture = fixture("otlp-invalid-time.json");
+    let output = tracelens()
+        .env("NO_COLOR", "1")
+        .args(["--color", "auto", "validate", fixture.as_str()])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(!contains_ansi(&stdout));
 }

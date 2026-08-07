@@ -317,6 +317,8 @@ crates/
 
 ### 交付物
 
+- 现有文本命令的彩色语义输出。
+- `--color auto|always|never` 颜色控制。
 - ASCII timeline 或 ASCII flame graph。
 - 支持指定 `--trace-id`。
 - 标注服务、span 名称、耗时、错误状态。
@@ -325,6 +327,9 @@ crates/
 
 ### 验收标准
 
+- 彩色输出必须使用稳定语义映射，不能随机用色。
+- `--output json` 不得包含 ANSI color。
+- `--color never` 必须输出纯文本，适合日志、CI 和文件重定向。
 - 终端输出在常见宽度下可读。
 - 对长 span name 有截断或缩略策略。
 - 并发 span 不被错误串行化展示。

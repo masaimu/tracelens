@@ -438,6 +438,12 @@ crates/
 - 在远端平台发布可下载二进制包。
 - 提供 checksum，便于用户校验下载文件。
 - 提供默认英文 README 和中文 README。
+- 提供产品传播内容维护规约。
+- 提供清晰的产品定位、目标用户、典型使用场景和输出说明文档。
+  - `docs/why-tracelens.md`
+  - `docs/use-cases.md`
+  - `docs/examples.md`
+  - `docs/output-guide.md`
 - 提供安装说明。
 - 提供基本使用示例。
 - 发布前运行完整测试和基础 benchmark。
@@ -466,6 +472,8 @@ crates/
 - 下载后的 `tracelens --version` 可以显示正确版本。
 - release artifact 与源码 tag 对应。
 - release note 清楚说明当前版本能力范围和不支持的功能。
+- README、使用场景、示例和输出说明能反映当前稳定能力，不能只在设计文档中记录。
+- 每次迭代完成后必须 review 新能力是否需要进入产品传播内容。
 - 发布流程可以被重复执行，最好由 CI 自动化。
 
 ### 不做

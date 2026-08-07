@@ -5,7 +5,7 @@
 <h1 align="center">tracelens</h1>
 
 <p align="center">
-  A local-first CLI for inspecting OpenTelemetry traces.
+  Understand slow OpenTelemetry traces locally, without running a trace backend.
 </p>
 
 <p align="center">
@@ -22,9 +22,16 @@
 
 `tracelens` is a command-line tool for exploring OpenTelemetry trace exports on your local machine.
 
-It is built for the moments when you have a trace file, not a running trace backend. Give `tracelens` an OTLP JSON or JSONL export, and it helps you validate the file, list traces, inspect span trees, and produce script-friendly JSON output.
+It is built for the moments when you have a trace file, not a running trace backend. Give `tracelens` an OTLP JSON or JSONL export, and it helps you validate the file, list traces, inspect span trees, explain service self time, analyze critical paths, and produce script-friendly JSON output.
 
 The project is still early. The current codebase is a local analysis CLI, not a full trace backend.
+
+## Why Developers Reach For It
+
+- **Local-first:** inspect OTLP JSON or JSONL files directly from disk.
+- **Explainable:** understand service self time, critical path segments, concurrency, suspicious timing, and semantic annotations.
+- **Automation-friendly:** use `--output json` and `--color never` in scripts, CI, and agent workflows.
+- **Conservative semantics:** client/server pairs are annotated, not merged; span links are not converted into parent-child edges.
 
 ## Why It Exists
 
@@ -35,6 +42,13 @@ During debugging, interviews, CI checks, incident review, offline analysis, or t
 ```text
 trace file -> parse -> normalize -> build graph -> analyze -> report
 ```
+
+## Guides
+
+- [Why tracelens?](docs/why-tracelens.md)
+- [Use cases](docs/use-cases.md)
+- [Examples](docs/examples.md)
+- [Output guide](docs/output-guide.md)
 
 ## Current Capabilities
 

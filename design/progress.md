@@ -15,15 +15,15 @@
 ## 当前快照
 
 - 更新时间：2026-08-07
-- 当前基线提交：`8fa3cbf`（远端 main；工作区包含第九期 Span 语义标注待提交改动）
-- 当前阶段：第九期 Span 语义标注完成后
-- 当前整体进度：`65%`
+- 当前基线提交：`d625121`（远端 main；工作区包含产品传播规约和首批产品传播文档待提交改动）
+- 当前阶段：第十二期产品传播文档首批落地后
+- 当前整体进度：`66%`
 
 ```text
-[#############-------] 65%
+[#############-------] 66%
 ```
 
-这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、手动性能 smoke benchmark，以及语义化彩色终端输出；但错误传播、N+1、ASCII timeline/flame graph、完整性能基线和发布分发，还没有完成。
+这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、手动性能 smoke benchmark，以及语义化彩色终端输出；但错误传播、N+1、ASCII timeline/flame graph、完整性能基线、CI/performance/comparison 等传播文档和发布分发，还没有完成。
 
 ## 计算规则
 
@@ -56,18 +56,18 @@
 | M6：终端可视化 | 8% | 15% | 1.2% | 已完成彩色终端输出语义层和 `--color` 控制；尚未实现 ASCII timeline/flame graph |
 | M7：性能、稳定性与自动化接口 | 7% | 60% | 4.2% | 已有测试、JSON 输出、本地 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path`，新增 CI、安全检查和手动 benchmark workflows，并支持脚本友好的 `--color never`；尚未完成 5k-50k 完整 P95 基线、稳定退出码规范文档 |
 | M8：HTML 报告 | 3% | 0% | 0.0% | 未开始 |
-| M9：发布与分发 | 2% | 10% | 0.2% | CLI 有版本号，已有英文/中文 README 和基础安装使用说明；尚未有 release artifact、checksum、发布流程 |
+| M9：发布与分发 | 2% | 25% | 0.5% | CLI 有版本号，已有英文/中文 README、基础安装使用说明、产品传播规约，以及 why/use-cases/examples/output-guide 首批传播文档；尚未有 release artifact、checksum、发布流程，CI/performance/comparison 文档也未补齐 |
 
 当前合计：
 
 ```text
-5.0 + 12.8 + 11.3 + 14.3 + 16.2 + 0 + 1.2 + 4.2 + 0 + 0.2 = 65.2%
+5.0 + 12.8 + 11.3 + 14.3 + 16.2 + 0 + 1.2 + 4.2 + 0 + 0.5 = 65.5%
 ```
 
 四舍五入后记录为：
 
 ```text
-65%
+66%
 ```
 
 ## 原始需求满足度
@@ -96,7 +96,7 @@
 | CI 检查与工程化质量门禁 | 70% | 已新增 GitHub Actions CI、安全检查和手动性能 benchmark workflow；尚未配置分支保护和 release workflow |
 | P95 样本处理耗时小于 2 秒 | 35% | 已有 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path`，支持通过 GitHub Actions 手动运行 smoke benchmark 并上传结果；尚未跑完整 5k-50k 多轮 P95 矩阵 |
 | 可脚本化 JSON 输出 | 70% | 基础命令、`services`、`tree` 和 `critical-path` 已有 `--output json` 与 `schema_version: "0.1"`，并输出结构化 annotations；`--output json` 不受彩色输出影响；schema 尚未稳定 |
-| 远程下载使用 | 8% | 有版本号、本地构建、README 安装说明和使用示例；尚未发布 release artifact |
+| 远程下载使用 | 12% | 有版本号、本地构建、README 安装说明、使用示例和首批产品传播文档；尚未发布 release artifact |
 
 ## 当前已具备的能力
 
@@ -211,6 +211,11 @@ tracelens --color auto|always|never <command>
 - 本地 SVG logo。
 - README CI 状态徽章。
 - 当前能力、安装方式、使用示例和路线图说明。
+- 产品传播内容维护规约，要求每次迭代后 review 新能力是否已进入 README、示例、使用场景或输出说明。
+- `docs/why-tracelens.md`：解释产品定位、使用理由和非目标。
+- `docs/use-cases.md`：把典型用户问题映射到 CLI 命令。
+- `docs/examples.md`：提供基于真实 fixture 的可复制命令和输出片段。
+- `docs/output-guide.md`：解释核心输出字段、critical path、classification、annotations、diagnostics 和 JSON 输出。
 
 当前验证能力：
 
@@ -229,7 +234,7 @@ tracelens --color auto|always|never <command>
 - M6：ASCII timeline/flame graph。
 - M7：完整 5k-50k 多轮 P95 性能基线、稳定 JSON schema、退出码规范、可选分支保护规则。
 - M8：HTML report。
-- M9：GitHub Releases、跨平台 artifact、checksum、发布流程。
+- M9：CI integration、performance、comparison 等传播文档，GitHub Releases、跨平台 artifact、checksum、发布流程。
 
 ## 更新规则
 
@@ -241,5 +246,6 @@ tracelens --color auto|always|never <command>
 4. 更新“原始需求满足度”中的具体能力百分比。
 5. 在“当前已具备的能力”中补充新增能力。
 6. 在“当前主要缺口”中移除已完成项，并加入下一阶段重点。
+7. 按 `design/product-communication.md` review 产品传播内容，确认新能力是否需要进入 README、示例、使用场景或输出说明。
 
 如果新增需求不属于 `design/milestones.md`，不能直接提高进度；必须先修改里程碑文档，明确它是否进入第一版范围。

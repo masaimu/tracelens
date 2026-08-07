@@ -9,6 +9,7 @@
 - `design/introduction.md`：项目介绍与原始需求。
 - `design/milestones.md`：项目里程碑、范围边界和非目标。
 - `design/progress.md`：当前能力满足度和整体进度条。
+- `design/product-communication.md`：产品传播内容维护规约。
 - 当前迭代对应的 `design/iteration-*.md` 文档。
 
 如果需求不在里程碑或当前迭代范围内，Agent 不能直接实现。必须先更新相关设计文档，明确该需求属于哪个里程碑或迭代。
@@ -70,6 +71,45 @@ design/iteration-*.md
 - 是否存在未覆盖的风险。
 - 是否建议提交。
 - 如果不建议提交，必须说明阻塞原因。
+
+### 4. 每次迭代完成后必须 review 产品传播内容
+
+每次迭代完成后，Agent 必须 review 当前新增能力是否已经体现在面向用户的产品传播内容中。
+
+必须检查：
+
+```text
+README.md
+README.zh-CN.md
+design/product-communication.md
+```
+
+如果对应文档已经存在，还必须检查：
+
+```text
+docs/why-tracelens.md
+docs/use-cases.md
+docs/examples.md 或 examples/README.md
+docs/output-guide.md
+docs/ci-integration.md
+docs/performance.md
+docs/comparison.md
+assets/
+```
+
+检查原则：
+
+- 新能力如果能提升用户感知，必须进入 README、使用场景、示例、输出说明或性能/CI 文档中的至少一个。
+- 如果新能力不适合对外宣传，必须在实施报告中说明不更新传播内容的原因。
+- 不能只在设计文档里记录能力，也要考虑用户是否能从项目首页、示例或说明文档里理解它的价值。
+- 面向用户的文案必须避免夸大，不得承诺尚未实现或未进入里程碑的能力。
+- 英文 README 和中文 README 的核心能力描述必须保持一致。
+
+实施报告中必须新增一项：
+
+```text
+产品传播内容 review：已更新/无需更新，并说明原因。
+```
 
 ## 开发约束
 

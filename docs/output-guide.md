@@ -1,0 +1,264 @@
+# Output Guide
+
+This guide explains the most important terms and fields in `tracelens` output.
+
+The goal is to make trace output understandable without requiring the reader to know the implementation details.
+
+## Common Trace Fields
+
+### `trace_id`
+
+The OpenTelemetry trace ID being inspected.
+
+Most single-trace commands require:
+
+```bash
+--trace-id <trace-id>
+```
+
+IDs are normalized to lowercase hex in default parsing mode.
+
+### `span_id`
+
+The OpenTelemetry span ID.
+
+In text output, span IDs are shown so you can map `tracelens` output back to the original OTLP data.
+
+### `service`
+
+The service name, usually read from resource attribute:
+
+```text
+service.name
+```
+
+If the attribute is missing, `tracelens` uses a fallback service name and emits a diagnostic.
+
+## Duration Fields
+
+### `wall-clock duration`
+
+The time from the earliest span start to the latest span end in the trace.
+
+Use it to answer:
+
+```text
+How long did the whole observed trace window last?
+```
+
+This can differ from root span duration when a trace has multiple roots, orphan spans, or async work outside the selected root span.
+
+### `root span duration`
+
+The duration of the root span used for trace-level analysis.
+
+When there is exactly one root span, this is straightforward. When a trace has multiple roots, `critical-path` selects the longest root span and prints a note.
+
+### `span_time`
+
+The raw sum of span durations for a service.
+
+Nested and concurrent spans can make this larger than wall-clock time.
+
+### `child_covered_time`
+
+The time range inside a span that is covered by direct child spans.
+
+Overlapping child spans are counted once by interval union.
+
+### `self_time`
+
+The time a service spent in its own spans after subtracting directly covered child intervals.
+
+Use it to answer:
+
+```text
+Which service contributed the most own time in this trace?
+```
+
+Example:
+
+```text
+service              self_time     span_time  child_covered_time  spans  errors
+cart-service          50.000ms      50.000ms                 0ns      1       0
+payment-service       40.000ms      40.000ms                 0ns      1       1
+checkout-service      10.000ms     100.000ms            90.000ms      1       0
+```
+
+Here, `checkout-service` owns the root span, but most of its time is covered by child spans.
+
+## Critical Path
+
+`critical-path` explains how the selected root span interval is attributed to spans.
+
+```bash
+tracelens critical-path traces.json --trace-id <trace-id>
+```
+
+### `critical path duration`
+
+The duration of the selected root span interval.
+
+This is not always the same as wall-clock duration.
+
+### `segments`
+
+Critical path segments split the selected root span interval into attributed windows:
+
+```text
+offset       duration    service           name
+100.000ms    300.000ms   cart-service      GET /cart
+650.000ms    200.000ms   redis             SET cache
+```
+
+Columns:
+
+- `offset`: when this segment begins relative to the trace start
+- `duration`: how much time this segment contributes
+- `service`: owning service
+- `name`: span name
+- `span_id`: original span ID
+
+When concurrent child spans overlap, `tracelens` attributes that window to the child that ends latest. This keeps the selected root span interval fully covered without double-counting overlapping child time.
+
+### `span_totals`
+
+The total critical path contribution grouped by span.
+
+Use this to answer:
+
+```text
+Which spans contributed the most blocking time?
+```
+
+## Span Execution Classification
+
+`critical-path` also classifies span execution relationships.
+
+```text
+serial: 3  concurrent: 4  nested: 5  suspicious: 1
+```
+
+### `serial`
+
+A span whose sibling group does not overlap in time.
+
+### `concurrent`
+
+A span that overlaps at least one sibling in the same parent group.
+
+### `nested`
+
+A span fully contained within its parent time range.
+
+### `suspicious`
+
+A span that starts before its parent or ends after its parent.
+
+This does not always mean the trace is wrong, but it is worth checking instrumentation or export quality.
+
+## Semantic Annotations
+
+`tracelens` annotates span semantics in `tree` and `critical-path` output.
+
+```text
+Span 语义标注
+client/server pairs: 1  async spans: 2  linked spans: 1  messaging spans: 2
+```
+
+### Client/server Pair
+
+A direct parent-child edge where:
+
+- parent kind is `client`
+- child kind is `server`
+
+`tracelens` marks the pair but does not merge the two spans into one timing node.
+
+This conservative behavior avoids hiding instrumentation differences across service boundaries.
+
+### Async Work
+
+A span is marked as async-related when it is:
+
+- kind `producer`
+- kind `consumer`
+- carrying `messaging.*` attributes
+- carrying span links
+
+### Linked Span
+
+If a span has links, `tracelens` prints the linked trace/span target and whether that target exists in the current trace.
+
+Span links are not converted into parent-child edges.
+
+### Messaging Span
+
+If a span has `messaging.*` attributes, it is marked as messaging-related.
+
+Messaging spans are not automatically treated as blocking causal paths because messaging semantics vary by system and instrumentation.
+
+## Diagnostics
+
+Diagnostics are warnings or errors about input quality or trace structure.
+
+Examples:
+
+- `missing_resource_spans`
+- `missing_service_name`
+- `malformed_jsonl_line`
+- `invalid_trace_id`
+- `invalid_span_id`
+- `invalid_timestamp`
+- `invalid_time_range`
+- `missing_parent`
+- `duplicate_span_id`
+- `multiple_root_spans`
+- `no_root_span`
+- `child_outside_parent`
+
+Diagnostics are intentionally visible. Trace analysis is only useful when you can also see the data quality caveats.
+
+## JSON Output
+
+Most commands support:
+
+```bash
+--output json
+```
+
+JSON output includes:
+
+```json
+{
+  "schema_version": "0.1",
+  "command": "critical-path"
+}
+```
+
+The schema is still version `0.1`, so it can change before the project reaches a stable `1.0`.
+
+Useful top-level JSON areas:
+
+- `summary`
+- `trace`
+- `nodes`
+- `services`
+- `critical_path`
+- `classification`
+- `annotations`
+- `diagnostics`
+
+## Color Output
+
+Text output supports:
+
+```bash
+--color auto
+--color always
+--color never
+```
+
+Use `--color never` for logs, CI, and file redirection.
+
+JSON output never includes ANSI color escapes.

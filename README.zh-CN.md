@@ -5,7 +5,7 @@
 <h1 align="center">tracelens</h1>
 
 <p align="center">
-  一个本地优先的 OpenTelemetry Trace 分析 CLI。
+  不用搭 Trace 后端，也能在本地看懂一份 OpenTelemetry Trace 文件慢在哪里。
 </p>
 
 <p align="center">
@@ -22,9 +22,16 @@
 
 `tracelens` 是一个用于本地分析 OpenTelemetry Trace 导出文件的命令行工具。
 
-它面向一种很常见的场景：你手里有一份 trace 文件，但暂时没有可用的 Trace 后端。把 OTLP JSON 或 JSONL 文件交给 `tracelens`，它可以帮助你校验文件、列出 trace、查看 span 树，并输出适合脚本消费的 JSON。
+它面向一种很常见的场景：你手里有一份 trace 文件，但暂时没有可用的 Trace 后端。把 OTLP JSON 或 JSONL 文件交给 `tracelens`，它可以帮助你校验文件、列出 trace、查看 span 树、解释服务 self time、分析关键路径，并输出适合脚本消费的 JSON。
 
 项目仍处在早期阶段。当前版本是本地分析 CLI，不是完整 Trace 后端。
+
+## 为什么工程师会需要它？
+
+- **本地优先**：直接读取磁盘上的 OTLP JSON 或 JSONL 文件。
+- **可解释**：帮助理解服务 self time、关键路径片段、并发关系、可疑时间关系和语义标注。
+- **适合自动化**：通过 `--output json` 和 `--color never` 接入脚本、CI 和 Agent 工作流。
+- **语义保守**：client/server pair 只标注不合并；span links 不会被转换成 parent-child 边。
 
 ## 为什么需要它？
 
@@ -35,6 +42,15 @@ Jaeger、Tempo、Zipkin 和各类厂商平台都很强大，但它们通常默�
 ```text
 trace file -> parse -> normalize -> build graph -> analyze -> report
 ```
+
+## 使用指南
+
+以下文档目前以英文为主，面向开源用户：
+
+- [为什么需要 tracelens？](docs/why-tracelens.md)
+- [典型使用场景](docs/use-cases.md)
+- [可复制示例](docs/examples.md)
+- [输出字段说明](docs/output-guide.md)
 
 ## 当前能力
 

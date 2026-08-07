@@ -1,3 +1,4 @@
+pub mod annotations;
 pub mod classification;
 pub mod critical_path;
 pub mod duration;

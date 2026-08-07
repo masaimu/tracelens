@@ -1,5 +1,8 @@
 use serde_json::{Value, json};
 
+use crate::analysis::annotations::{
+    ClientServerPair, LinkedSpanRef, SpanAnnotation, TraceAnnotations,
+};
 use crate::analysis::classification::{SpanClassification, TraceClassification};
 use crate::analysis::critical_path::{
     CriticalPathAnalysis, CriticalPathRootSpan, CriticalPathSegment, CriticalPathSpanTotal,
@@ -68,7 +71,7 @@ pub fn format_list_traces_json(traces: &[TraceSummary], limit: usize) -> String 
     }))
 }
 
-pub fn format_tree_json(trace: &TraceGraph) -> String {
+pub fn format_tree_json(trace: &TraceGraph, annotations: &TraceAnnotations) -> String {
     to_pretty(json!({
         "schema_version": SCHEMA_VERSION,
         "command": "tree",
@@ -81,7 +84,8 @@ pub fn format_tree_json(trace: &TraceGraph) -> String {
             "duplicate_span_id_count": trace.duplicate_span_ids.len(),
             "diagnostics_count": trace.diagnostics.len(),
         },
-        "nodes": tree_nodes_to_json(trace),
+        "nodes": tree_nodes_to_json(trace, annotations),
+        "annotations": trace_annotations_to_json(annotations),
         "diagnostics": diagnostics_to_json(&trace.diagnostics),
     }))
 }
@@ -111,6 +115,7 @@ pub fn format_critical_path_json(
     duration: &TraceDurationAnalysis,
     critical_path: &CriticalPathAnalysis,
     classification: &TraceClassification,
+    annotations: &TraceAnnotations,
     trace: &TraceGraph,
 ) -> String {
     let (unavailable_reason, status_label) = match &critical_path.status {
@@ -162,6 +167,7 @@ pub fn format_critical_path_json(
                 .map(span_classification_to_json)
                 .collect::<Vec<_>>(),
         },
+        "annotations": trace_annotations_to_json(annotations),
         "diagnostics": diagnostics_to_json(&trace.diagnostics),
     }))
 }
@@ -204,6 +210,98 @@ fn span_classification_to_json(span: &SpanClassification) -> Value {
     })
 }
 
+fn trace_annotations_to_json(annotations: &TraceAnnotations) -> Value {
+    json!({
+        "counts": {
+            "client_server_pairs": annotations.counts.client_server_pairs,
+            "client_server_span_count": annotations.counts.client_server_span_count,
+            "async_span_count": annotations.counts.async_span_count,
+            "linked_span_count": annotations.counts.linked_span_count,
+            "messaging_span_count": annotations.counts.messaging_span_count,
+        },
+        "client_server_pairs": annotations
+            .client_server_pairs
+            .iter()
+            .map(client_server_pair_to_json)
+            .collect::<Vec<_>>(),
+        "async_spans": annotations
+            .spans
+            .iter()
+            .filter(|span| span.is_async_related())
+            .map(span_annotation_to_json)
+            .collect::<Vec<_>>(),
+        "linked_spans": annotations
+            .spans
+            .iter()
+            .filter(|span| span.linked_span_count > 0)
+            .map(span_annotation_to_json)
+            .collect::<Vec<_>>(),
+        "spans": annotations
+            .spans
+            .iter()
+            .map(span_annotation_to_json)
+            .collect::<Vec<_>>(),
+    })
+}
+
+fn span_annotation_to_json(annotation: &SpanAnnotation) -> Value {
+    json!({
+        "span_id": annotation.span_id,
+        "service_name": annotation.service_name,
+        "name": annotation.name,
+        "role": annotation.role.label(),
+        "client_server_peers": annotation
+            .client_server_peers
+            .iter()
+            .map(|peer| {
+                json!({
+                    "span_id": peer.span_id,
+                    "service_name": peer.service_name,
+                    "name": peer.name,
+                    "relationship": peer.relationship.label(),
+                })
+            })
+            .collect::<Vec<_>>(),
+        "async_work": annotation.async_work,
+        "messaging": annotation.messaging,
+        "linked_span_count": annotation.linked_span_count,
+        "linked_spans": annotation
+            .linked_spans
+            .iter()
+            .map(linked_span_ref_to_json)
+            .collect::<Vec<_>>(),
+        "notes": annotation
+            .notes
+            .iter()
+            .map(|note| note.label())
+            .collect::<Vec<_>>(),
+    })
+}
+
+fn client_server_pair_to_json(pair: &ClientServerPair) -> Value {
+    json!({
+        "client": {
+            "span_id": pair.client_span_id,
+            "service_name": pair.client_service_name,
+            "name": pair.client_name,
+        },
+        "server": {
+            "span_id": pair.server_span_id,
+            "service_name": pair.server_service_name,
+            "name": pair.server_name,
+        },
+    })
+}
+
+fn linked_span_ref_to_json(link: &LinkedSpanRef) -> Value {
+    json!({
+        "trace_id": link.trace_id,
+        "span_id": link.span_id,
+        "same_trace": link.same_trace,
+        "target_in_trace": link.target_in_trace,
+    })
+}
+
 fn root_span_to_json(root: &RootSpanDuration) -> Value {
     json!({
         "span_id": root.span_id,
@@ -224,21 +322,21 @@ fn service_duration_to_json(service: &ServiceDuration) -> Value {
     })
 }
 
-fn tree_nodes_to_json(trace: &TraceGraph) -> Vec<Value> {
+fn tree_nodes_to_json(trace: &TraceGraph, annotations: &TraceAnnotations) -> Vec<Value> {
     let mut nodes = Vec::new();
     let mut visited = vec![false; trace.spans.len()];
 
     for index in &trace.root_indices {
-        push_tree_node(trace, *index, 0, &mut visited, &mut nodes);
+        push_tree_node(trace, annotations, *index, 0, &mut visited, &mut nodes);
     }
 
     for index in &trace.orphan_indices {
-        push_tree_node(trace, *index, 0, &mut visited, &mut nodes);
+        push_tree_node(trace, annotations, *index, 0, &mut visited, &mut nodes);
     }
 
     for index in 0..trace.spans.len() {
         if !visited[index] {
-            push_tree_node(trace, index, 0, &mut visited, &mut nodes);
+            push_tree_node(trace, annotations, index, 0, &mut visited, &mut nodes);
         }
     }
 
@@ -247,6 +345,7 @@ fn tree_nodes_to_json(trace: &TraceGraph) -> Vec<Value> {
 
 fn push_tree_node(
     trace: &TraceGraph,
+    annotations: &TraceAnnotations,
     index: usize,
     depth: usize,
     visited: &mut [bool],
@@ -261,11 +360,12 @@ fn push_tree_node(
     nodes.push(json!({
         "depth": depth,
         "span": span_to_json(span),
+        "annotations": annotations.spans.get(index).map(span_annotation_to_json),
     }));
 
     if let Some(children) = trace.children_by_parent.get(&span.span_id) {
         for child_index in children {
-            push_tree_node(trace, *child_index, depth + 1, visited, nodes);
+            push_tree_node(trace, annotations, *child_index, depth + 1, visited, nodes);
         }
     }
 }

@@ -47,6 +47,8 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - Trace grouping by `trace_id`.
 - Parent-child span graph construction.
 - Service-level self time analysis.
+- Critical path analysis and span execution classification.
+- Client/server, async work, messaging, and linked span annotations in tree and critical-path output.
 - Root span, orphan span, missing parent, duplicate span ID, multiple root, no root, and suspicious timing diagnostics.
 - Text output for humans.
 - Semantic colored text output with `--color auto|always|never`.
@@ -177,13 +179,13 @@ Implemented:
 - Service-level self time analysis.
 - Critical path analysis based on parent-child topology and time intervals.
 - Serial, concurrent, nested, and suspicious span classification.
+- Client/server span pair annotation.
+- Async work, messaging, and linked span annotation.
 - Validation diagnostics.
 - Semantic colored text output and JSON output.
 
 Not implemented yet:
 
-- Client/server span pair annotation.
-- Async work and linked span annotation.
 - Slow request detection.
 - Error propagation analysis.
 - N+1 detection.

@@ -376,6 +376,143 @@ fn critical_path_outputs_json() {
 }
 
 #[test]
+fn tree_outputs_semantic_annotations_with_chinese_explanations() {
+    let fixture = fixture("otlp-semantic-annotations.json");
+    let output = tracelens()
+        .args([
+            "--color",
+            "never",
+            "tree",
+            fixture.as_str(),
+            "--trace-id",
+            "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("标注=client/server"));
+    assert!(stdout.contains("linked(1)"));
+    assert!(stdout.contains("Span 语义标注"));
+    assert!(stdout.contains("client/server pair 表示 client span 直接调用 server span"));
+    assert!(stdout.contains("async/linked 表示 producer、consumer、messaging 属性或 span links"));
+    assert!(stdout.contains("client [frontend-service] GET inventory"));
+    assert!(stdout.contains("server [inventory-service] GET /stock"));
+}
+
+#[test]
+fn tree_json_outputs_semantic_annotations() {
+    let fixture = fixture("otlp-semantic-annotations.json");
+    let output = tracelens()
+        .args([
+            "tree",
+            fixture.as_str(),
+            "--trace-id",
+            "dddddddddddddddddddddddddddddddd",
+            "--output",
+            "json",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let json: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
+
+    assert_eq!(json["annotations"]["counts"]["client_server_pairs"], 1);
+    assert_eq!(json["annotations"]["counts"]["linked_span_count"], 1);
+    let nodes = json["nodes"].as_array().expect("nodes should be array");
+    assert!(nodes.iter().any(|node| {
+        node["annotations"]["client_server_peers"]
+            .as_array()
+            .is_some_and(|peers| !peers.is_empty())
+    }));
+}
+
+#[test]
+fn critical_path_outputs_semantic_annotations() {
+    let fixture = fixture("otlp-semantic-annotations.json");
+    let output = tracelens()
+        .args([
+            "--color",
+            "never",
+            "critical-path",
+            fixture.as_str(),
+            "--trace-id",
+            "dddddddddddddddddddddddddddddddd",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("Span 语义标注"));
+    assert!(
+        stdout.contains(
+            "client/server pairs: 1  async spans: 2  linked spans: 1  messaging spans: 2"
+        )
+    );
+    assert!(stdout.contains("async / linked span："));
+    assert!(stdout.contains("publish checkout event"));
+    assert!(stdout.contains("consume checkout event"));
+    assert!(
+        stdout.contains("links=[dddddddddddddddddddddddddddddddd:1000000000000004(current-trace)]")
+    );
+}
+
+#[test]
+fn critical_path_json_outputs_semantic_annotations() {
+    let fixture = fixture("otlp-semantic-annotations.json");
+    let output = tracelens()
+        .args([
+            "critical-path",
+            fixture.as_str(),
+            "--trace-id",
+            "dddddddddddddddddddddddddddddddd",
+            "--output",
+            "json",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(!contains_ansi(&stdout));
+    let json: Value = serde_json::from_str(&stdout).expect("stdout should be valid json");
+
+    assert_eq!(json["annotations"]["counts"]["client_server_pairs"], 1);
+    assert_eq!(json["annotations"]["counts"]["async_span_count"], 2);
+    assert_eq!(json["annotations"]["counts"]["linked_span_count"], 1);
+    assert_eq!(json["annotations"]["counts"]["messaging_span_count"], 2);
+    assert_eq!(
+        json["annotations"]["client_server_pairs"][0]["client"]["span_id"],
+        "1000000000000002"
+    );
+    assert_eq!(
+        json["annotations"]["client_server_pairs"][0]["server"]["span_id"],
+        "1000000000000003"
+    );
+    assert_eq!(
+        json["annotations"]["linked_spans"][0]["linked_spans"][0]["span_id"],
+        "1000000000000004"
+    );
+    assert_eq!(
+        json["annotations"]["linked_spans"][0]["linked_spans"][0]["target_in_trace"],
+        true
+    );
+    assert_eq!(json["critical_path"]["status"], "available");
+
+    let segment_span_ids = json["critical_path"]["segments"]
+        .as_array()
+        .expect("segments should be an array")
+        .iter()
+        .map(|segment| segment["span_id"].as_str().expect("span_id"))
+        .collect::<Vec<_>>();
+    assert!(segment_span_ids.contains(&"1000000000000002"));
+    assert!(segment_span_ids.contains(&"1000000000000003"));
+}
+
+#[test]
 fn critical_path_reports_selected_root_for_multiple_roots() {
     let fixture = fixture("otlp-multiple-roots.json");
     let output = tracelens()

@@ -1,0 +1,161 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "frontend-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.frontend"
+          },
+          "spans": [
+            {
+              "traceId": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+              "spanId": "1000000000000001",
+              "name": "GET /checkout",
+              "kind": 2,
+              "startTimeUnixNano": "0",
+              "endTimeUnixNano": "500000000",
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+              "spanId": "1000000000000002",
+              "parentSpanId": "1000000000000001",
+              "name": "GET inventory",
+              "kind": 3,
+              "startTimeUnixNano": "50000000",
+              "endTimeUnixNano": "250000000",
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+              "spanId": "1000000000000004",
+              "parentSpanId": "1000000000000001",
+              "name": "publish checkout event",
+              "kind": 4,
+              "startTimeUnixNano": "300000000",
+              "endTimeUnixNano": "320000000",
+              "attributes": [
+                {
+                  "key": "messaging.system",
+                  "value": {
+                    "stringValue": "kafka"
+                  }
+                },
+                {
+                  "key": "messaging.destination.name",
+                  "value": {
+                    "stringValue": "checkout-events"
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "inventory-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.inventory"
+          },
+          "spans": [
+            {
+              "traceId": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+              "spanId": "1000000000000003",
+              "parentSpanId": "1000000000000002",
+              "name": "GET /stock",
+              "kind": 2,
+              "startTimeUnixNano": "70000000",
+              "endTimeUnixNano": "220000000",
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "worker-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.worker"
+          },
+          "spans": [
+            {
+              "traceId": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+              "spanId": "1000000000000005",
+              "name": "consume checkout event",
+              "kind": 5,
+              "startTimeUnixNano": "600000000",
+              "endTimeUnixNano": "700000000",
+              "attributes": [
+                {
+                  "key": "messaging.system",
+                  "value": {
+                    "stringValue": "kafka"
+                  }
+                }
+              ],
+              "links": [
+                {
+                  "traceId": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+                  "spanId": "1000000000000004",
+                  "attributes": [
+                    {
+                      "key": "link.reason",
+                      "value": {
+                        "stringValue": "async follow-up"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

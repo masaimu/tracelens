@@ -4,6 +4,7 @@ use std::process::ExitCode;
 use anyhow::{Context, Result, anyhow};
 use clap::{Parser, Subcommand, ValueEnum};
 
+use crate::analysis::annotations::annotate_trace_spans;
 use crate::analysis::classification::classify_trace_spans;
 use crate::analysis::critical_path::analyze_critical_path;
 use crate::analysis::duration::analyze_trace_duration;
@@ -238,9 +239,11 @@ pub fn run() -> Result<ExitCode> {
                 .get(&normalized_trace_id)
                 .ok_or_else(|| anyhow!("trace_id not found: {normalized_trace_id}"))?;
 
+            let annotations = annotate_trace_spans(trace);
+
             match output {
-                OutputFormat::Text => print!("{}", format_tree(trace, text_style)),
-                OutputFormat::Json => print!("{}", format_tree_json(trace)),
+                OutputFormat::Text => print!("{}", format_tree(trace, &annotations, text_style)),
+                OutputFormat::Json => print!("{}", format_tree_json(trace, &annotations)),
             }
             Ok(ExitCode::SUCCESS)
         }
@@ -260,6 +263,7 @@ pub fn run() -> Result<ExitCode> {
             let duration = analyze_trace_duration(trace);
             let critical_path = analyze_critical_path(trace);
             let classification = classify_trace_spans(trace);
+            let annotations = annotate_trace_spans(trace);
 
             match output {
                 OutputFormat::Text => print!(
@@ -268,13 +272,20 @@ pub fn run() -> Result<ExitCode> {
                         &duration,
                         &critical_path,
                         &classification,
+                        &annotations,
                         trace,
                         text_style
                     )
                 ),
                 OutputFormat::Json => print!(
                     "{}",
-                    format_critical_path_json(&duration, &critical_path, &classification, trace)
+                    format_critical_path_json(
+                        &duration,
+                        &critical_path,
+                        &classification,
+                        &annotations,
+                        trace
+                    )
                 ),
             }
             Ok(ExitCode::SUCCESS)

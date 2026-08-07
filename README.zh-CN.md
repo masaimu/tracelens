@@ -47,6 +47,8 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - 按 `trace_id` 分组 trace。
 - 构建 parent-child span graph。
 - 服务维度 self time 分析。
+- 关键路径分析和 span 执行分类。
+- 在 tree 和 critical-path 输出中标注 client/server、async work、messaging 和 linked span。
 - 识别 root span、孤儿 span、缺失 parent、重复 span ID、多 root、无 root、可疑时间关系等问题。
 - 面向人的文本输出。
 - 语义化彩色文本输出：`--color auto|always|never`。
@@ -177,13 +179,13 @@ tracelens validate tests/fixtures/otlp-basic.json --strict
 - 服务维度 self time 分析。
 - 基于 parent-child 拓扑和时间区间的关键路径分析。
 - 串行、并发、nested、suspicious span 分类。
+- client/server span pair 标注。
+- async work、messaging 和 linked span 标注。
 - validation diagnostics。
 - 语义化彩色文本输出和 JSON 输出。
 
 尚未实现：
 
-- client/server span pair 标注。
-- async work 和 linked span 标注。
 - 慢请求检测。
 - 错误传播分析。
 - N+1 检测。

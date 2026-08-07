@@ -2,6 +2,9 @@ use std::collections::BTreeSet;
 use std::fmt::Write;
 use std::path::Path;
 
+use crate::analysis::annotations::{
+    AnnotationNote, ClientServerPair, SpanAnnotation, TraceAnnotations,
+};
 use crate::analysis::classification::{ParentRelation, SiblingRelation, TraceClassification};
 use crate::analysis::critical_path::{
     CriticalPathAnalysis, CriticalPathSegment, CriticalPathSpanTotal, CriticalPathStatus,
@@ -148,7 +151,7 @@ pub fn format_list_traces(
     output
 }
 
-pub fn format_tree(trace: &TraceGraph, style: TextStyle) -> String {
+pub fn format_tree(trace: &TraceGraph, annotations: &TraceAnnotations, style: TextStyle) -> String {
     let mut output = String::new();
 
     writeln!(output, "Trace: {}", style.identifier(&trace.trace_id)).expect("write to string");
@@ -177,14 +180,30 @@ pub fn format_tree(trace: &TraceGraph, style: TextStyle) -> String {
 
     let mut visited = BTreeSet::new();
     for index in &trace.root_indices {
-        write_span_tree(&mut output, trace, *index, 0, &mut visited, style);
+        write_span_tree(
+            &mut output,
+            trace,
+            annotations,
+            *index,
+            0,
+            &mut visited,
+            style,
+        );
     }
 
     if !trace.orphan_indices.is_empty() {
         writeln!(output).expect("write to string");
         writeln!(output, "{}", style.warning("Orphan spans:")).expect("write to string");
         for index in &trace.orphan_indices {
-            write_span_tree(&mut output, trace, *index, 1, &mut visited, style);
+            write_span_tree(
+                &mut output,
+                trace,
+                annotations,
+                *index,
+                1,
+                &mut visited,
+                style,
+            );
         }
     }
 
@@ -197,8 +216,21 @@ pub fn format_tree(trace: &TraceGraph, style: TextStyle) -> String {
                     .expect("write to string");
                 wrote_unattached_header = true;
             }
-            write_span_tree(&mut output, trace, index, 0, &mut visited, style);
+            write_span_tree(
+                &mut output,
+                trace,
+                annotations,
+                index,
+                0,
+                &mut visited,
+                style,
+            );
         }
+    }
+
+    if has_any_annotations(annotations) {
+        writeln!(output).expect("write to string");
+        write_annotations_summary(&mut output, annotations, style);
     }
 
     if !trace.diagnostics.is_empty() {
@@ -339,6 +371,7 @@ pub fn format_critical_path(
     duration: &TraceDurationAnalysis,
     critical_path: &CriticalPathAnalysis,
     classification: &TraceClassification,
+    annotations: &TraceAnnotations,
     trace: &TraceGraph,
     style: TextStyle,
 ) -> String {
@@ -434,6 +467,9 @@ pub fn format_critical_path(
     )
     .expect("write to string");
     write_classification_details(&mut output, classification, style);
+
+    writeln!(output).expect("write to string");
+    write_annotations_summary(&mut output, annotations, style);
 
     if !trace.diagnostics.is_empty() {
         writeln!(output).expect("write to string");
@@ -668,6 +704,7 @@ fn write_service_table(output: &mut String, services: &[ServiceDuration], style:
 fn write_span_tree(
     output: &mut String,
     trace: &TraceGraph,
+    annotations: &TraceAnnotations,
     index: usize,
     depth: usize,
     visited: &mut BTreeSet<usize>,
@@ -682,18 +719,30 @@ fn write_span_tree(
         output,
         "{}{}",
         "  ".repeat(depth),
-        format_span_line(span, style)
+        format_span_line(span, annotations.spans.get(index), style)
     )
     .expect("write to string");
 
     if let Some(children) = trace.children_by_parent.get(&span.span_id) {
         for child_index in children {
-            write_span_tree(output, trace, *child_index, depth + 1, visited, style);
+            write_span_tree(
+                output,
+                trace,
+                annotations,
+                *child_index,
+                depth + 1,
+                visited,
+                style,
+            );
         }
     }
 }
 
-fn format_span_line(span: &CanonicalSpan, style: TextStyle) -> String {
+fn format_span_line(
+    span: &CanonicalSpan,
+    annotation: Option<&SpanAnnotation>,
+    style: TextStyle,
+) -> String {
     let mut line = format!(
         "[{}] {} {} span_id={}",
         style.service(&span.service_name),
@@ -716,7 +765,176 @@ fn format_span_line(span: &CanonicalSpan, style: TextStyle) -> String {
         line.push_str(&style.error("ERROR"));
     }
 
+    if let Some(annotation) = annotation
+        && annotation.has_annotations()
+    {
+        line.push(' ');
+        line.push_str(&format_inline_annotation(annotation, style));
+    }
+
     line
+}
+
+fn format_inline_annotation(annotation: &SpanAnnotation, style: TextStyle) -> String {
+    let mut labels = Vec::new();
+    if !annotation.client_server_peers.is_empty() {
+        let peers = annotation
+            .client_server_peers
+            .iter()
+            .map(|peer| format!("{}:{}", peer.relationship.label(), peer.service_name))
+            .collect::<Vec<_>>()
+            .join(",");
+        labels.push(format!("{}({peers})", style.concurrent("client/server")));
+    }
+    if annotation.async_work {
+        labels.push(style.warning("async").to_string());
+    }
+    if annotation.messaging {
+        labels.push(style.concurrent("messaging").to_string());
+    }
+    if annotation.linked_span_count > 0 {
+        labels.push(style.warning(format!("linked({})", annotation.linked_span_count)));
+    }
+
+    format!("标注={}", labels.join(","))
+}
+
+fn has_any_annotations(annotations: &TraceAnnotations) -> bool {
+    annotations.counts.client_server_pairs > 0
+        || annotations.counts.async_span_count > 0
+        || annotations.counts.linked_span_count > 0
+        || annotations.counts.messaging_span_count > 0
+}
+
+fn write_annotations_summary(
+    output: &mut String,
+    annotations: &TraceAnnotations,
+    style: TextStyle,
+) {
+    writeln!(output, "{}", style.section("Span 语义标注")).expect("write to string");
+    writeln!(
+        output,
+        "client/server pairs: {}  async spans: {}  linked spans: {}  messaging spans: {}",
+        style.concurrent(annotations.counts.client_server_pairs),
+        style.warning(annotations.counts.async_span_count),
+        style.warning(annotations.counts.linked_span_count),
+        style.concurrent(annotations.counts.messaging_span_count)
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("说明：client/server pair 表示 client span 直接调用 server span；tracelens 只做标注，不合并两段耗时。")
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("说明：async/linked 表示 producer、consumer、messaging 属性或 span links 关联的工作；当前不会因为 links 或 messaging 额外把它们强行计入阻塞关键路径。若这类 span 本身已经是普通 parent-child 子节点，关键路径仍按现有拓扑处理。")
+    )
+    .expect("write to string");
+
+    write_client_server_pairs(output, &annotations.client_server_pairs, style);
+    write_async_linked_spans(output, annotations, style);
+}
+
+fn write_client_server_pairs(output: &mut String, pairs: &[ClientServerPair], style: TextStyle) {
+    if pairs.is_empty() {
+        return;
+    }
+
+    writeln!(output).expect("write to string");
+    writeln!(output, "{}", style.concurrent("client/server pair：")).expect("write to string");
+    for pair in pairs {
+        writeln!(
+            output,
+            "- client [{}] {} span_id={} -> server [{}] {} span_id={}",
+            style.service(&pair.client_service_name),
+            pair.client_name,
+            style.identifier(&pair.client_span_id),
+            style.service(&pair.server_service_name),
+            pair.server_name,
+            style.identifier(&pair.server_span_id)
+        )
+        .expect("write to string");
+    }
+}
+
+fn write_async_linked_spans(output: &mut String, annotations: &TraceAnnotations, style: TextStyle) {
+    let spans = annotations
+        .spans
+        .iter()
+        .filter(|span| span.is_async_related())
+        .collect::<Vec<_>>();
+    if spans.is_empty() {
+        return;
+    }
+
+    writeln!(output).expect("write to string");
+    writeln!(output, "{}", style.warning("async / linked span：")).expect("write to string");
+    for span in spans {
+        writeln!(
+            output,
+            "- [{}] {} span_id={} role={} 标注={}{}",
+            style.service(&span.service_name),
+            span.name,
+            style.identifier(&span.span_id),
+            span.role.label(),
+            format_annotation_notes(span, style),
+            format_link_targets(span, style)
+        )
+        .expect("write to string");
+    }
+}
+
+fn format_annotation_notes(span: &SpanAnnotation, style: TextStyle) -> String {
+    let notes = span
+        .notes
+        .iter()
+        .filter(|note| **note != AnnotationNote::ClientServerPair)
+        .map(|note| match note {
+            AnnotationNote::AsyncKind => style.warning("async-kind"),
+            AnnotationNote::MessagingAttributes => style.concurrent("messaging"),
+            AnnotationNote::SpanLinks => style.warning("links"),
+            AnnotationNote::ClientServerPair => style.concurrent("client/server"),
+        })
+        .collect::<Vec<_>>();
+
+    if notes.is_empty() {
+        style.muted("none")
+    } else {
+        notes.join(",")
+    }
+}
+
+fn format_link_targets(span: &SpanAnnotation, style: TextStyle) -> String {
+    if span.linked_spans.is_empty() {
+        return String::new();
+    }
+
+    let links = span
+        .linked_spans
+        .iter()
+        .map(|link| {
+            let trace_id = link.trace_id.as_deref().unwrap_or("unknown-trace");
+            let span_id = link.span_id.as_deref().unwrap_or("unknown-span");
+            let location = if link.target_in_trace {
+                "current-trace"
+            } else if link.same_trace {
+                "same-trace-missing"
+            } else {
+                "external-trace"
+            };
+            format!(
+                "{}:{}({location})",
+                style.identifier(trace_id),
+                style.identifier(span_id)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+
+    format!(" links=[{links}]")
 }
 
 fn write_diagnostics(output: &mut String, diagnostics: &[Diagnostic], style: TextStyle) {

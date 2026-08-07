@@ -178,6 +178,18 @@ def command_argv(binary: Path, command: str, fixture: Path) -> list[object]:
         return [binary, "services", fixture, "--trace-id", FIRST_TRACE_ID]
     if command == "critical-path":
         return [binary, "critical-path", fixture, "--trace-id", FIRST_TRACE_ID]
+    if command == "timeline":
+        return [
+            binary,
+            "--color",
+            "never",
+            "timeline",
+            fixture,
+            "--trace-id",
+            FIRST_TRACE_ID,
+            "--width",
+            "48",
+        ]
     if command == "detect":
         return [binary, "detect", fixture, "--output", "json"]
     if command == "tree":

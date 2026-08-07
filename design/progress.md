@@ -15,15 +15,15 @@
 ## 当前快照
 
 - 更新时间：2026-08-07
-- 当前基线提交：当前工作区基于 `91acd6e`，包含第十四期 N+1 检测与 5k-50k 规模验证实现
-- 当前阶段：第十四期 N+1 检测与 5k-50k 规模验证完成后
-- 当前整体进度：`77%`
+- 当前基线提交：当前工作区基于 `b81df48`，包含第十五期 ASCII timeline MVP 实现
+- 当前阶段：第十五期 ASCII timeline MVP 完成后
+- 当前整体进度：`82%`
 
 ```text
-[###############-----] 77%
+[################----] 82%
 ```
 
-这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark、语义化彩色终端输出、`detect` 的慢 trace 候选、错误信号候选和 N+1 候选，以及 5k/50k spans JSON/JSONL 规模验证；但完整错误传播链推断、service latency distribution、ASCII timeline/flame graph、完整多 shape 性能基线、CI integration/comparison 等传播文档和发布分发，还没有完成。
+这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark、语义化彩色终端输出、`detect` 的慢 trace 候选、错误信号候选和 N+1 候选、5k/50k spans JSON/JSONL 规模验证，以及 `timeline` ASCII 时间轴 MVP；但完整错误传播链推断、service latency distribution、超大单 trace timeline 打磨、完整多 shape 性能基线、CI integration/comparison 等传播文档和发布分发，还没有完成。
 
 ## 计算规则
 
@@ -53,21 +53,21 @@
 | M3：基础 CLI 分析命令 | 15% | 95% | 14.3% | `validate`、`summary`、`list-traces`、`tree`、`--output json` 已完成；JSON schema 仍处于 `0.1` 可调整阶段 |
 | M4：耗时分析与关键路径 | 18% | 90% | 16.2% | 已完成 M4-A/M4-B/M4-C：`services`、`critical-path`、串行/并发/nested/suspicious 分类，以及 client/server span pair、async work、linked span 标注；后续仍需与 timeline/report 进一步联动 |
 | M5：模式检测 | 12% | 75% | 9.0% | 已完成 M5-A/M5-B：`detect` 包含慢 trace 候选、service candidates、错误信号候选和 N+1 候选；完整错误传播链推断和 service latency distribution 仍未完成 |
-| M6：终端可视化 | 8% | 15% | 1.2% | 已完成彩色终端输出语义层和 `--color` 控制；尚未实现 ASCII timeline/flame graph |
-| M7：性能、稳定性与自动化接口 | 7% | 75% | 5.3% | 已有测试、JSON 输出、本地 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path` 和 `detect`，新增 CI、安全检查、自动/手动 benchmark workflows 和 Actions summary 报告，并支持脚本友好的 `--color never`；已完成 5k/50k JSON/JSONL smoke 验证和 50k detect 3 轮 benchmark；尚未完成多 shape 完整 P95 矩阵、稳定退出码规范文档 |
+| M6：终端可视化 | 8% | 75% | 6.0% | 已完成彩色终端输出语义层、`--color` 控制和 `timeline` ASCII 时间轴 MVP；后续可继续打磨超大单 trace 折叠/过滤、可选 flame graph 或更稳定快照基线 |
+| M7：性能、稳定性与自动化接口 | 7% | 75% | 5.3% | 已有测试、JSON 输出、本地 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path` 和 `detect`，并可选支持 `timeline`；新增 CI、安全检查、自动/手动 benchmark workflows 和 Actions summary 报告，并支持脚本友好的 `--color never`；已完成 5k/50k JSON/JSONL smoke 验证和 50k detect 3 轮 benchmark；尚未完成多 shape 完整 P95 矩阵、稳定退出码规范文档 |
 | M8：HTML 报告 | 3% | 0% | 0.0% | 未开始 |
 | M9：发布与分发 | 2% | 25% | 0.5% | CLI 有版本号，已有英文/中文 README、基础安装使用说明、产品传播规约，以及 why/use-cases/examples/output-guide 首批传播文档；尚未有 release artifact、checksum、发布流程，CI/performance/comparison 文档也未补齐 |
 
 当前合计：
 
 ```text
-5.0 + 14.3 + 11.3 + 14.3 + 16.2 + 9.0 + 1.2 + 5.3 + 0 + 0.5 = 77.1%
+5.0 + 14.3 + 11.3 + 14.3 + 16.2 + 9.0 + 6.0 + 5.3 + 0 + 0.5 = 81.9%
 ```
 
 四舍五入后记录为：
 
 ```text
-77%
+82%
 ```
 
 ## 原始需求满足度
@@ -85,17 +85,17 @@
 | 计算端到端 duration | 75% | `services` 已分开展示 wall-clock duration 与唯一 root span duration；`critical-path` 已展示被选中 root span duration |
 | 计算 critical path | 90% | `critical-path` 已基于 parent-child 拓扑和时间区间输出关键路径片段和 span 聚合；多 root、无 root、child 超出 root 区间均有明确语义；重复 span ID 不会在关键路径汇总中被错误合并；已补充 client/server、async work 和 linked span 语义标注 |
 | 计算服务维度 self time | 65% | `services` 已按 service 聚合 self time，child 覆盖时间使用区间并集；后续需与 critical path 和可视化打通 |
-| 识别串行/并发 span | 75% | `critical-path` 输出 serial/concurrent/nested/suspicious 分类计数和明细；尚未在 timeline 可视化中复用 |
+| 识别串行/并发 span | 85% | `critical-path` 输出 serial/concurrent/nested/suspicious 分类计数和明细；`timeline` 通过横向 bar 重叠展示并发关系 |
 | 检测慢请求 | 50% | `detect` 已按 trace wall-clock duration 输出慢 trace 候选、sample count、p95 reference、confidence 和 service candidates；尚未有 service latency distribution、p99/p999 |
 | 检测错误传播链 | 45% | `detect` 已识别 status error、HTTP 5xx、gRPC/RPC 非 OK 和 exception event，并输出 earliest/top/error spans 证据；尚未做完整传播链推断 |
 | 检测 N+1 调用模式 | 75% | `detect` 已按同 parent 直接 child span 聚合相似调用，重复 `>= 5` 输出 medium candidate，重复 `>= 10` 且多数串行输出 high confidence；尚未做跨 trace 聚合或 SQL AST 级相似判断 |
-| 终端 ASCII flame graph/timeline | 10% | 已完成彩色终端输出基础设施和稳定颜色语义；ASCII timeline/flame graph 本体未开始 |
+| 终端 ASCII flame graph/timeline | 70% | 已完成彩色终端输出基础设施、稳定颜色语义和 `timeline` ASCII 时间轴 MVP；尚未做 flame graph 或超大单 trace 折叠/过滤 |
 | 单页 HTML report | 0% | 未开始 |
-| 子命令式真实 CLI | 92% | `validate/summary/list-traces/tree/services/critical-path/detect` 已完成，tree/critical-path 已补充语义标注；后续还需要 `report` |
-| 核心单元测试 | 88% | 已有 32 个单元测试和 34 个 CLI 端到端测试；后续可视化和 report 还需要继续补 |
+| 子命令式真实 CLI | 94% | `validate/summary/list-traces/tree/services/critical-path/detect/timeline` 已完成，tree/critical-path/timeline 已补充语义或可视化说明；后续还需要 `report` |
+| 核心单元测试 | 90% | 已有 34 个单元测试和 37 个 CLI 端到端测试；后续 report 和更完整性能基线还需要继续补 |
 | CI 检查与工程化质量门禁 | 76% | 已新增 GitHub Actions CI、安全检查和自动/手动性能 benchmark workflow；Benchmark 默认覆盖 5k/50k spans 和 `detect`，会展示 Actions summary；尚未配置分支保护和 release workflow |
 | P95 样本处理耗时小于 2 秒 | 65% | 已有 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path` 和 `detect`；本地 50k spans `detect` 3 轮 P95 为 466.123ms；尚未跑完整多 shape 多轮 P95 矩阵 |
-| 可脚本化 JSON 输出 | 80% | 基础命令、`services`、`tree`、`critical-path` 和 `detect` 已有 `--output json` 与 `schema_version: "0.1"`，并输出结构化 annotations / slow_traces / error_traces / n_plus_one_candidates；`--output json` 不受彩色输出影响；schema 尚未稳定 |
+| 可脚本化 JSON 输出 | 82% | 基础命令、`services`、`tree`、`critical-path`、`detect` 和 `timeline` 已有 `--output json` 与 `schema_version: "0.1"`，并输出结构化 annotations / slow_traces / error_traces / n_plus_one_candidates / timeline rows；`--output json` 不受彩色输出影响；schema 尚未稳定 |
 | 远程下载使用 | 12% | 有版本号、本地构建、README 安装说明、使用示例和首批产品传播文档；尚未发布 release artifact |
 
 ## 当前已具备的能力
@@ -110,6 +110,7 @@ tracelens tree <file> --trace-id <id>
 tracelens services <file> --trace-id <id>
 tracelens critical-path <file> --trace-id <id>
 tracelens detect <file>
+tracelens timeline <file> --trace-id <id>
 tracelens --color auto|always|never <command>
 ```
 
@@ -157,6 +158,7 @@ tracelens --color auto|always|never <command>
 - `list-traces --sort duration|spans|errors`。
 - `services --output text|json`。
 - `detect --output text|json`。
+- `timeline --output text|json`。
 - `tree --output text|json` 输出 span 语义标注。
 - `critical-path --output text|json` 输出 span 语义标注。
 
@@ -175,6 +177,10 @@ tracelens --color auto|always|never <command>
 - 重复 span ID 参与关键路径时，span 汇总按内部 span 实例聚合，不把不同实例错误合并。
 - serial/concurrent/nested/suspicious span 分类计数与明细。
 - `critical-path` 文本输出包含中文字段说明，已知 critical-path note 在文本输出中中文化，JSON 输出保持结构化。
+- `timeline` 文本输出包含中文说明，解释横轴、bar 重叠、critical/error/orphan 标记、start offset 和 duration。
+- `timeline` JSON 输出包含结构化 `timeline.rows`、`bar_start`、`bar_width`、`is_critical_path`、`is_error`、`is_orphan` 和 `is_unattached`。
+- `timeline` 支持 `--width 40..=160`，默认时间轴条宽为 `48`。
+- `timeline` 复用 `critical-path` 结果标记关键路径 span，不改变关键路径算法。
 - client/server span pair 标注：直接 client -> server parent-child 边会被识别为远程调用边界，但不合并耗时节点。
 - async work 标注：producer、consumer、`messaging.*` attributes 和 span links 会被标注为 async/linked 相关工作。
 - linked span 标注：保留 link 目标 trace/span ID，并标记是否指向当前 trace 内已有 span。
@@ -204,6 +210,7 @@ tracelens --color auto|always|never <command>
 - 本地 benchmark runner。
 - benchmark runner 默认覆盖 `critical-path` 命令。
 - benchmark runner 覆盖 `detect` 命令。
+- benchmark runner 可选支持 `timeline` 命令。
 - GitHub Actions benchmark 默认 spans 包含 `5000,50000`，默认 commands 包含 `detect`。
 - 5k spans wide/overlap critical-path smoke 已跑通。
 - 5k/50k spans JSON/JSONL balanced validate/summary/list-traces/detect smoke 已跑通。
@@ -237,7 +244,7 @@ tracelens --color auto|always|never <command>
 - `docs/why-tracelens.md`：解释产品定位、使用理由和非目标。
 - `docs/use-cases.md`：把典型用户问题映射到 CLI 命令。
 - `docs/examples.md`：提供基于真实 fixture 的可复制命令和输出片段。
-- `docs/output-guide.md`：解释核心输出字段、detect candidates、critical path、classification、annotations、diagnostics 和 JSON 输出。
+- `docs/output-guide.md`：解释核心输出字段、detect candidates、critical path、timeline、classification、annotations、diagnostics 和 JSON 输出。
 - `docs/performance.md`：说明性能目标、benchmark runner、synthetic fixtures、Actions benchmark 和当前本地 smoke snapshot。
 
 当前验证能力：
@@ -246,15 +253,15 @@ tracelens --color auto|always|never <command>
 - `cargo test`。
 - `cargo clippy --all-targets -- -D warnings`。
 - `cargo build`。
-- 32 个单元测试。
-- 34 个 CLI 端到端测试。
+- 34 个单元测试。
+- 37 个 CLI 端到端测试。
 
 ## 当前主要缺口
 
 下一批最重要的缺口：
 
 - M5：完整错误传播链推断、service latency distribution。
-- M6：ASCII timeline/flame graph。
+- M6：超大单 trace timeline 折叠/过滤、可选 ASCII flame graph 或更稳定快照基线。
 - M7：完整多 shape、多轮 P95 性能基线、稳定 JSON schema、退出码规范、可选分支保护规则。
 - M8：HTML report。
 - M9：CI integration、comparison 等传播文档，GitHub Releases、跨平台 artifact、checksum、发布流程。

@@ -15,6 +15,7 @@ use crate::analysis::detect::{
 };
 use crate::analysis::duration::{ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
+use crate::analysis::timeline::{TimelineAnalysis, TimelineRow};
 use crate::graph::trace_graph::{TraceCollection, TraceGraph};
 use crate::model::diagnostic::{Diagnostic, Severity};
 use crate::model::span::CanonicalSpan;
@@ -608,6 +609,123 @@ pub fn format_critical_path(
     output
 }
 
+pub fn format_timeline(
+    timeline: &TimelineAnalysis,
+    critical_path: &CriticalPathAnalysis,
+    trace: &TraceGraph,
+    style: TextStyle,
+) -> String {
+    let mut output = String::new();
+
+    writeln!(output, "{}", style.section("Trace Timeline")).expect("write to string");
+    writeln!(output, "trace_id: {}", style.identifier(&timeline.trace_id))
+        .expect("write to string");
+    writeln!(
+        output,
+        "wall-clock duration: {}",
+        style.duration(format_duration(timeline.duration_ns))
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "spans: {}  roots: {}  orphans: {}  diagnostics: {}  bar_width: {}",
+        trace.spans.len(),
+        trace.root_indices.len(),
+        trace.orphan_indices.len(),
+        style_count_by_risk(style, trace.diagnostics.len()),
+        timeline.width
+    )
+    .expect("write to string");
+    match &critical_path.status {
+        CriticalPathStatus::Available => {
+            writeln!(
+                output,
+                "critical path: {}  duration: {}",
+                style.ok("available"),
+                style.critical(format_duration(critical_path.total_duration_ns))
+            )
+            .expect("write to string");
+        }
+        CriticalPathStatus::Unavailable { reason } => {
+            writeln!(
+                output,
+                "critical path: {}  reason: {}",
+                style.warning("unavailable"),
+                localize_critical_path_reason(reason)
+            )
+            .expect("write to string");
+        }
+    }
+    for note in &critical_path.notes {
+        writeln!(
+            output,
+            "注意：{}",
+            style.warning(localize_critical_path_note(note))
+        )
+        .expect("write to string");
+    }
+    writeln!(
+        output,
+        "{}",
+        style.muted("说明：横轴表示从 trace start 到 trace end 的相对时间；横条重叠表示这些 span 在时间上并发执行，不代表被串行排队。")
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("说明：* 表示该 span 出现在关键路径中，! 表示错误 span，? 表示 orphan 或 unattached span。")
+    )
+    .expect("write to string");
+
+    for note in &timeline.notes {
+        writeln!(
+            output,
+            "注意：{}",
+            style.warning(localize_timeline_note(note))
+        )
+        .expect("write to string");
+    }
+
+    writeln!(output).expect("write to string");
+    writeln!(
+        output,
+        "axis: {} |{}| {}",
+        style.duration("0ns"),
+        "-".repeat(timeline.width),
+        style.duration(format_duration(timeline.duration_ns))
+    )
+    .expect("write to string");
+    write_timeline_rows(&mut output, &timeline.rows, timeline.width, style);
+
+    writeln!(output).expect("write to string");
+    writeln!(output, "{}", style.section("字段说明：")).expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("- start：span start 相对 trace start 的偏移时间。")
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("- duration：span 自身持续时间；并发 span 的 duration 相加可能大于 wall-clock duration。")
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("- bar_width：只控制 ASCII 时间轴条宽，不代表整行终端宽度。")
+    )
+    .expect("write to string");
+
+    if !trace.diagnostics.is_empty() {
+        writeln!(output).expect("write to string");
+        write_diagnostics(&mut output, &trace.diagnostics, style);
+    }
+
+    output
+}
+
 fn write_slow_trace_candidates(
     output: &mut String,
     candidates: &[SlowTraceCandidate],
@@ -1024,6 +1142,143 @@ fn write_critical_path_totals(
             style.identifier(&total.span_id)
         )
         .expect("write to string");
+    }
+}
+
+fn write_timeline_rows(output: &mut String, rows: &[TimelineRow], width: usize, style: TextStyle) {
+    if rows.is_empty() {
+        writeln!(output, "(no spans)").expect("write to string");
+        return;
+    }
+
+    writeln!(
+        output,
+        "{}",
+        style.table_header(format!(
+            "{:<2}  {:<18}  {:<36}  {:>10}  {:>10}  timeline{}  span_id",
+            "mk",
+            "service",
+            "span",
+            "start",
+            "duration",
+            " ".repeat(width.saturating_sub("timeline".len()))
+        ))
+    )
+    .expect("write to string");
+
+    for row in rows {
+        let marker = format_timeline_marker(row, style);
+        let service = pad_right(&truncate_chars(&row.service_name, 18), 18);
+        let service = style.service(service);
+        let name = timeline_display_name(row);
+        let name = pad_right(&truncate_chars(&name, 36), 36);
+        let name = if row.is_error {
+            style.error(name)
+        } else if row.is_critical_path {
+            style.critical(name)
+        } else {
+            name
+        };
+        let start = format!("{:>10}", format_duration(row.start_offset_ns));
+        let duration = format!("{:>10}", format_duration(row.duration_ns));
+        let bar = format_timeline_bar(row, width, style);
+
+        writeln!(
+            output,
+            "{}  {}  {}  {}  {}  |{}|  {}",
+            marker,
+            service,
+            name,
+            style.duration(start),
+            style.duration(duration),
+            bar,
+            style.identifier(&row.span_id)
+        )
+        .expect("write to string");
+    }
+}
+
+fn timeline_display_name(row: &TimelineRow) -> String {
+    let depth = row.depth.min(8);
+    let mut name = format!("{}{}", "  ".repeat(depth), row.name);
+    if row.is_unattached {
+        name.push_str(" (unattached)");
+    } else if row.is_orphan {
+        name.push_str(" (orphan)");
+    }
+    name
+}
+
+fn format_timeline_marker(row: &TimelineRow, style: TextStyle) -> String {
+    let critical = if row.is_critical_path {
+        style.critical("*")
+    } else {
+        " ".to_string()
+    };
+    let signal = if row.is_error {
+        style.error("!")
+    } else if row.is_orphan || row.is_unattached {
+        style.warning("?")
+    } else {
+        " ".to_string()
+    };
+
+    format!("{critical}{signal}")
+}
+
+fn format_timeline_bar(row: &TimelineRow, width: usize, style: TextStyle) -> String {
+    let mut bar = String::new();
+    let start = row.bar_start.min(width);
+    let end = start.saturating_add(row.bar_width).min(width);
+
+    bar.push_str(&" ".repeat(start));
+    let segment_width = end.saturating_sub(start);
+    let segment = if row.is_error {
+        style.error("!".repeat(segment_width))
+    } else if row.is_critical_path {
+        style.critical("=".repeat(segment_width))
+    } else {
+        style.concurrent("#".repeat(segment_width))
+    };
+    bar.push_str(&segment);
+    bar.push_str(&" ".repeat(width.saturating_sub(end)));
+    bar
+}
+
+fn truncate_chars(value: &str, max_chars: usize) -> String {
+    if value.chars().count() <= max_chars {
+        return value.to_string();
+    }
+    if max_chars <= 3 {
+        return ".".repeat(max_chars);
+    }
+
+    let mut output = value.chars().take(max_chars - 3).collect::<String>();
+    output.push_str("...");
+    output
+}
+
+fn pad_right(value: &str, width: usize) -> String {
+    let char_count = value.chars().count();
+    if char_count >= width {
+        return value.to_string();
+    }
+
+    format!("{}{}", value, " ".repeat(width - char_count))
+}
+
+fn localize_timeline_note(note: &str) -> String {
+    match note {
+        "trace duration is zero; timeline bars are pinned to the first column" => {
+            "trace duration 为 0；时间轴条会固定在第一列。".to_string()
+        }
+        "critical path is unavailable; timeline rows are not marked as critical" => {
+            "关键路径不可用；timeline 不会标记关键路径 span。".to_string()
+        }
+        "orphan spans are shown with '?' because their parent span is missing" => {
+            "orphan span 会用 ? 标记，因为它们的 parent span 在当前 trace 中缺失。".to_string()
+        }
+        _ => note.to_string(),
     }
 }
 

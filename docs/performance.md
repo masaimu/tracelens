@@ -32,6 +32,20 @@ commands: validate,summary,list-traces,services,critical-path,detect
 iterations: 3
 ```
 
+The runner also supports `timeline` for targeted checks:
+
+```bash
+python3 tools/run_perf_benchmark.py \
+  --spans 50000 \
+  --traces 20 \
+  --formats json \
+  --shapes balanced \
+  --commands timeline \
+  --iterations 1
+```
+
+`timeline` is not part of the default CI smoke command list yet because it renders one row per span in the selected trace. Use a focused run when changing timeline layout or rendering behavior.
+
 For a focused 50k `detect` run:
 
 ```bash
@@ -103,6 +117,7 @@ Use them to answer:
 
 - Did a command regress obviously?
 - Does `detect` still handle 50k spans?
+- Does a timeline layout change need a focused `timeline` benchmark?
 - Are generated fixtures and benchmark outputs staying out of Git?
 - Does a new analysis command need targeted optimization before it becomes part of the default workflow?
 

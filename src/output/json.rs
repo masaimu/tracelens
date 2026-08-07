@@ -14,6 +14,7 @@ use crate::analysis::detect::{
 };
 use crate::analysis::duration::{RootSpanDuration, ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
+use crate::analysis::timeline::{TimelineAnalysis, TimelineRow};
 use crate::graph::trace_graph::{TraceCollection, TraceGraph};
 use crate::model::diagnostic::Diagnostic;
 use crate::model::span::{CanonicalSpan, SpanEvent, SpanLink};
@@ -213,6 +214,51 @@ pub fn format_critical_path_json(
     }))
 }
 
+pub fn format_timeline_json(
+    timeline: &TimelineAnalysis,
+    critical_path: &CriticalPathAnalysis,
+    trace: &TraceGraph,
+) -> String {
+    let (unavailable_reason, status_label) = match &critical_path.status {
+        CriticalPathStatus::Available => (None, critical_path.status.label()),
+        CriticalPathStatus::Unavailable { reason } => {
+            (Some(reason.as_str()), critical_path.status.label())
+        }
+    };
+
+    to_pretty(json!({
+        "schema_version": SCHEMA_VERSION,
+        "command": "timeline",
+        "trace": {
+            "trace_id": timeline.trace_id,
+            "start_ns": timeline.start_ns,
+            "end_ns": timeline.end_ns,
+            "wall_clock_duration_ns": timeline.duration_ns,
+            "span_count": trace.spans.len(),
+            "root_count": trace.root_indices.len(),
+            "orphan_count": trace.orphan_indices.len(),
+            "diagnostics_count": trace.diagnostics.len(),
+        },
+        "timeline": {
+            "width": timeline.width,
+            "rows": timeline
+                .rows
+                .iter()
+                .map(timeline_row_to_json)
+                .collect::<Vec<_>>(),
+            "notes": timeline.notes,
+        },
+        "critical_path": {
+            "status": status_label,
+            "unavailable_reason": unavailable_reason,
+            "root_span_id": critical_path.root_span_id,
+            "total_duration_ns": critical_path.total_duration_ns,
+            "notes": critical_path.notes,
+        },
+        "diagnostics": diagnostics_to_json(&trace.diagnostics),
+    }))
+}
+
 fn slow_trace_candidate_to_json(candidate: &SlowTraceCandidate) -> Value {
     json!({
         "trace_id": candidate.trace_id,
@@ -341,6 +387,25 @@ fn critical_path_root_span_to_json(root: &CriticalPathRootSpan) -> Value {
         "service_name": root.service_name,
         "name": root.name,
         "duration_ns": root.duration_ns,
+    })
+}
+
+fn timeline_row_to_json(row: &TimelineRow) -> Value {
+    json!({
+        "depth": row.depth,
+        "span_id": row.span_id,
+        "parent_span_id": row.parent_span_id,
+        "service_name": row.service_name,
+        "name": row.name,
+        "start_offset_ns": row.start_offset_ns,
+        "end_offset_ns": row.end_offset_ns,
+        "duration_ns": row.duration_ns,
+        "bar_start": row.bar_start,
+        "bar_width": row.bar_width,
+        "is_error": row.is_error,
+        "is_critical_path": row.is_critical_path,
+        "is_orphan": row.is_orphan,
+        "is_unattached": row.is_unattached,
     })
 }
 

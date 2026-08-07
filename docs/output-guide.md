@@ -131,6 +131,85 @@ Use this to answer:
 Which spans contributed the most blocking time?
 ```
 
+## Timeline
+
+`timeline` draws a terminal-friendly time view for one trace.
+
+```bash
+tracelens timeline traces.json --trace-id <trace-id>
+```
+
+It keeps the parent-child order from the trace graph, but uses horizontal bars to show when each span starts and how long it runs.
+
+### Markers
+
+Text output uses stable ASCII markers:
+
+- `*`: the span appears on the critical path
+- `!`: the span is an error span
+- `?`: the span is orphan or unattached
+
+Bar characters also carry meaning:
+
+- `=`: critical path span
+- `!`: error span
+- `#`: ordinary span
+
+Colors can highlight these meanings, but the symbols remain readable with:
+
+```bash
+tracelens --color never timeline traces.json --trace-id <trace-id>
+```
+
+### `bar_width`
+
+The width of the ASCII time bar, not the full terminal line.
+
+Default:
+
+```text
+48
+```
+
+Allowed range:
+
+```text
+40..=160
+```
+
+### `start`
+
+The span start offset relative to the trace start.
+
+### `duration`
+
+The span's own duration.
+
+Concurrent spans can overlap, so span durations in the timeline should not be summed as wall-clock time.
+
+### `timeline.rows`
+
+JSON output includes structured rows:
+
+```json
+{
+  "depth": 1,
+  "span_id": "0000000000000003",
+  "service_name": "payment-service",
+  "name": "POST /charge",
+  "start_offset_ns": 500000000,
+  "duration_ns": 400000000,
+  "bar_start": 21,
+  "bar_width": 17,
+  "is_critical_path": true,
+  "is_error": false,
+  "is_orphan": false,
+  "is_unattached": false
+}
+```
+
+`bar_start` and `bar_width` are scaled positions inside the configured time bar. If two rows have overlapping bar ranges, those spans overlap in time.
+
 ## Span Execution Classification
 
 `critical-path` also classifies span execution relationships.
@@ -387,6 +466,7 @@ Useful top-level JSON areas:
 - `nodes`
 - `services`
 - `critical_path`
+- `timeline`
 - `classification`
 - `annotations`
 - `slow_traces`

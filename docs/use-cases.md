@@ -142,13 +142,35 @@ Why it matters:
 
 The slowest raw span is not always the most useful answer. The critical path explains how the root span interval is attributed across nested and concurrent child spans.
 
-## 7. Keep CI Logs Clean
+## 7. See Trace Timing as an ASCII Timeline
+
+Use this when you want to see where spans sit on the trace time axis without opening a trace backend.
+
+```bash
+tracelens timeline traces.json --trace-id <trace-id>
+```
+
+What to look for:
+
+- `*` critical path markers
+- `!` error span markers
+- `?` orphan or unattached span markers
+- overlapping bars that show spans running at the same time
+- late spans near the end of the wall-clock window
+- notes about root span and wall-clock duration mismatch
+
+Why it matters:
+
+Tables are precise, but they can make timing hard to feel. The timeline view keeps the parent-child order while showing relative start, duration, and overlap in one terminal-friendly view.
+
+## 8. Keep CI Logs Clean
 
 Use this when you want trace checks in CI, scripts, or automation.
 
 ```bash
 tracelens --color never validate traces.json
 tracelens critical-path traces.json --trace-id <trace-id> --output json
+tracelens timeline traces.json --trace-id <trace-id> --output json
 tracelens detect traces.json --output json
 ```
 
@@ -157,6 +179,7 @@ What to look for:
 - nonzero exit status in strict validation
 - JSON fields under `diagnostics`
 - JSON fields under `critical_path`
+- JSON fields under `timeline`
 - JSON fields under `slow_traces` and `error_traces`
 - JSON fields under `annotations`
 
@@ -164,7 +187,7 @@ Why it matters:
 
 `--color never` avoids ANSI escapes in logs. `--output json` gives scripts stable structured data.
 
-## 8. Review Async and Linked Work Safely
+## 9. Review Async and Linked Work Safely
 
 Use this when a trace includes producer/consumer spans, messaging attributes, or span links.
 
@@ -195,5 +218,6 @@ Async traces can be easy to over-interpret. `tracelens` annotates related work w
 | What is the parent-child shape? | `tree` |
 | Which service spent the most own time? | `services` |
 | What blocked the root span? | `critical-path` |
+| Where do spans sit on the time axis? | `timeline` |
 | Do I need script-friendly output? | add `--output json` |
 | Do I need clean logs? | add `--color never` |

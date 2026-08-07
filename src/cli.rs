@@ -10,18 +10,21 @@ use crate::analysis::critical_path::analyze_critical_path;
 use crate::analysis::detect::analyze_detect;
 use crate::analysis::duration::analyze_trace_duration;
 use crate::analysis::summary::{TraceSummary, summarize};
+use crate::analysis::timeline::{
+    DEFAULT_TIMELINE_WIDTH, MAX_TIMELINE_WIDTH, MIN_TIMELINE_WIDTH, analyze_timeline,
+};
 use crate::graph::trace_graph::TraceCollection;
 use crate::input::otlp_json::parse_otlp_file;
 use crate::model::diagnostic::Severity;
 use crate::model::span::{TRACE_ID_LEN, normalize_hex_id};
 use crate::output::json::{
     format_critical_path_json, format_detect_json, format_list_traces_json, format_services_json,
-    format_summary_json, format_tree_json, format_validate_json,
+    format_summary_json, format_timeline_json, format_tree_json, format_validate_json,
 };
 use crate::output::style::{ColorMode, TextStyle};
 use crate::output::text::{
     format_critical_path, format_detect, format_list_traces, format_services, format_summary,
-    format_tree, format_validate,
+    format_timeline, format_tree, format_validate,
 };
 
 #[derive(Debug, Parser)]
@@ -119,6 +122,24 @@ enum Commands {
         /// Trace ID to inspect.
         #[arg(long = "trace-id")]
         trace_id: String,
+
+        /// Output format.
+        #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+        output: OutputFormat,
+    },
+
+    /// Print an ASCII timeline for a single trace.
+    Timeline {
+        /// Path to an OTLP JSON trace file.
+        file: PathBuf,
+
+        /// Trace ID to inspect.
+        #[arg(long = "trace-id")]
+        trace_id: String,
+
+        /// Width of the ASCII time bar, not the whole terminal line.
+        #[arg(long, default_value_t = DEFAULT_TIMELINE_WIDTH)]
+        width: usize,
 
         /// Output format.
         #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
@@ -326,6 +347,40 @@ pub fn run() -> Result<ExitCode> {
                         trace
                     )
                 ),
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        Commands::Timeline {
+            file,
+            trace_id,
+            width,
+            output,
+        } => {
+            if !(MIN_TIMELINE_WIDTH..=MAX_TIMELINE_WIDTH).contains(&width) {
+                return Err(anyhow!(
+                    "--width must be between {MIN_TIMELINE_WIDTH} and {MAX_TIMELINE_WIDTH}"
+                ));
+            }
+
+            let normalized_trace_id = normalize_hex_id(&trace_id, TRACE_ID_LEN)
+                .map_err(|message| anyhow!("invalid --trace-id: {message}"))?;
+            let collection = load_collection(&file)?;
+            ensure_has_spans(&collection)?;
+            let trace = collection
+                .traces
+                .get(&normalized_trace_id)
+                .ok_or_else(|| anyhow!("trace_id not found: {normalized_trace_id}"))?;
+            let critical_path = analyze_critical_path(trace);
+            let timeline = analyze_timeline(trace, &critical_path, width);
+
+            match output {
+                OutputFormat::Text => print!(
+                    "{}",
+                    format_timeline(&timeline, &critical_path, trace, text_style)
+                ),
+                OutputFormat::Json => {
+                    print!("{}", format_timeline_json(&timeline, &critical_path, trace))
+                }
             }
             Ok(ExitCode::SUCCESS)
         }

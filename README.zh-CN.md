@@ -28,14 +28,14 @@
 
 `tracelens` 是一个用于本地分析 OpenTelemetry Trace 导出文件的命令行工具。
 
-它面向一种很常见的场景：你手里有一份 trace 文件，但暂时没有可用的 Trace 后端。把 OTLP JSON 或 JSONL 文件交给 `tracelens`，它可以帮助你校验文件、列出 trace、查看 span 树、解释服务 self time、分析关键路径、检测慢请求/错误/N+1 候选，并输出适合脚本消费的 JSON。
+它面向一种很常见的场景：你手里有一份 trace 文件，但暂时没有可用的 Trace 后端。把 OTLP JSON 或 JSONL 文件交给 `tracelens`，它可以帮助你校验文件、列出 trace、查看 span 树、解释服务 self time、分析关键路径、绘制 ASCII timeline、检测慢请求/错误/N+1 候选，并输出适合脚本消费的 JSON。
 
 项目仍处在早期阶段。当前版本是本地分析 CLI，不是完整 Trace 后端。
 
 ## 为什么工程师会需要它？
 
 - **本地优先**：直接读取磁盘上的 OTLP JSON 或 JSONL 文件。
-- **可解释**：帮助理解服务 self time、关键路径片段、并发关系、可疑时间关系和语义标注。
+- **可解释**：帮助理解服务 self time、关键路径片段、timeline 重叠关系、并发关系、可疑时间关系和语义标注。
 - **主动提示**：用 confidence 标记提示慢 trace、错误信号和 N+1 候选。
 - **适合自动化**：通过 `--output json` 和 `--color never` 接入脚本、CI 和 Agent 工作流。
 - **语义保守**：client/server pair 只标注不合并；span links 不会被转换成 parent-child 边。
@@ -72,6 +72,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - 构建 parent-child span graph。
 - 服务维度 self time 分析。
 - 关键路径分析和 span 执行分类。
+- 单条 trace 的 ASCII timeline 输出，标记关键路径、错误、orphan 和时间重叠。
 - `detect` MVP：慢 trace 候选、服务候选、错误信号候选和 N+1 候选。
 - 在 tree 和 critical-path 输出中标注 client/server、async work、messaging 和 linked span。
 - 识别 root span、孤儿 span、缺失 parent、重复 span ID、多 root、无 root、可疑时间关系等问题。
@@ -89,6 +90,7 @@ tracelens list-traces <file>
 tracelens tree <file> --trace-id <id>
 tracelens services <file> --trace-id <id>
 tracelens critical-path <file> --trace-id <id>
+tracelens timeline <file> --trace-id <id>
 tracelens detect <file>
 ```
 
@@ -152,6 +154,12 @@ tracelens services tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D26
 tracelens critical-path tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 ```
 
+绘制某条 trace 的 ASCII timeline：
+
+```bash
+tracelens timeline tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+```
+
 检测慢 trace、错误和 N+1 候选：
 
 ```bash
@@ -210,6 +218,7 @@ tracelens validate tests/fixtures/otlp-basic.json --strict
 - 基础 trace graph 构建。
 - 服务维度 self time 分析。
 - 基于 parent-child 拓扑和时间区间的关键路径分析。
+- 单条 trace 的 ASCII timeline 输出。
 - 串行、并发、nested、suspicious span 分类。
 - `detect` MVP：慢 trace 候选、错误信号候选和 N+1 候选。
 - client/server span pair 标注。
@@ -219,7 +228,7 @@ tracelens validate tests/fixtures/otlp-basic.json --strict
 
 尚未实现：
 
-- ASCII timeline 或 flame graph。
+- ASCII flame graph。
 - HTML 报告。
 - 可远程下载的 release artifact。
 

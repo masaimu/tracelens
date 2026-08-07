@@ -540,6 +540,115 @@ fn critical_path_outputs_json() {
 }
 
 #[test]
+fn timeline_outputs_ascii_bars_and_chinese_explanations() {
+    let fixture = fixture("otlp-concurrent.json");
+    let output = tracelens()
+        .args([
+            "--color",
+            "never",
+            "timeline",
+            fixture.as_str(),
+            "--trace-id",
+            "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+            "--width",
+            "48",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(!contains_ansi(&stdout));
+    assert!(stdout.contains("Trace Timeline"));
+    assert!(stdout.contains("横轴表示从 trace start 到 trace end 的相对时间"));
+    assert!(stdout.contains("* 表示该 span 出现在关键路径中"));
+    assert!(stdout.contains("axis: 0ns |------------------------------------------------| 1.100s"));
+    assert!(stdout.contains("bar_width: 48"));
+    assert!(stdout.contains("GET /checkout"));
+    assert!(stdout.contains("POST /charge"));
+    assert!(stdout.contains("GET /stock"));
+    assert!(stdout.contains("=============="));
+    assert!(stdout.contains("#############"));
+    assert!(stdout.contains("注意：wall-clock duration 大于被选中 root span 的时间区间"));
+    assert!(stdout.contains("字段说明"));
+}
+
+#[test]
+fn timeline_outputs_json_without_ansi_and_preserves_overlap() {
+    let fixture = fixture("otlp-concurrent.json");
+    let output = tracelens()
+        .args([
+            "--color",
+            "always",
+            "timeline",
+            fixture.as_str(),
+            "--trace-id",
+            "cccccccccccccccccccccccccccccccc",
+            "--width",
+            "48",
+            "--output",
+            "json",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(!contains_ansi(&stdout));
+    let json: Value = serde_json::from_str(&stdout).expect("stdout should be valid json");
+
+    assert_eq!(json["schema_version"], "0.1");
+    assert_eq!(json["command"], "timeline");
+    assert_eq!(json["timeline"]["width"], 48);
+    assert_eq!(json["trace"]["wall_clock_duration_ns"], 1_100_000_000_u64);
+    assert_eq!(json["critical_path"]["status"], "available");
+
+    let rows = json["timeline"]["rows"]
+        .as_array()
+        .expect("timeline rows should be an array");
+    assert_eq!(rows.len(), 7);
+
+    let checkout = rows
+        .iter()
+        .find(|row| row["span_id"] == "0000000000000001")
+        .expect("checkout row should exist");
+    assert_eq!(checkout["is_critical_path"], true);
+    assert_eq!(checkout["depth"], 0);
+
+    let charge = rows
+        .iter()
+        .find(|row| row["span_id"] == "0000000000000003")
+        .expect("charge row should exist");
+    let stock = rows
+        .iter()
+        .find(|row| row["span_id"] == "0000000000000006")
+        .expect("stock row should exist");
+    assert_eq!(charge["bar_start"], stock["bar_start"]);
+    assert_eq!(charge["start_offset_ns"], stock["start_offset_ns"]);
+    assert_eq!(stock["is_critical_path"], false);
+}
+
+#[test]
+fn timeline_rejects_invalid_width() {
+    let fixture = fixture("otlp-concurrent.json");
+    let output = tracelens()
+        .args([
+            "timeline",
+            fixture.as_str(),
+            "--trace-id",
+            "cccccccccccccccccccccccccccccccc",
+            "--width",
+            "12",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf8");
+    assert!(stderr.contains("--width must be between 40 and 160"));
+}
+
+#[test]
 fn tree_outputs_semantic_annotations_with_chinese_explanations() {
     let fixture = fixture("otlp-semantic-annotations.json");
     let output = tracelens()

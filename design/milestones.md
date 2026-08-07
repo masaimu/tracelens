@@ -326,11 +326,18 @@ crates/
 
 - 现有文本命令的彩色语义输出。
 - `--color auto|always|never` 颜色控制。
+- `tracelens timeline <file> --trace-id <id>`。
 - ASCII timeline 或 ASCII flame graph。
 - 支持指定 `--trace-id`。
 - 标注服务、span 名称、耗时、错误状态。
 - 标注关键路径。
 - 对并发 span 做可读布局。
+- timeline JSON 输出，便于后续 HTML report 复用同一分析模型。
+
+### 阶段拆分
+
+- M6-A：实现 ASCII timeline MVP，支持 `--trace-id`、`--width`、critical path/error/orphan 标记、中文说明、text/JSON 输出，以及 benchmark runner 的可选命令支持。
+- M6-B：后续视需要补充更紧凑的 flame graph、超大单 trace 折叠/过滤策略，或更稳定的快照测试基线。
 
 ### 验收标准
 
@@ -341,6 +348,7 @@ crates/
 - 对长 span name 有截断或缩略策略。
 - 并发 span 不被错误串行化展示。
 - 输出结果可以被快照测试覆盖。
+- `timeline --output json` 应保留每行 span 的 bar offset、bar width 和关键标记。
 
 ### 不做
 
@@ -360,6 +368,7 @@ crates/
 - P95 处理耗时统计。
 - 本地性能测试机，包括 synthetic fixture 生成器和 benchmark runner。
 - benchmark runner 覆盖 `detect`，并支持 50k spans smoke benchmark。
+- benchmark runner 可选支持 `timeline`，但默认 CI smoke 不必立即纳入可视化输出命令。
 - GitHub Actions CI 质量门禁。
 - GitHub Actions 依赖安全检查。
 - GitHub Actions 手动性能 smoke benchmark。
@@ -371,12 +380,12 @@ crates/
 ### 验收标准
 
 - 生成的大规模 synthetic fixture 和本地 benchmark 结果不进入 Git。
-- benchmark runner 应覆盖 `critical-path`、`detect` 等核心分析命令，避免新增命令绕过性能验收。
+- benchmark runner 应覆盖 `critical-path`、`detect` 等核心分析命令，并能手动覆盖 `timeline` 这类可视化输出命令，避免新增命令长期成为性能盲区。
 - GitHub Actions 在 push 和 pull request 时运行格式化检查、测试、clippy 和构建。
 - GitHub Actions 可以定期或手动运行依赖安全检查。
 - GitHub Actions 可以手动运行性能 smoke benchmark，并保存结果 artifact。
 - 对 5k 到 50k spans 的样本，解析、建图和核心分析 P95 小于 2 秒。
-- `validate`、`summary`、`tree`、`critical-path`、`detect` 有端到端测试。
+- `validate`、`summary`、`tree`、`critical-path`、`detect`、`timeline` 有端到端测试。
 - JSON 输出包含 `schema_version`。
 - 非法输入和空文件有明确错误信息。
 

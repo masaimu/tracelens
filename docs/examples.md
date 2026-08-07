@@ -59,7 +59,7 @@ Useful output:
 Detect 检测概览
 traces: 6  spans: 9  diagnostics: 0  limit: 2
 样本数: 6  样本质量: limited  p95 耗时参考: 900.000ms
-慢请求候选: 2  错误 trace 候选: 1  错误 span: 4
+慢请求候选: 2  错误 trace 候选: 1  N+1 候选: 0  错误 span: 4
 
 慢请求候选
 rank  trace_id                          duration  confidence  spans  services  errors  diagnostics
@@ -175,6 +175,40 @@ serial: 3  concurrent: 4  nested: 5  suspicious: 1
 可疑 span（超出 parent 时间范围）：
 - [notify-service] POST /notify span_id=0000000000000007
 ```
+
+## Draw an ASCII Timeline
+
+```bash
+tracelens timeline tests/fixtures/otlp-concurrent.json \
+  --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC \
+  --width 48
+```
+
+Useful output:
+
+```text
+Trace Timeline
+trace_id: cccccccccccccccccccccccccccccccc
+wall-clock duration: 1.100s
+spans: 7  roots: 1  orphans: 0  diagnostics: 1  bar_width: 48
+critical path: available  duration: 1.000s
+注意：wall-clock duration 大于被选中 root span 的时间区间；关键路径只覆盖该 root span 区间
+
+axis: 0ns |------------------------------------------------| 1.100s
+mk  service             span                                       start    duration  timeline                                          span_id
+*   checkout-service    GET /checkout                                0ns      1.000s  |==========================================      |  0000000000000001
+*   payment-service       POST /charge                         500.000ms   400.000ms  |                     =================          |  0000000000000003
+    inventory-service     GET /stock                           500.000ms   300.000ms  |                     #############              |  0000000000000006
+```
+
+Markers:
+
+- `*`: this span appears on the critical path.
+- `!`: this span is an error span.
+- `?`: this span is orphan or unattached.
+- overlapping bars mean the spans overlap in time.
+
+Use this view after `critical-path` or `detect` when you need a quick visual feel for span order and overlap.
 
 ## Inspect Client/server and Async Annotations
 

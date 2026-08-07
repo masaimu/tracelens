@@ -23,13 +23,13 @@ def main() -> int:
     parser.add_argument("--generator", default="tools/generate_synthetic_traces.py")
     parser.add_argument("--data-dir", default="perf-data")
     parser.add_argument("--results-dir", default="perf-results")
-    parser.add_argument("--spans", default="5000", help="Comma-separated span counts.")
+    parser.add_argument("--spans", default="5000,50000", help="Comma-separated span counts.")
     parser.add_argument("--traces", type=int, default=10)
     parser.add_argument("--services", type=int, default=8)
     parser.add_argument("--attributes", type=int, default=2)
     parser.add_argument("--formats", default="json", help="Comma-separated: json,jsonl.")
     parser.add_argument("--shapes", default="balanced", help="Comma-separated benchmark shapes.")
-    parser.add_argument("--commands", default="validate,summary,list-traces,services,critical-path")
+    parser.add_argument("--commands", default="validate,summary,list-traces,services,critical-path,detect")
     parser.add_argument("--iterations", type=int, default=3)
     parser.add_argument("--no-build", action="store_true", help="Skip cargo build --release.")
     args = parser.parse_args()
@@ -178,6 +178,8 @@ def command_argv(binary: Path, command: str, fixture: Path) -> list[object]:
         return [binary, "services", fixture, "--trace-id", FIRST_TRACE_ID]
     if command == "critical-path":
         return [binary, "critical-path", fixture, "--trace-id", FIRST_TRACE_ID]
+    if command == "detect":
+        return [binary, "detect", fixture, "--output", "json"]
     if command == "tree":
         return [binary, "tree", fixture, "--trace-id", FIRST_TRACE_ID]
     raise ValueError(f"unsupported command: {command}")

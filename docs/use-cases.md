@@ -52,7 +52,7 @@ Why it matters:
 
 You usually do not want to open every trace. Start with the slowest or riskiest candidate.
 
-## 3. Detect Slow and Error Candidates
+## 3. Detect Slow, Error, and N+1 Candidates
 
 Use this when you want `tracelens` to suggest where to look first.
 
@@ -70,10 +70,13 @@ What to look for:
 - earliest error span
 - topologically higher error span
 - error signals such as OTLP ERROR, HTTP 5xx, gRPC/RPC non-OK, or exception events
+- N+1 candidates under a single parent span
+- repeated child count
+- serial ratio
 
 Why it matters:
 
-`detect` turns raw trace lists into triage hints. It is intentionally conservative: low sample counts lower confidence, and current output is a candidate list rather than a final root-cause verdict.
+`detect` turns raw trace lists into triage hints. It is intentionally conservative: low sample counts lower confidence, and current output is a candidate list rather than a final root-cause verdict. N+1 detection uses same-parent direct child spans, so candidates should still be checked against business semantics.
 
 ## 4. Inspect the Span Tree
 
@@ -188,7 +191,7 @@ Async traces can be easy to over-interpret. `tracelens` annotates related work w
 | --- | --- |
 | Is this file usable? | `validate` |
 | Which trace should I inspect first? | `summary` or `list-traces` |
-| Which traces look slow or erroneous? | `detect` |
+| Which traces look slow, erroneous, or N+1-like? | `detect` |
 | What is the parent-child shape? | `tree` |
 | Which service spent the most own time? | `services` |
 | What blocked the root span? | `critical-path` |

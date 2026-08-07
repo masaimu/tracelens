@@ -9,8 +9,8 @@ use crate::analysis::critical_path::{
     CriticalPathStatus,
 };
 use crate::analysis::detect::{
-    DetectAnalysis, ErrorSpanCandidate, ErrorTraceCandidate, ServiceSlowCandidate,
-    SlowTraceCandidate,
+    DetectAnalysis, ErrorSpanCandidate, ErrorTraceCandidate, NPlusOneCandidate, NPlusOneChildGroup,
+    NPlusOneSpanRef, ServiceSlowCandidate, SlowTraceCandidate,
 };
 use crate::analysis::duration::{RootSpanDuration, ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
@@ -129,6 +129,7 @@ pub fn format_detect_json(analysis: &DetectAnalysis, collection: &TraceCollectio
             "p95_duration_ns": analysis.summary.p95_duration_ns,
             "slow_trace_candidate_count": analysis.summary.slow_trace_candidate_count,
             "error_trace_candidate_count": analysis.summary.error_trace_candidate_count,
+            "n_plus_one_candidate_count": analysis.summary.n_plus_one_candidate_count,
             "error_span_count": analysis.summary.error_span_count,
         },
         "slow_traces": analysis
@@ -140,6 +141,11 @@ pub fn format_detect_json(analysis: &DetectAnalysis, collection: &TraceCollectio
             .error_traces
             .iter()
             .map(error_trace_candidate_to_json)
+            .collect::<Vec<_>>(),
+        "n_plus_one_candidates": analysis
+            .n_plus_one_candidates
+            .iter()
+            .map(n_plus_one_candidate_to_json)
             .collect::<Vec<_>>(),
         "notes": analysis.notes,
         "diagnostics": diagnostics_to_json(&collection.diagnostics),
@@ -264,6 +270,49 @@ fn error_span_candidate_to_json(candidate: &ErrorSpanCandidate) -> Value {
         "start_ns": candidate.start_ns,
         "duration_ns": candidate.duration_ns,
         "signals": candidate.signals,
+    })
+}
+
+fn n_plus_one_candidate_to_json(candidate: &NPlusOneCandidate) -> Value {
+    json!({
+        "trace_id": candidate.trace_id,
+        "parent_span": n_plus_one_span_ref_to_json(&candidate.parent_span),
+        "child_group": n_plus_one_child_group_to_json(&candidate.child_group),
+        "repeated_count": candidate.repeated_count,
+        "serial_ratio": candidate.serial_ratio_per_mille as f64 / 1_000.0,
+        "serial_ratio_per_mille": candidate.serial_ratio_per_mille,
+        "confidence": candidate.confidence.label(),
+        "reason": candidate.reason,
+        "example_child_spans": candidate
+            .example_child_spans
+            .iter()
+            .map(n_plus_one_span_ref_to_json)
+            .collect::<Vec<_>>(),
+    })
+}
+
+fn n_plus_one_child_group_to_json(group: &NPlusOneChildGroup) -> Value {
+    json!({
+        "service_name": group.service_name,
+        "normalized_name": group.normalized_name,
+        "db_system": group.db_system,
+        "db_operation": group.db_operation,
+        "rpc_system": group.rpc_system,
+        "http_method": group.http_method,
+        "http_route": group.http_route,
+        "signature": group.signature,
+    })
+}
+
+fn n_plus_one_span_ref_to_json(span: &NPlusOneSpanRef) -> Value {
+    json!({
+        "span_id": span.span_id,
+        "parent_span_id": span.parent_span_id,
+        "service_name": span.service_name,
+        "name": span.name,
+        "depth": span.depth,
+        "start_ns": span.start_ns,
+        "duration_ns": span.duration_ns,
     })
 }
 

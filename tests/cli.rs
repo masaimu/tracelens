@@ -347,6 +347,86 @@ fn detect_outputs_json() {
         .as_array()
         .expect("signals should be array");
     assert!(signals.iter().any(|signal| signal == "status_code_error"));
+    assert_eq!(value["summary"]["n_plus_one_candidate_count"], 0);
+    assert!(
+        value["n_plus_one_candidates"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn detect_outputs_n_plus_one_candidates_with_chinese_explanations() {
+    let fixture = fixture("otlp-n-plus-one.json");
+    let output = tracelens()
+        .args([
+            "--color",
+            "never",
+            "detect",
+            fixture.as_str(),
+            "--limit",
+            "5",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("N+1 候选"));
+    assert!(stdout.contains("repeated=10"));
+    assert!(stdout.contains("serial_ratio=100.0%"));
+    assert!(stdout.contains("confidence=high"));
+    assert!(stdout.contains("select product {num}"));
+    assert!(stdout.contains("repeated=6"));
+    assert!(stdout.contains("serial_ratio=0.0%"));
+    assert!(stdout.contains("confidence=medium"));
+    assert!(stdout.contains("possible N+1"));
+}
+
+#[test]
+fn detect_outputs_n_plus_one_json() {
+    let fixture = fixture("otlp-n-plus-one.json");
+    let output = tracelens()
+        .args([
+            "detect",
+            fixture.as_str(),
+            "--limit",
+            "5",
+            "--output",
+            "json",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let value: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
+    assert_eq!(value["summary"]["n_plus_one_candidate_count"], 2);
+
+    let candidates = value["n_plus_one_candidates"]
+        .as_array()
+        .expect("n_plus_one_candidates should be array");
+    let high = candidates
+        .iter()
+        .find(|candidate| candidate["trace_id"] == "77777777777777777777777777777777")
+        .expect("high confidence candidate should exist");
+    assert_eq!(high["repeated_count"], 10);
+    assert_eq!(high["serial_ratio_per_mille"], 1000);
+    assert_eq!(high["serial_ratio"], 1.0);
+    assert_eq!(high["confidence"], "high");
+    assert_eq!(
+        high["child_group"]["normalized_name"],
+        "select product {num}"
+    );
+    assert_eq!(high["child_group"]["db_system"], "postgresql");
+
+    let possible = candidates
+        .iter()
+        .find(|candidate| candidate["trace_id"] == "88888888888888888888888888888888")
+        .expect("possible candidate should exist");
+    assert_eq!(possible["repeated_count"], 6);
+    assert_eq!(possible["serial_ratio_per_mille"], 0);
+    assert_eq!(possible["confidence"], "medium");
 }
 
 #[test]

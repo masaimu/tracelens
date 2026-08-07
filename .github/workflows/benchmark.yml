@@ -19,7 +19,7 @@ on:
       spans:
         description: Comma-separated span counts.
         required: true
-        default: "5000"
+        default: "5000,50000"
       traces:
         description: Number of traces per generated fixture.
         required: true
@@ -35,7 +35,7 @@ on:
       commands:
         description: Comma-separated tracelens commands.
         required: true
-        default: validate,summary,list-traces,services,critical-path
+        default: validate,summary,list-traces,services,critical-path,detect
       iterations:
         description: Iterations per benchmark case.
         required: true
@@ -79,11 +79,11 @@ jobs:
 
       - name: Run benchmark
         env:
-          BENCHMARK_SPANS: ${{ github.event.inputs.spans || '5000' }}
+          BENCHMARK_SPANS: ${{ github.event.inputs.spans || '5000,50000' }}
           BENCHMARK_TRACES: ${{ github.event.inputs.traces || '20' }}
           BENCHMARK_FORMATS: ${{ github.event.inputs.formats || 'json' }}
           BENCHMARK_SHAPES: ${{ github.event.inputs.shapes || 'balanced,overlap' }}
-          BENCHMARK_COMMANDS: ${{ github.event.inputs.commands || 'validate,summary,list-traces,services,critical-path' }}
+          BENCHMARK_COMMANDS: ${{ github.event.inputs.commands || 'validate,summary,list-traces,services,critical-path,detect' }}
           BENCHMARK_ITERATIONS: ${{ github.event.inputs.iterations || '1' }}
         run: |
           python3 tools/run_perf_benchmark.py \

@@ -10,8 +10,8 @@ use crate::analysis::critical_path::{
     CriticalPathAnalysis, CriticalPathSegment, CriticalPathSpanTotal, CriticalPathStatus,
 };
 use crate::analysis::detect::{
-    Confidence, DetectAnalysis, ErrorSpanCandidate, SampleQuality, ServiceSlowCandidate,
-    SlowTraceCandidate,
+    Confidence, DetectAnalysis, ErrorSpanCandidate, NPlusOneCandidate, NPlusOneSpanRef,
+    SampleQuality, ServiceSlowCandidate, SlowTraceCandidate,
 };
 use crate::analysis::duration::{ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
@@ -400,9 +400,10 @@ pub fn format_detect(
     .expect("write to string");
     writeln!(
         output,
-        "慢请求候选: {}  错误 trace 候选: {}  错误 span: {}",
+        "慢请求候选: {}  错误 trace 候选: {}  N+1 候选: {}  错误 span: {}",
         style_count_by_risk(style, analysis.summary.slow_trace_candidate_count),
         style_count_by_risk(style, analysis.summary.error_trace_candidate_count),
+        style_count_by_risk(style, analysis.summary.n_plus_one_candidate_count),
         style_count_by_risk(style, analysis.summary.error_span_count)
     )
     .expect("write to string");
@@ -445,6 +446,16 @@ pub fn format_detect(
     write_error_trace_candidates(&mut output, &analysis.error_traces, style);
 
     writeln!(output).expect("write to string");
+    writeln!(output, "{}", style.section("N+1 候选")).expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("说明：这里按同一个 parent 下的相似直接 child span 聚合；repeated 表示重复次数，serial_ratio 表示这些 child 相邻顺序执行的比例。")
+    )
+    .expect("write to string");
+    write_n_plus_one_candidates(&mut output, &analysis.n_plus_one_candidates, style);
+
+    writeln!(output).expect("write to string");
     writeln!(output, "{}", style.section("字段说明：")).expect("write to string");
     writeln!(
         output,
@@ -462,6 +473,12 @@ pub fn format_detect(
         output,
         "{}",
         style.muted("- signals：错误判定信号，例如 status_code_error、http_5xx、grpc_non_zero、rpc_non_ok、exception_event。")
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("- N+1：同一个 parent 下相似 child span 重复 >= 5 会作为 possible；重复 >= 10 且 serial_ratio >= 80% 会升级为 high confidence。")
     )
     .expect("write to string");
 
@@ -703,6 +720,86 @@ fn write_error_trace_candidates(
     }
 }
 
+fn write_n_plus_one_candidates(
+    output: &mut String,
+    candidates: &[NPlusOneCandidate],
+    style: TextStyle,
+) {
+    if candidates.is_empty() {
+        writeln!(output, "(no N+1 candidates)").expect("write to string");
+        return;
+    }
+
+    for candidate in candidates {
+        writeln!(
+            output,
+            "- trace_id={}  repeated={}  serial_ratio={}  confidence={}",
+            style.identifier(&candidate.trace_id),
+            style.warning(candidate.repeated_count),
+            style.duration(format_ratio(candidate.serial_ratio_per_mille)),
+            style_confidence(style, candidate.confidence)
+        )
+        .expect("write to string");
+        writeln!(
+            output,
+            "  parent: {}",
+            format_n_plus_one_span_ref(&candidate.parent_span, style)
+        )
+        .expect("write to string");
+        writeln!(
+            output,
+            "  group: {}",
+            style.warning(&candidate.child_group.signature)
+        )
+        .expect("write to string");
+        writeln!(
+            output,
+            "  解释：{}",
+            n_plus_one_explanation(candidate, style)
+        )
+        .expect("write to string");
+        writeln!(output, "  examples:").expect("write to string");
+        for span in &candidate.example_child_spans {
+            writeln!(output, "  - {}", format_n_plus_one_span_ref(span, style))
+                .expect("write to string");
+        }
+    }
+}
+
+fn format_n_plus_one_span_ref(span: &NPlusOneSpanRef, style: TextStyle) -> String {
+    format!(
+        "[{}] {} span_id={} depth={} duration={}",
+        style.service(&span.service_name),
+        span.name,
+        style.identifier(&span.span_id),
+        span.depth,
+        style.duration(format_duration(span.duration_ns))
+    )
+}
+
+fn n_plus_one_explanation(candidate: &NPlusOneCandidate, style: TextStyle) -> String {
+    if candidate.confidence == Confidence::High {
+        return format!(
+            "相似 child span 重复 {} 次，且 serial_ratio 为 {}，满足 high confidence N+1 阈值。",
+            style.warning(candidate.repeated_count),
+            style.duration(format_ratio(candidate.serial_ratio_per_mille))
+        );
+    }
+
+    if candidate.repeated_count >= 10 {
+        return format!(
+            "相似 child span 重复 {} 次，但 serial_ratio 只有 {}，更像并发扇出；先作为 possible N+1 候选。",
+            style.warning(candidate.repeated_count),
+            style.duration(format_ratio(candidate.serial_ratio_per_mille))
+        );
+    }
+
+    format!(
+        "相似 child span 重复 {} 次，达到 possible N+1 阈值；需要结合业务语义确认。",
+        style.warning(candidate.repeated_count)
+    )
+}
+
 fn format_error_span_candidate(candidate: &ErrorSpanCandidate, style: TextStyle) -> String {
     format!(
         "[{}] {} span_id={} depth={} duration={} signals={}",
@@ -723,7 +820,7 @@ fn format_error_span_candidate(candidate: &ErrorSpanCandidate, style: TextStyle)
 fn slow_candidate_explanation(candidate: &SlowTraceCandidate, style: TextStyle) -> String {
     if candidate.sample_count < 5 {
         return style.warning(format!(
-            "当前样本数只有 {}，这条 trace 耗时最高，但只能低置信度作为排查线索。",
+            "当前样本数只有 {}，这条 trace 只能低置信度作为排查线索。",
             candidate.sample_count
         ));
     }
@@ -758,6 +855,10 @@ fn style_sample_quality(style: TextStyle, quality: SampleQuality) -> String {
     }
 }
 
+fn format_ratio(serial_ratio_per_mille: u16) -> String {
+    format!("{:.1}%", serial_ratio_per_mille as f64 / 10.0)
+}
+
 fn localize_detect_note(note: &str) -> String {
     match note {
         "trace sample count is below 5; slow-trace findings are low-confidence candidates" => {
@@ -766,8 +867,9 @@ fn localize_detect_note(note: &str) -> String {
         "trace sample count is below 20; percentile references are useful but still limited" => {
             "trace 样本数少于 20；p95 参考值已经可用，但仍需要谨慎解读。".to_string()
         }
-        "N+1 detection is intentionally deferred to the next M5 step to avoid early false positives" => {
-            "N+1 检测会在 M5 的下一步实现；第一版先避免过早引入误报。".to_string()
+        "N+1 detection uses same-parent direct child span heuristics; inspect candidates before treating them as root cause" => {
+            "N+1 检测采用同 parent 直接 child span 的启发式规则；候选结果需要结合业务语义确认。"
+                .to_string()
         }
         _ => note.to_string(),
     }

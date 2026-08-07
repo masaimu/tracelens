@@ -1,0 +1,457 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "checkout-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.checkout"
+          },
+          "spans": [
+            {
+              "traceId": "77777777777777777777777777777777",
+              "spanId": "7700000000000001",
+              "name": "GET /checkout",
+              "kind": 2,
+              "startTimeUnixNano": "1000000000",
+              "endTimeUnixNano": "1200000000",
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "88888888888888888888888888888888",
+              "spanId": "8800000000000001",
+              "name": "GET /cart",
+              "kind": 2,
+              "startTimeUnixNano": "2000000000",
+              "endTimeUnixNano": "2200000000",
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "postgres-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.postgres"
+          },
+          "spans": [
+            {
+              "traceId": "77777777777777777777777777777777",
+              "spanId": "7700000000000002",
+              "parentSpanId": "7700000000000001",
+              "name": "SELECT product 1",
+              "kind": 3,
+              "startTimeUnixNano": "1010000000",
+              "endTimeUnixNano": "1015000000",
+              "attributes": [
+                {
+                  "key": "db.system",
+                  "value": {
+                    "stringValue": "postgresql"
+                  }
+                },
+                {
+                  "key": "db.operation",
+                  "value": {
+                    "stringValue": "SELECT"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "77777777777777777777777777777777",
+              "spanId": "7700000000000003",
+              "parentSpanId": "7700000000000001",
+              "name": "SELECT product 2",
+              "kind": 3,
+              "startTimeUnixNano": "1020000000",
+              "endTimeUnixNano": "1025000000",
+              "attributes": [
+                {
+                  "key": "db.system",
+                  "value": {
+                    "stringValue": "postgresql"
+                  }
+                },
+                {
+                  "key": "db.operation",
+                  "value": {
+                    "stringValue": "SELECT"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "77777777777777777777777777777777",
+              "spanId": "7700000000000004",
+              "parentSpanId": "7700000000000001",
+              "name": "SELECT product 3",
+              "kind": 3,
+              "startTimeUnixNano": "1030000000",
+              "endTimeUnixNano": "1035000000",
+              "attributes": [
+                {
+                  "key": "db.system",
+                  "value": {
+                    "stringValue": "postgresql"
+                  }
+                },
+                {
+                  "key": "db.operation",
+                  "value": {
+                    "stringValue": "SELECT"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "77777777777777777777777777777777",
+              "spanId": "7700000000000005",
+              "parentSpanId": "7700000000000001",
+              "name": "SELECT product 4",
+              "kind": 3,
+              "startTimeUnixNano": "1040000000",
+              "endTimeUnixNano": "1045000000",
+              "attributes": [
+                {
+                  "key": "db.system",
+                  "value": {
+                    "stringValue": "postgresql"
+                  }
+                },
+                {
+                  "key": "db.operation",
+                  "value": {
+                    "stringValue": "SELECT"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "77777777777777777777777777777777",
+              "spanId": "7700000000000006",
+              "parentSpanId": "7700000000000001",
+              "name": "SELECT product 5",
+              "kind": 3,
+              "startTimeUnixNano": "1050000000",
+              "endTimeUnixNano": "1055000000",
+              "attributes": [
+                {
+                  "key": "db.system",
+                  "value": {
+                    "stringValue": "postgresql"
+                  }
+                },
+                {
+                  "key": "db.operation",
+                  "value": {
+                    "stringValue": "SELECT"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "77777777777777777777777777777777",
+              "spanId": "7700000000000007",
+              "parentSpanId": "7700000000000001",
+              "name": "SELECT product 6",
+              "kind": 3,
+              "startTimeUnixNano": "1060000000",
+              "endTimeUnixNano": "1065000000",
+              "attributes": [
+                {
+                  "key": "db.system",
+                  "value": {
+                    "stringValue": "postgresql"
+                  }
+                },
+                {
+                  "key": "db.operation",
+                  "value": {
+                    "stringValue": "SELECT"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "77777777777777777777777777777777",
+              "spanId": "7700000000000008",
+              "parentSpanId": "7700000000000001",
+              "name": "SELECT product 7",
+              "kind": 3,
+              "startTimeUnixNano": "1070000000",
+              "endTimeUnixNano": "1075000000",
+              "attributes": [
+                {
+                  "key": "db.system",
+                  "value": {
+                    "stringValue": "postgresql"
+                  }
+                },
+                {
+                  "key": "db.operation",
+                  "value": {
+                    "stringValue": "SELECT"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "77777777777777777777777777777777",
+              "spanId": "7700000000000009",
+              "parentSpanId": "7700000000000001",
+              "name": "SELECT product 8",
+              "kind": 3,
+              "startTimeUnixNano": "1080000000",
+              "endTimeUnixNano": "1085000000",
+              "attributes": [
+                {
+                  "key": "db.system",
+                  "value": {
+                    "stringValue": "postgresql"
+                  }
+                },
+                {
+                  "key": "db.operation",
+                  "value": {
+                    "stringValue": "SELECT"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "77777777777777777777777777777777",
+              "spanId": "770000000000000a",
+              "parentSpanId": "7700000000000001",
+              "name": "SELECT product 9",
+              "kind": 3,
+              "startTimeUnixNano": "1090000000",
+              "endTimeUnixNano": "1095000000",
+              "attributes": [
+                {
+                  "key": "db.system",
+                  "value": {
+                    "stringValue": "postgresql"
+                  }
+                },
+                {
+                  "key": "db.operation",
+                  "value": {
+                    "stringValue": "SELECT"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "77777777777777777777777777777777",
+              "spanId": "770000000000000b",
+              "parentSpanId": "7700000000000001",
+              "name": "SELECT product 10",
+              "kind": 3,
+              "startTimeUnixNano": "1100000000",
+              "endTimeUnixNano": "1105000000",
+              "attributes": [
+                {
+                  "key": "db.system",
+                  "value": {
+                    "stringValue": "postgresql"
+                  }
+                },
+                {
+                  "key": "db.operation",
+                  "value": {
+                    "stringValue": "SELECT"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "inventory-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test.inventory"
+          },
+          "spans": [
+            {
+              "traceId": "88888888888888888888888888888888",
+              "spanId": "8800000000000002",
+              "parentSpanId": "8800000000000001",
+              "name": "GET /inventory/1",
+              "kind": 3,
+              "startTimeUnixNano": "2010000000",
+              "endTimeUnixNano": "2090000000",
+              "attributes": [
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "GET"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/inventory/{id}"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "88888888888888888888888888888888",
+              "spanId": "8800000000000003",
+              "parentSpanId": "8800000000000001",
+              "name": "GET /inventory/2",
+              "kind": 3,
+              "startTimeUnixNano": "2010000000",
+              "endTimeUnixNano": "2090000000",
+              "attributes": [
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "GET"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/inventory/{id}"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "88888888888888888888888888888888",
+              "spanId": "8800000000000004",
+              "parentSpanId": "8800000000000001",
+              "name": "GET /inventory/3",
+              "kind": 3,
+              "startTimeUnixNano": "2010000000",
+              "endTimeUnixNano": "2090000000",
+              "attributes": [
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "GET"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/inventory/{id}"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "88888888888888888888888888888888",
+              "spanId": "8800000000000005",
+              "parentSpanId": "8800000000000001",
+              "name": "GET /inventory/4",
+              "kind": 3,
+              "startTimeUnixNano": "2010000000",
+              "endTimeUnixNano": "2090000000",
+              "attributes": [
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "GET"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/inventory/{id}"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "88888888888888888888888888888888",
+              "spanId": "8800000000000006",
+              "parentSpanId": "8800000000000001",
+              "name": "GET /inventory/5",
+              "kind": 3,
+              "startTimeUnixNano": "2010000000",
+              "endTimeUnixNano": "2090000000",
+              "attributes": [
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "GET"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/inventory/{id}"
+                  }
+                }
+              ]
+            },
+            {
+              "traceId": "88888888888888888888888888888888",
+              "spanId": "8800000000000007",
+              "parentSpanId": "8800000000000001",
+              "name": "GET /inventory/6",
+              "kind": 3,
+              "startTimeUnixNano": "2010000000",
+              "endTimeUnixNano": "2090000000",
+              "attributes": [
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "GET"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/inventory/{id}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

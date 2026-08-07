@@ -81,6 +81,28 @@ The same command also prints error evidence:
 
 `detect` output is a candidate list. Use `tree`, `services`, or `critical-path` next when you need deeper evidence.
 
+## Detect N+1 Candidates
+
+```bash
+tracelens detect tests/fixtures/otlp-n-plus-one.json --limit 5
+```
+
+Useful output:
+
+```text
+N+1 候选
+- trace_id=77777777777777777777777777777777  repeated=10  serial_ratio=100.0%  confidence=high
+  parent: [checkout-service] GET /checkout span_id=7700000000000001 depth=0 duration=200.000ms
+  group: service=postgres-service name=select product {num} db.system=postgresql db.operation=SELECT
+  解释：相似 child span 重复 10 次，且 serial_ratio 为 100.0%，满足 high confidence N+1 阈值。
+
+- trace_id=88888888888888888888888888888888  repeated=6  serial_ratio=0.0%  confidence=medium
+  parent: [checkout-service] GET /cart span_id=8800000000000001 depth=0 duration=200.000ms
+  group: service=inventory-service name=get /inventory/{num} http.method=GET http.route=/inventory/{id}
+```
+
+The second candidate stays `medium` because the repeated child calls are concurrent, not mostly serial.
+
 ## Inspect a Span Tree
 
 ```bash
@@ -180,7 +202,7 @@ async / linked span：
 ## Produce JSON for Scripts
 
 ```bash
-tracelens detect tests/fixtures/otlp-detect.json --output json
+tracelens detect tests/fixtures/otlp-n-plus-one.json --output json
 ```
 
 Useful JSON fields:
@@ -190,19 +212,15 @@ Useful JSON fields:
   "schema_version": "0.1",
   "command": "detect",
   "summary": {
-    "sample_count": 6,
-    "sample_quality": "limited"
+    "sample_count": 2,
+    "sample_quality": "insufficient",
+    "n_plus_one_candidate_count": 2
   },
-  "slow_traces": [
+  "n_plus_one_candidates": [
     {
-      "trace_id": "66666666666666666666666666666666",
-      "confidence": "medium"
-    }
-  ],
-  "error_traces": [
-    {
-      "trace_id": "66666666666666666666666666666666",
-      "error_span_count": 4,
+      "trace_id": "77777777777777777777777777777777",
+      "repeated_count": 10,
+      "serial_ratio": 1.0,
       "confidence": "high"
     }
   ]

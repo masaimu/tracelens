@@ -283,6 +283,63 @@ Each error trace includes:
 
 `earliest_error_span` is the first error span by start time. `top_error_span` is the highest-level error span by trace topology. `error_spans` keeps the full evidence list so later error signals are not hidden when the earliest and top spans are the same.
 
+### `n_plus_one_candidates`
+
+N+1 candidates are groups of similar direct child spans under the same parent span.
+
+Current detection is intentionally conservative:
+
+- only direct parent-child relationships are considered
+- span links and messaging relationships are not treated as parent-child
+- repeated child count must be at least `5`
+- high confidence requires repeated count at least `10` and `serial_ratio >= 0.8`
+
+Each candidate includes:
+
+- `trace_id`
+- `parent_span`
+- `child_group`
+- `repeated_count`
+- `serial_ratio`
+- `confidence`
+- `reason`
+- `example_child_spans`
+
+### `child_group`
+
+The normalized group signature for repeated child spans.
+
+The grouping uses:
+
+- service name
+- normalized span name
+- `db.system`
+- `db.operation`
+- `rpc.system`
+- `http.method`
+- `http.route`
+
+Numeric parts of span names are normalized. For example:
+
+```text
+SELECT product 1
+SELECT product 2
+```
+
+becomes:
+
+```text
+select product {num}
+```
+
+### `serial_ratio`
+
+The ratio of adjacent repeated child spans that run sequentially.
+
+If a group has 10 spans and every next span starts after the previous span ends, the ratio is `1.0`.
+
+If repeated child spans mostly overlap, the ratio is lower. This keeps concurrent fan-out from being incorrectly upgraded to high-confidence N+1.
+
 ## Diagnostics
 
 Diagnostics are warnings or errors about input quality or trace structure.
@@ -334,6 +391,7 @@ Useful top-level JSON areas:
 - `annotations`
 - `slow_traces`
 - `error_traces`
+- `n_plus_one_candidates`
 - `notes`
 - `diagnostics`
 

@@ -27,6 +27,7 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 - critical path
 - service self time
 - slow/error candidates
+- N+1 candidates
 - confidence markers
 - diagnostics
 - script-friendly JSON
@@ -56,13 +57,13 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 | `docs/use-cases.md` | 典型用户场景 | 必须把用户问题映射到 CLI 命令 |
 | `docs/examples.md` | 可复制示例 | 必须使用真实 fixture、真实命令和真实输出片段 |
 | `docs/output-guide.md` | 输出字段说明 | 必须解释核心指标、语义标注、diagnostics 和 JSON 输出 |
+| `docs/performance.md` | 性能说明 | 必须说明性能目标、benchmark 方法、当前规模验证和本地结果解释 |
 
 后续建议逐步新增：
 
 | 文件 | 作用 | 优先级 |
 | --- | --- | --- |
 | `docs/ci-integration.md` | 说明 `--output json`、`--color never`、退出码和 CI 接入方式 | 中 |
-| `docs/performance.md` | 说明性能目标、benchmark 方法和当前基线 | 中 |
 | `docs/comparison.md` | 克制比较 Jaeger/Tempo/Zipkin 与 tracelens 的适用场景 | 中 |
 
 ## 每次迭代后的强制检查

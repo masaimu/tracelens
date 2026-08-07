@@ -14,6 +14,7 @@ In that moment, you still need answers:
 - Where is the time going?
 - Which service contributes the most self time?
 - Which trace contains error signals?
+- Is there a possible N+1 call pattern under one parent span?
 - Which spans are concurrent, suspicious, or outside their parent range?
 - Are client/server and async spans being interpreted safely?
 
@@ -33,7 +34,7 @@ It gives you a terminal-first view of the trace:
 - span tree structure
 - service-level self time
 - critical path segments
-- slow/error candidates with confidence markers
+- slow/error/N+1 candidates with confidence markers
 - serial, concurrent, nested, and suspicious span classification
 - client/server, async work, messaging, and linked span annotations
 - JSON output for scripts and CI
@@ -57,7 +58,7 @@ That makes it useful for:
 
 The CLI output is intentionally explanatory. It does not only print numbers; it also explains what those numbers mean.
 
-For example, service self time is shown separately from raw span time, critical path output explains how concurrent child spans are attributed, and `detect` marks low-sample findings as candidates instead of pretending they are final conclusions.
+For example, service self time is shown separately from raw span time, critical path output explains how concurrent child spans are attributed, and `detect` marks slow/error/N+1 findings as candidates instead of pretending they are final conclusions.
 
 ### Conservative Trace Semantics
 
@@ -114,7 +115,7 @@ Reach for `tracelens` when:
 - an incident review needs a quick local explanation
 - you want to inspect span relationships without opening a UI
 - an automation agent needs JSON output from a trace analysis step
-- you want to understand whether a slow trace is dominated by service self time, a critical path span, error signals, or suspicious structure
+- you want to understand whether a slow trace is dominated by service self time, a critical path span, error signals, repeated child calls, or suspicious structure
 
 If your question is "where should we store millions of traces?", use a backend.
 

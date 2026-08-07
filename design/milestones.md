@@ -359,6 +359,7 @@ crates/
 - 样本 benchmark。
 - P95 处理耗时统计。
 - 本地性能测试机，包括 synthetic fixture 生成器和 benchmark runner。
+- benchmark runner 覆盖 `detect`，并支持 50k spans smoke benchmark。
 - GitHub Actions CI 质量门禁。
 - GitHub Actions 依赖安全检查。
 - GitHub Actions 手动性能 smoke benchmark。
@@ -370,7 +371,7 @@ crates/
 ### 验收标准
 
 - 生成的大规模 synthetic fixture 和本地 benchmark 结果不进入 Git。
-- benchmark runner 应覆盖 `critical-path` 等核心分析命令，避免新增命令绕过性能验收。
+- benchmark runner 应覆盖 `critical-path`、`detect` 等核心分析命令，避免新增命令绕过性能验收。
 - GitHub Actions 在 push 和 pull request 时运行格式化检查、测试、clippy 和构建。
 - GitHub Actions 可以定期或手动运行依赖安全检查。
 - GitHub Actions 可以手动运行性能 smoke benchmark，并保存结果 artifact。

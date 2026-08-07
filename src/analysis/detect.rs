@@ -57,6 +57,7 @@ pub struct DetectSummary {
     pub p95_duration_ns: Option<u64>,
     pub slow_trace_candidate_count: usize,
     pub error_trace_candidate_count: usize,
+    pub n_plus_one_candidate_count: usize,
     pub error_span_count: usize,
 }
 
@@ -109,12 +110,59 @@ pub struct ErrorTraceCandidate {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NPlusOneSpanRef {
+    pub span_id: String,
+    pub parent_span_id: Option<String>,
+    pub service_name: String,
+    pub name: String,
+    pub depth: usize,
+    pub start_ns: u64,
+    pub duration_ns: u64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NPlusOneChildGroup {
+    pub service_name: String,
+    pub normalized_name: String,
+    pub db_system: Option<String>,
+    pub db_operation: Option<String>,
+    pub rpc_system: Option<String>,
+    pub http_method: Option<String>,
+    pub http_route: Option<String>,
+    pub signature: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NPlusOneCandidate {
+    pub trace_id: String,
+    pub parent_span: NPlusOneSpanRef,
+    pub child_group: NPlusOneChildGroup,
+    pub repeated_count: usize,
+    pub serial_ratio_per_mille: u16,
+    pub confidence: Confidence,
+    pub reason: String,
+    pub example_child_spans: Vec<NPlusOneSpanRef>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DetectAnalysis {
     pub limit: usize,
     pub summary: DetectSummary,
     pub slow_traces: Vec<SlowTraceCandidate>,
     pub error_traces: Vec<ErrorTraceCandidate>,
+    pub n_plus_one_candidates: Vec<NPlusOneCandidate>,
     pub notes: Vec<String>,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+struct NPlusOneGroupKey {
+    service_name: String,
+    normalized_name: String,
+    db_system: Option<String>,
+    db_operation: Option<String>,
+    rpc_system: Option<String>,
+    http_method: Option<String>,
+    http_route: Option<String>,
 }
 
 pub fn analyze_detect(collection: &TraceCollection, limit: usize) -> DetectAnalysis {
@@ -131,6 +179,7 @@ pub fn analyze_detect(collection: &TraceCollection, limit: usize) -> DetectAnaly
 
     let slow_traces = slow_trace_candidates(collection, limit, p95_duration_ns, sample_count);
     let error_traces = error_trace_candidates(collection, limit);
+    let n_plus_one_candidates = n_plus_one_candidates(collection, limit);
     let error_span_count = collection
         .traces
         .values()
@@ -150,7 +199,7 @@ pub fn analyze_detect(collection: &TraceCollection, limit: usize) -> DetectAnaly
         );
     }
     notes.push(
-        "N+1 detection is intentionally deferred to the next M5 step to avoid early false positives"
+        "N+1 detection uses same-parent direct child span heuristics; inspect candidates before treating them as root cause"
             .to_string(),
     );
 
@@ -165,10 +214,12 @@ pub fn analyze_detect(collection: &TraceCollection, limit: usize) -> DetectAnaly
             p95_duration_ns,
             slow_trace_candidate_count: slow_traces.len(),
             error_trace_candidate_count: error_traces.len(),
+            n_plus_one_candidate_count: n_plus_one_candidates.len(),
             error_span_count,
         },
         slow_traces,
         error_traces,
+        n_plus_one_candidates,
         notes,
     }
 }
@@ -356,6 +407,238 @@ fn error_trace_candidate(trace: &TraceGraph) -> Option<ErrorTraceCandidate> {
     })
 }
 
+fn n_plus_one_candidates(collection: &TraceCollection, limit: usize) -> Vec<NPlusOneCandidate> {
+    let mut candidates = collection
+        .traces
+        .values()
+        .flat_map(trace_n_plus_one_candidates)
+        .collect::<Vec<_>>();
+
+    candidates.sort_by(|left, right| {
+        confidence_rank(right.confidence)
+            .cmp(&confidence_rank(left.confidence))
+            .then(right.repeated_count.cmp(&left.repeated_count))
+            .then(
+                right
+                    .serial_ratio_per_mille
+                    .cmp(&left.serial_ratio_per_mille),
+            )
+            .then(left.trace_id.cmp(&right.trace_id))
+            .then(left.parent_span.span_id.cmp(&right.parent_span.span_id))
+            .then(left.child_group.signature.cmp(&right.child_group.signature))
+    });
+    candidates.truncate(limit);
+    candidates
+}
+
+fn trace_n_plus_one_candidates(trace: &TraceGraph) -> Vec<NPlusOneCandidate> {
+    let span_id_to_index = first_span_id_to_index(trace);
+    let mut candidates = Vec::new();
+
+    for (parent_span_id, child_indices) in &trace.children_by_parent {
+        let Some(parent_index) = span_id_to_index.get(parent_span_id.as_str()).copied() else {
+            continue;
+        };
+
+        let mut groups: BTreeMap<NPlusOneGroupKey, Vec<usize>> = BTreeMap::new();
+        for child_index in child_indices {
+            let child = &trace.spans[*child_index];
+            groups
+                .entry(n_plus_one_group_key(child))
+                .or_default()
+                .push(*child_index);
+        }
+
+        for (group_key, mut group_child_indices) in groups {
+            if group_child_indices.len() < 5 {
+                continue;
+            }
+
+            group_child_indices.sort_by(|left, right| {
+                trace.spans[*left]
+                    .start_ns
+                    .cmp(&trace.spans[*right].start_ns)
+                    .then(trace.spans[*left].span_id.cmp(&trace.spans[*right].span_id))
+            });
+            let repeated_count = group_child_indices.len();
+            let serial_ratio_per_mille = serial_ratio_per_mille(trace, &group_child_indices);
+            let confidence = n_plus_one_confidence(repeated_count, serial_ratio_per_mille);
+
+            candidates.push(NPlusOneCandidate {
+                trace_id: trace.trace_id.clone(),
+                parent_span: n_plus_one_span_ref(trace, parent_index),
+                child_group: n_plus_one_child_group(group_key),
+                repeated_count,
+                serial_ratio_per_mille,
+                confidence,
+                reason: n_plus_one_reason(repeated_count, serial_ratio_per_mille, confidence),
+                example_child_spans: group_child_indices
+                    .iter()
+                    .take(3)
+                    .map(|index| n_plus_one_span_ref(trace, *index))
+                    .collect(),
+            });
+        }
+    }
+
+    candidates
+}
+
+fn n_plus_one_confidence(repeated_count: usize, serial_ratio_per_mille: u16) -> Confidence {
+    if repeated_count >= 10 && serial_ratio_per_mille >= 800 {
+        Confidence::High
+    } else {
+        Confidence::Medium
+    }
+}
+
+fn n_plus_one_reason(
+    repeated_count: usize,
+    serial_ratio_per_mille: u16,
+    confidence: Confidence,
+) -> String {
+    match confidence {
+        Confidence::High => format!(
+            "repeated child spans >= 10 and serial ratio is {} per mille",
+            serial_ratio_per_mille
+        ),
+        Confidence::Medium if repeated_count >= 10 => format!(
+            "repeated child spans >= 10 but serial ratio is only {} per mille",
+            serial_ratio_per_mille
+        ),
+        Confidence::Medium => format!("repeated child spans >= 5 ({repeated_count})"),
+        Confidence::Low => "below N+1 threshold".to_string(),
+    }
+}
+
+fn serial_ratio_per_mille(trace: &TraceGraph, child_indices: &[usize]) -> u16 {
+    if child_indices.len() <= 1 {
+        return 1_000;
+    }
+
+    let serial_pairs = child_indices
+        .windows(2)
+        .filter(|window| trace.spans[window[1]].start_ns >= trace.spans[window[0]].end_ns)
+        .count();
+    let adjacent_pairs = child_indices.len() - 1;
+    ((serial_pairs * 1_000 + adjacent_pairs / 2) / adjacent_pairs) as u16
+}
+
+fn n_plus_one_group_key(span: &CanonicalSpan) -> NPlusOneGroupKey {
+    NPlusOneGroupKey {
+        service_name: span.service_name.clone(),
+        normalized_name: normalize_span_name_for_n_plus_one(&span.name),
+        db_system: attribute_value(span, "db.system"),
+        db_operation: attribute_value(span, "db.operation"),
+        rpc_system: attribute_value(span, "rpc.system"),
+        http_method: attribute_value(span, "http.method"),
+        http_route: attribute_value(span, "http.route"),
+    }
+}
+
+fn n_plus_one_child_group(key: NPlusOneGroupKey) -> NPlusOneChildGroup {
+    let signature = n_plus_one_signature(&key);
+    NPlusOneChildGroup {
+        service_name: key.service_name,
+        normalized_name: key.normalized_name,
+        db_system: key.db_system,
+        db_operation: key.db_operation,
+        rpc_system: key.rpc_system,
+        http_method: key.http_method,
+        http_route: key.http_route,
+        signature,
+    }
+}
+
+fn n_plus_one_signature(key: &NPlusOneGroupKey) -> String {
+    [
+        format!("service={}", key.service_name),
+        format!("name={}", key.normalized_name),
+        format_option("db.system", key.db_system.as_deref()),
+        format_option("db.operation", key.db_operation.as_deref()),
+        format_option("rpc.system", key.rpc_system.as_deref()),
+        format_option("http.method", key.http_method.as_deref()),
+        format_option("http.route", key.http_route.as_deref()),
+    ]
+    .into_iter()
+    .filter(|part| !part.ends_with("=<none>"))
+    .collect::<Vec<_>>()
+    .join(" ")
+}
+
+fn format_option(key: &str, value: Option<&str>) -> String {
+    format!("{key}={}", value.unwrap_or("<none>"))
+}
+
+fn n_plus_one_span_ref(trace: &TraceGraph, index: usize) -> NPlusOneSpanRef {
+    let span = &trace.spans[index];
+    NPlusOneSpanRef {
+        span_id: span.span_id.clone(),
+        parent_span_id: span.parent_span_id.clone(),
+        service_name: span.service_name.clone(),
+        name: span.name.clone(),
+        depth: span_depth(trace, index),
+        start_ns: span.start_ns,
+        duration_ns: span.duration_ns(),
+    }
+}
+
+fn normalize_span_name_for_n_plus_one(name: &str) -> String {
+    let name = name.trim().to_ascii_lowercase();
+    let name = name.split('?').next().unwrap_or(name.as_str());
+    let mut output = String::new();
+    let mut in_number = false;
+    let mut previous_whitespace = false;
+
+    for character in name.chars() {
+        if character.is_ascii_digit() {
+            if !in_number {
+                output.push_str("{num}");
+                in_number = true;
+            }
+            previous_whitespace = false;
+            continue;
+        }
+
+        in_number = false;
+        if character.is_whitespace() {
+            if !previous_whitespace {
+                output.push(' ');
+                previous_whitespace = true;
+            }
+        } else {
+            output.push(character);
+            previous_whitespace = false;
+        }
+    }
+
+    output.trim().to_string()
+}
+
+fn attribute_value(span: &CanonicalSpan, key: &str) -> Option<String> {
+    span.attributes
+        .get(key)
+        .map(|value| value.trim())
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string)
+}
+
+fn first_span_id_to_index(trace: &TraceGraph) -> BTreeMap<&str, usize> {
+    let mut map = BTreeMap::new();
+    for (index, span) in trace.spans.iter().enumerate() {
+        map.entry(span.span_id.as_str()).or_insert(index);
+    }
+    map
+}
+
+fn confidence_rank(confidence: Confidence) -> u8 {
+    match confidence {
+        Confidence::Low => 0,
+        Confidence::Medium => 1,
+        Confidence::High => 2,
+    }
+}
+
 fn error_confidence(trace: &TraceGraph, error_indices: &[usize]) -> Confidence {
     let has_structured_status = error_indices.iter().any(|index| {
         error_signals(&trace.spans[*index])
@@ -539,5 +822,35 @@ mod tests {
                 .signals
                 .contains(&"status_code_error".to_string())
         );
+    }
+
+    #[test]
+    fn detects_n_plus_one_candidates_conservatively() {
+        let data = parse_otlp_file(Path::new("tests/fixtures/otlp-n-plus-one.json"))
+            .expect("fixture should parse");
+        let collection = TraceCollection::build(data);
+        let analysis = analyze_detect(&collection, 5);
+
+        assert_eq!(analysis.summary.n_plus_one_candidate_count, 2);
+
+        let high = analysis
+            .n_plus_one_candidates
+            .iter()
+            .find(|candidate| candidate.trace_id == "77777777777777777777777777777777")
+            .expect("serial repeated database calls should be detected");
+        assert_eq!(high.repeated_count, 10);
+        assert_eq!(high.serial_ratio_per_mille, 1_000);
+        assert_eq!(high.confidence, Confidence::High);
+        assert_eq!(high.child_group.normalized_name, "select product {num}");
+        assert_eq!(high.child_group.db_system.as_deref(), Some("postgresql"));
+
+        let concurrent = analysis
+            .n_plus_one_candidates
+            .iter()
+            .find(|candidate| candidate.trace_id == "88888888888888888888888888888888")
+            .expect("concurrent repeated calls should still be a possible candidate");
+        assert_eq!(concurrent.repeated_count, 6);
+        assert_eq!(concurrent.serial_ratio_per_mille, 0);
+        assert_eq!(concurrent.confidence, Confidence::Medium);
     }
 }

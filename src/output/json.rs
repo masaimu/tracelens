@@ -8,6 +8,10 @@ use crate::analysis::critical_path::{
     CriticalPathAnalysis, CriticalPathRootSpan, CriticalPathSegment, CriticalPathSpanTotal,
     CriticalPathStatus,
 };
+use crate::analysis::detect::{
+    DetectAnalysis, ErrorSpanCandidate, ErrorTraceCandidate, ServiceSlowCandidate,
+    SlowTraceCandidate,
+};
 use crate::analysis::duration::{RootSpanDuration, ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
 use crate::graph::trace_graph::{TraceCollection, TraceGraph};
@@ -111,6 +115,37 @@ pub fn format_services_json(analysis: &TraceDurationAnalysis, trace: &TraceGraph
     }))
 }
 
+pub fn format_detect_json(analysis: &DetectAnalysis, collection: &TraceCollection) -> String {
+    to_pretty(json!({
+        "schema_version": SCHEMA_VERSION,
+        "command": "detect",
+        "limit": analysis.limit,
+        "summary": {
+            "trace_count": analysis.summary.trace_count,
+            "span_count": analysis.summary.span_count,
+            "diagnostics_count": analysis.summary.diagnostics_count,
+            "sample_count": analysis.summary.sample_count,
+            "sample_quality": analysis.summary.sample_quality.label(),
+            "p95_duration_ns": analysis.summary.p95_duration_ns,
+            "slow_trace_candidate_count": analysis.summary.slow_trace_candidate_count,
+            "error_trace_candidate_count": analysis.summary.error_trace_candidate_count,
+            "error_span_count": analysis.summary.error_span_count,
+        },
+        "slow_traces": analysis
+            .slow_traces
+            .iter()
+            .map(slow_trace_candidate_to_json)
+            .collect::<Vec<_>>(),
+        "error_traces": analysis
+            .error_traces
+            .iter()
+            .map(error_trace_candidate_to_json)
+            .collect::<Vec<_>>(),
+        "notes": analysis.notes,
+        "diagnostics": diagnostics_to_json(&collection.diagnostics),
+    }))
+}
+
 pub fn format_critical_path_json(
     duration: &TraceDurationAnalysis,
     critical_path: &CriticalPathAnalysis,
@@ -170,6 +205,66 @@ pub fn format_critical_path_json(
         "annotations": trace_annotations_to_json(annotations),
         "diagnostics": diagnostics_to_json(&trace.diagnostics),
     }))
+}
+
+fn slow_trace_candidate_to_json(candidate: &SlowTraceCandidate) -> Value {
+    json!({
+        "trace_id": candidate.trace_id,
+        "rank": candidate.rank,
+        "duration_ns": candidate.duration_ns,
+        "p95_duration_ns": candidate.p95_duration_ns,
+        "sample_count": candidate.sample_count,
+        "confidence": candidate.confidence.label(),
+        "reason": candidate.reason,
+        "span_count": candidate.span_count,
+        "service_count": candidate.service_count,
+        "error_span_count": candidate.error_span_count,
+        "diagnostics_count": candidate.diagnostics_count,
+        "service_candidates": candidate
+            .service_candidates
+            .iter()
+            .map(service_slow_candidate_to_json)
+            .collect::<Vec<_>>(),
+    })
+}
+
+fn service_slow_candidate_to_json(candidate: &ServiceSlowCandidate) -> Value {
+    json!({
+        "service_name": candidate.service_name,
+        "span_time_ns": candidate.span_time_ns,
+        "max_span_duration_ns": candidate.max_span_duration_ns,
+        "span_count": candidate.span_count,
+        "error_span_count": candidate.error_span_count,
+    })
+}
+
+fn error_trace_candidate_to_json(candidate: &ErrorTraceCandidate) -> Value {
+    json!({
+        "trace_id": candidate.trace_id,
+        "error_span_count": candidate.error_span_count,
+        "confidence": candidate.confidence.label(),
+        "earliest_error_span": error_span_candidate_to_json(&candidate.earliest_error_span),
+        "top_error_span": error_span_candidate_to_json(&candidate.top_error_span),
+        "error_spans": candidate
+            .error_spans
+            .iter()
+            .map(error_span_candidate_to_json)
+            .collect::<Vec<_>>(),
+        "explanation": candidate.explanation,
+    })
+}
+
+fn error_span_candidate_to_json(candidate: &ErrorSpanCandidate) -> Value {
+    json!({
+        "span_id": candidate.span_id,
+        "parent_span_id": candidate.parent_span_id,
+        "service_name": candidate.service_name,
+        "name": candidate.name,
+        "depth": candidate.depth,
+        "start_ns": candidate.start_ns,
+        "duration_ns": candidate.duration_ns,
+        "signals": candidate.signals,
+    })
 }
 
 fn critical_path_segment_to_json(segment: &CriticalPathSegment) -> Value {

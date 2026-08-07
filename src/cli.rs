@@ -7,6 +7,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use crate::analysis::annotations::annotate_trace_spans;
 use crate::analysis::classification::classify_trace_spans;
 use crate::analysis::critical_path::analyze_critical_path;
+use crate::analysis::detect::analyze_detect;
 use crate::analysis::duration::analyze_trace_duration;
 use crate::analysis::summary::{TraceSummary, summarize};
 use crate::graph::trace_graph::TraceCollection;
@@ -14,13 +15,13 @@ use crate::input::otlp_json::parse_otlp_file;
 use crate::model::diagnostic::Severity;
 use crate::model::span::{TRACE_ID_LEN, normalize_hex_id};
 use crate::output::json::{
-    format_critical_path_json, format_list_traces_json, format_services_json, format_summary_json,
-    format_tree_json, format_validate_json,
+    format_critical_path_json, format_detect_json, format_list_traces_json, format_services_json,
+    format_summary_json, format_tree_json, format_validate_json,
 };
 use crate::output::style::{ColorMode, TextStyle};
 use crate::output::text::{
-    format_critical_path, format_list_traces, format_services, format_summary, format_tree,
-    format_validate,
+    format_critical_path, format_detect, format_list_traces, format_services, format_summary,
+    format_tree, format_validate,
 };
 
 #[derive(Debug, Parser)]
@@ -76,6 +77,20 @@ enum Commands {
         /// Sort metric.
         #[arg(long, value_enum, default_value_t = TraceSort::Duration)]
         sort: TraceSort,
+
+        /// Output format.
+        #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+        output: OutputFormat,
+    },
+
+    /// Detect common performance and error candidates across traces.
+    Detect {
+        /// Path to an OTLP JSON trace file.
+        file: PathBuf,
+
+        /// Maximum number of candidates to print per category.
+        #[arg(long, default_value_t = 5)]
+        limit: usize,
 
         /// Output format.
         #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
@@ -222,6 +237,30 @@ pub fn run() -> Result<ExitCode> {
                     print!("{}", format_list_traces(&file, &traces, limit, text_style))
                 }
                 OutputFormat::Json => print!("{}", format_list_traces_json(&traces, limit)),
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        Commands::Detect {
+            file,
+            limit,
+            output,
+        } => {
+            if limit == 0 {
+                return Err(anyhow!("--limit must be greater than 0"));
+            }
+
+            let collection = load_collection(&file)?;
+            ensure_has_spans(&collection)?;
+            let analysis = analyze_detect(&collection, limit);
+
+            match output {
+                OutputFormat::Text => {
+                    print!(
+                        "{}",
+                        format_detect(&file, &analysis, &collection, text_style)
+                    )
+                }
+                OutputFormat::Json => print!("{}", format_detect_json(&analysis, &collection)),
             }
             Ok(ExitCode::SUCCESS)
         }

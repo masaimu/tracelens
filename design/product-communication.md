@@ -26,6 +26,8 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 - OpenTelemetry / OTLP JSON / OTLP JSONL
 - critical path
 - service self time
+- slow/error candidates
+- confidence markers
 - diagnostics
 - script-friendly JSON
 - CI-friendly

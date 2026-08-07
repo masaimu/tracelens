@@ -52,7 +52,30 @@ Why it matters:
 
 You usually do not want to open every trace. Start with the slowest or riskiest candidate.
 
-## 3. Inspect the Span Tree
+## 3. Detect Slow and Error Candidates
+
+Use this when you want `tracelens` to suggest where to look first.
+
+```bash
+tracelens detect traces.json --limit 5
+```
+
+What to look for:
+
+- slow trace candidates
+- `sample_count` and `p95` duration reference
+- `confidence`
+- service candidates inside each slow trace
+- error trace candidates
+- earliest error span
+- topologically higher error span
+- error signals such as OTLP ERROR, HTTP 5xx, gRPC/RPC non-OK, or exception events
+
+Why it matters:
+
+`detect` turns raw trace lists into triage hints. It is intentionally conservative: low sample counts lower confidence, and current output is a candidate list rather than a final root-cause verdict.
+
+## 4. Inspect the Span Tree
 
 Use this when you want to understand parent-child structure and service boundaries.
 
@@ -74,7 +97,7 @@ Why it matters:
 
 The tree view helps you see whether the trace shape matches the system behavior you expected.
 
-## 4. Explain Service-level Time
+## 5. Explain Service-level Time
 
 Use this when the main question is "which service contributed most of the time?"
 
@@ -95,7 +118,7 @@ Why it matters:
 
 Raw span duration can be misleading when spans nest or overlap. `self_time` removes directly covered child intervals so the service contribution is easier to reason about.
 
-## 5. Explain the Critical Path
+## 6. Explain the Critical Path
 
 Use this when the main question is "what blocked the end-to-end request?"
 
@@ -116,13 +139,14 @@ Why it matters:
 
 The slowest raw span is not always the most useful answer. The critical path explains how the root span interval is attributed across nested and concurrent child spans.
 
-## 6. Keep CI Logs Clean
+## 7. Keep CI Logs Clean
 
 Use this when you want trace checks in CI, scripts, or automation.
 
 ```bash
 tracelens --color never validate traces.json
 tracelens critical-path traces.json --trace-id <trace-id> --output json
+tracelens detect traces.json --output json
 ```
 
 What to look for:
@@ -130,13 +154,14 @@ What to look for:
 - nonzero exit status in strict validation
 - JSON fields under `diagnostics`
 - JSON fields under `critical_path`
+- JSON fields under `slow_traces` and `error_traces`
 - JSON fields under `annotations`
 
 Why it matters:
 
 `--color never` avoids ANSI escapes in logs. `--output json` gives scripts stable structured data.
 
-## 7. Review Async and Linked Work Safely
+## 8. Review Async and Linked Work Safely
 
 Use this when a trace includes producer/consumer spans, messaging attributes, or span links.
 
@@ -163,6 +188,7 @@ Async traces can be easy to over-interpret. `tracelens` annotates related work w
 | --- | --- |
 | Is this file usable? | `validate` |
 | Which trace should I inspect first? | `summary` or `list-traces` |
+| Which traces look slow or erroneous? | `detect` |
 | What is the parent-child shape? | `tree` |
 | Which service spent the most own time? | `services` |
 | What blocked the root span? | `critical-path` |

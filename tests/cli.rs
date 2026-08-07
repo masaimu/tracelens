@@ -279,6 +279,90 @@ fn services_outputs_json() {
 }
 
 #[test]
+fn detect_outputs_chinese_explanations() {
+    let fixture = fixture("otlp-detect.json");
+    let output = tracelens()
+        .args([
+            "--color",
+            "never",
+            "detect",
+            fixture.as_str(),
+            "--limit",
+            "2",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("Detect 检测概览"));
+    assert!(stdout.contains("样本数: 6"));
+    assert!(stdout.contains("慢请求候选"));
+    assert!(stdout.contains("service candidates"));
+    assert!(stdout.contains("checkout-service"));
+    assert!(stdout.contains("错误传播候选"));
+    assert!(stdout.contains("earliest:"));
+    assert!(stdout.contains("top:"));
+    assert!(stdout.contains("status_code_error(OTLP ERROR)"));
+    assert!(stdout.contains("http_5xx(HTTP 5xx)"));
+    assert!(stdout.contains("grpc_non_zero(gRPC 非 0)"));
+    assert!(stdout.contains("exception_event(exception 事件)"));
+    assert!(stdout.contains("N+1 检测"));
+}
+
+#[test]
+fn detect_outputs_json() {
+    let fixture = fixture("otlp-detect.json");
+    let output = tracelens()
+        .args(["detect", fixture.as_str(), "--output", "json"])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let value: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
+
+    assert_eq!(value["schema_version"], "0.1");
+    assert_eq!(value["command"], "detect");
+    assert_eq!(value["summary"]["sample_count"], 6);
+    assert_eq!(value["summary"]["sample_quality"], "limited");
+    assert_eq!(value["summary"]["p95_duration_ns"], 900_000_000_u64);
+    assert_eq!(
+        value["slow_traces"][0]["trace_id"],
+        "66666666666666666666666666666666"
+    );
+    assert_eq!(value["slow_traces"][0]["confidence"], "medium");
+    assert!(
+        value["slow_traces"][0]["service_candidates"]
+            .as_array()
+            .expect("service_candidates should be array")
+            .iter()
+            .any(|service| service["service_name"] == "checkout-service")
+    );
+    assert_eq!(value["error_traces"][0]["error_span_count"], 4);
+    assert_eq!(
+        value["error_traces"][0]["top_error_span"]["span_id"],
+        "6600000000000001"
+    );
+    let signals = value["error_traces"][0]["earliest_error_span"]["signals"]
+        .as_array()
+        .expect("signals should be array");
+    assert!(signals.iter().any(|signal| signal == "status_code_error"));
+}
+
+#[test]
+fn detect_rejects_zero_limit() {
+    let fixture = fixture("otlp-detect.json");
+    let output = tracelens()
+        .args(["detect", fixture.as_str(), "--limit", "0"])
+        .output()
+        .expect("command should run");
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf8");
+    assert!(stderr.contains("--limit must be greater than 0"));
+}
+
+#[test]
 fn strict_validate_fails_on_jsonl_invalid_line() {
     let fixture = fixture("otlp-jsonl-invalid-line.jsonl");
     let output = tracelens()

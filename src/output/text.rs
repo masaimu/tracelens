@@ -9,6 +9,10 @@ use crate::analysis::classification::{ParentRelation, SiblingRelation, TraceClas
 use crate::analysis::critical_path::{
     CriticalPathAnalysis, CriticalPathSegment, CriticalPathSpanTotal, CriticalPathStatus,
 };
+use crate::analysis::detect::{
+    Confidence, DetectAnalysis, ErrorSpanCandidate, SampleQuality, ServiceSlowCandidate,
+    SlowTraceCandidate,
+};
 use crate::analysis::duration::{ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
 use crate::graph::trace_graph::{TraceCollection, TraceGraph};
@@ -367,6 +371,114 @@ pub fn format_services(
     output
 }
 
+pub fn format_detect(
+    path: &Path,
+    analysis: &DetectAnalysis,
+    collection: &TraceCollection,
+    style: TextStyle,
+) -> String {
+    let mut output = String::new();
+
+    writeln!(output, "File: {}", path.display()).expect("write to string");
+    writeln!(output, "{}", style.section("Detect 检测概览")).expect("write to string");
+    writeln!(
+        output,
+        "traces: {}  spans: {}  diagnostics: {}  limit: {}",
+        analysis.summary.trace_count,
+        analysis.summary.span_count,
+        style_count_by_risk(style, analysis.summary.diagnostics_count),
+        analysis.limit
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "样本数: {}  样本质量: {}  p95 耗时参考: {}",
+        analysis.summary.sample_count,
+        style_sample_quality(style, analysis.summary.sample_quality),
+        format_optional_duration_styled(style, analysis.summary.p95_duration_ns)
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "慢请求候选: {}  错误 trace 候选: {}  错误 span: {}",
+        style_count_by_risk(style, analysis.summary.slow_trace_candidate_count),
+        style_count_by_risk(style, analysis.summary.error_trace_candidate_count),
+        style_count_by_risk(style, analysis.summary.error_span_count)
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted(
+            "说明：detect 输出的是候选问题和证据，不是最终根因结论；样本数不足时会降低 confidence。"
+        )
+    )
+    .expect("write to string");
+
+    if !analysis.notes.is_empty() {
+        writeln!(output).expect("write to string");
+        writeln!(output, "{}", style.section("注意事项")).expect("write to string");
+        for note in &analysis.notes {
+            writeln!(output, "- {}", style.warning(localize_detect_note(note)))
+                .expect("write to string");
+        }
+    }
+
+    writeln!(output).expect("write to string");
+    writeln!(output, "{}", style.section("慢请求候选")).expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("说明：这里按 trace 的端到端耗时排序，并列出每条慢 trace 内最值得优先查看的 service candidates。")
+    )
+    .expect("write to string");
+    write_slow_trace_candidates(&mut output, &analysis.slow_traces, style);
+
+    writeln!(output).expect("write to string");
+    writeln!(output, "{}", style.section("错误传播候选")).expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("说明：这里会识别 OTLP status=ERROR、HTTP 5xx、gRPC/RPC 非 OK，以及 exception event；earliest 表示时间上最早看到的错误，top 表示拓扑上更高层的错误 span。")
+    )
+    .expect("write to string");
+    write_error_trace_candidates(&mut output, &analysis.error_traces, style);
+
+    writeln!(output).expect("write to string");
+    writeln!(output, "{}", style.section("字段说明：")).expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("- confidence：当前检测结果的置信度。low 通常表示样本太少，只能作为线索；medium/high 可以作为优先排查依据。")
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("- service candidates：慢 trace 中按 span_time 排序的服务候选，帮助定位下一步该看哪个服务。")
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("- signals：错误判定信号，例如 status_code_error、http_5xx、grpc_non_zero、rpc_non_ok、exception_event。")
+    )
+    .expect("write to string");
+
+    if !collection.diagnostics.is_empty() {
+        writeln!(output).expect("write to string");
+        writeln!(
+            output,
+            "{}",
+            style.warning("数据诊断：下面的问题会影响检测结果的可信度，需要结合候选问题一起看。")
+        )
+        .expect("write to string");
+        write_diagnostics(&mut output, &collection.diagnostics, style);
+    }
+
+    output
+}
+
 pub fn format_critical_path(
     duration: &TraceDurationAnalysis,
     critical_path: &CriticalPathAnalysis,
@@ -477,6 +589,216 @@ pub fn format_critical_path(
     }
 
     output
+}
+
+fn write_slow_trace_candidates(
+    output: &mut String,
+    candidates: &[SlowTraceCandidate],
+    style: TextStyle,
+) {
+    if candidates.is_empty() {
+        writeln!(output, "(no slow trace candidates)").expect("write to string");
+        return;
+    }
+
+    writeln!(
+        output,
+        "{}",
+        style.table_header(
+            "rank  trace_id                          duration  confidence  spans  services  errors  diagnostics"
+        )
+    )
+    .expect("write to string");
+
+    for candidate in candidates {
+        writeln!(
+            output,
+            "{:>4}  {}  {:>10}  {:>10}  {:>5}  {:>8}  {:>6}  {:>11}",
+            candidate.rank,
+            style.identifier(&candidate.trace_id),
+            style.duration(format_duration(candidate.duration_ns)),
+            style_confidence(style, candidate.confidence),
+            candidate.span_count,
+            candidate.service_count,
+            style_count_by_risk(style, candidate.error_span_count),
+            style_count_by_risk(style, candidate.diagnostics_count)
+        )
+        .expect("write to string");
+        writeln!(
+            output,
+            "      解释：{}",
+            slow_candidate_explanation(candidate, style)
+        )
+        .expect("write to string");
+        write_service_candidates(output, &candidate.service_candidates, style);
+    }
+}
+
+fn write_service_candidates(
+    output: &mut String,
+    candidates: &[ServiceSlowCandidate],
+    style: TextStyle,
+) {
+    if candidates.is_empty() {
+        return;
+    }
+
+    writeln!(output, "      service candidates:").expect("write to string");
+    for service in candidates {
+        writeln!(
+            output,
+            "      - [{}] span_time={} max_span={} spans={} errors={}",
+            style.service(&service.service_name),
+            style.duration(format_duration(service.span_time_ns)),
+            style.duration(format_duration(service.max_span_duration_ns)),
+            service.span_count,
+            style_count_by_risk(style, service.error_span_count)
+        )
+        .expect("write to string");
+    }
+}
+
+fn write_error_trace_candidates(
+    output: &mut String,
+    candidates: &[crate::analysis::detect::ErrorTraceCandidate],
+    style: TextStyle,
+) {
+    if candidates.is_empty() {
+        writeln!(output, "(no error trace candidates)").expect("write to string");
+        return;
+    }
+
+    for candidate in candidates {
+        writeln!(
+            output,
+            "- trace_id={}  error_spans={}  confidence={}",
+            style.identifier(&candidate.trace_id),
+            style_count_by_risk(style, candidate.error_span_count),
+            style_confidence(style, candidate.confidence)
+        )
+        .expect("write to string");
+        writeln!(
+            output,
+            "  earliest: {}",
+            format_error_span_candidate(&candidate.earliest_error_span, style)
+        )
+        .expect("write to string");
+        writeln!(
+            output,
+            "  top:      {}",
+            format_error_span_candidate(&candidate.top_error_span, style)
+        )
+        .expect("write to string");
+        writeln!(
+            output,
+            "  signals: {}",
+            aggregate_error_signals(candidate, style)
+        )
+        .expect("write to string");
+        writeln!(output, "  error spans:").expect("write to string");
+        for span in &candidate.error_spans {
+            writeln!(output, "  - {}", format_error_span_candidate(span, style))
+                .expect("write to string");
+        }
+    }
+}
+
+fn format_error_span_candidate(candidate: &ErrorSpanCandidate, style: TextStyle) -> String {
+    format!(
+        "[{}] {} span_id={} depth={} duration={} signals={}",
+        style.service(&candidate.service_name),
+        candidate.name,
+        style.identifier(&candidate.span_id),
+        candidate.depth,
+        style.duration(format_duration(candidate.duration_ns)),
+        candidate
+            .signals
+            .iter()
+            .map(|signal| localize_error_signal(signal))
+            .collect::<Vec<_>>()
+            .join(",")
+    )
+}
+
+fn slow_candidate_explanation(candidate: &SlowTraceCandidate, style: TextStyle) -> String {
+    if candidate.sample_count < 5 {
+        return style.warning(format!(
+            "当前样本数只有 {}，这条 trace 耗时最高，但只能低置信度作为排查线索。",
+            candidate.sample_count
+        ));
+    }
+
+    match candidate.p95_duration_ns {
+        Some(p95) if candidate.duration_ns >= p95 => format!(
+            "耗时 {} 已达到或超过当前样本 p95 参考值 {}。",
+            style.duration(format_duration(candidate.duration_ns)),
+            style.duration(format_duration(p95))
+        ),
+        Some(p95) => format!(
+            "按耗时排序进入候选；当前样本 p95 参考值为 {}。",
+            style.duration(format_duration(p95))
+        ),
+        None => "当前没有可用 p95 参考值，只按耗时排序。".to_string(),
+    }
+}
+
+fn style_confidence(style: TextStyle, confidence: Confidence) -> String {
+    match confidence {
+        Confidence::Low => style.warning(confidence.label()),
+        Confidence::Medium => style.concurrent(confidence.label()),
+        Confidence::High => style.error(confidence.label()),
+    }
+}
+
+fn style_sample_quality(style: TextStyle, quality: SampleQuality) -> String {
+    match quality {
+        SampleQuality::Insufficient => style.warning(quality.label()),
+        SampleQuality::Limited => style.concurrent(quality.label()),
+        SampleQuality::Broad => style.ok(quality.label()),
+    }
+}
+
+fn localize_detect_note(note: &str) -> String {
+    match note {
+        "trace sample count is below 5; slow-trace findings are low-confidence candidates" => {
+            "trace 样本数少于 5；慢请求检测只能作为低置信度候选。".to_string()
+        }
+        "trace sample count is below 20; percentile references are useful but still limited" => {
+            "trace 样本数少于 20；p95 参考值已经可用，但仍需要谨慎解读。".to_string()
+        }
+        "N+1 detection is intentionally deferred to the next M5 step to avoid early false positives" => {
+            "N+1 检测会在 M5 的下一步实现；第一版先避免过早引入误报。".to_string()
+        }
+        _ => note.to_string(),
+    }
+}
+
+fn localize_error_signal(signal: &str) -> String {
+    match signal {
+        "status_code_error" => "status_code_error(OTLP ERROR)".to_string(),
+        "http_5xx" => "http_5xx(HTTP 5xx)".to_string(),
+        "grpc_non_zero" => "grpc_non_zero(gRPC 非 0)".to_string(),
+        "rpc_non_ok" => "rpc_non_ok(RPC 非 OK)".to_string(),
+        "exception_event" => "exception_event(exception 事件)".to_string(),
+        _ => signal.to_string(),
+    }
+}
+
+fn aggregate_error_signals(
+    candidate: &crate::analysis::detect::ErrorTraceCandidate,
+    style: TextStyle,
+) -> String {
+    let signals = candidate
+        .error_spans
+        .iter()
+        .flat_map(|span| span.signals.iter())
+        .collect::<BTreeSet<_>>();
+
+    signals
+        .into_iter()
+        .map(|signal| style.warning(localize_error_signal(signal)))
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 fn write_critical_path_segments(

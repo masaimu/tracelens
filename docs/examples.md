@@ -47,6 +47,40 @@ Slowest traces:
 
 This is the fastest way to find a trace worth inspecting.
 
+## Detect Slow and Error Candidates
+
+```bash
+tracelens detect tests/fixtures/otlp-detect.json --limit 2
+```
+
+Useful output:
+
+```text
+Detect 检测概览
+traces: 6  spans: 9  diagnostics: 0  limit: 2
+样本数: 6  样本质量: limited  p95 耗时参考: 900.000ms
+慢请求候选: 2  错误 trace 候选: 1  错误 span: 4
+
+慢请求候选
+rank  trace_id                          duration  confidence  spans  services  errors  diagnostics
+   1  66666666666666666666666666666666   900.000ms      medium      4         4       4            0
+      service candidates:
+      - [checkout-service] span_time=900.000ms max_span=900.000ms spans=1 errors=1
+      - [payment-service] span_time=250.000ms max_span=250.000ms spans=1 errors=1
+```
+
+The same command also prints error evidence:
+
+```text
+错误传播候选
+- trace_id=66666666666666666666666666666666  error_spans=4  confidence=high
+  earliest: [checkout-service] GET /checkout span_id=6600000000000001 depth=0 duration=900.000ms signals=status_code_error(OTLP ERROR)
+  top:      [checkout-service] GET /checkout span_id=6600000000000001 depth=0 duration=900.000ms signals=status_code_error(OTLP ERROR)
+  signals: exception_event(exception 事件),grpc_non_zero(gRPC 非 0),http_5xx(HTTP 5xx),status_code_error(OTLP ERROR)
+```
+
+`detect` output is a candidate list. Use `tree`, `services`, or `critical-path` next when you need deeper evidence.
+
 ## Inspect a Span Tree
 
 ```bash
@@ -146,9 +180,7 @@ async / linked span：
 ## Produce JSON for Scripts
 
 ```bash
-tracelens critical-path tests/fixtures/otlp-semantic-annotations.json \
-  --trace-id DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD \
-  --output json
+tracelens detect tests/fixtures/otlp-detect.json --output json
 ```
 
 Useful JSON fields:
@@ -156,18 +188,24 @@ Useful JSON fields:
 ```json
 {
   "schema_version": "0.1",
-  "command": "critical-path",
-  "critical_path": {
-    "status": "available"
+  "command": "detect",
+  "summary": {
+    "sample_count": 6,
+    "sample_quality": "limited"
   },
-  "annotations": {
-    "counts": {
-      "client_server_pairs": 1,
-      "async_span_count": 2,
-      "linked_span_count": 1,
-      "messaging_span_count": 2
+  "slow_traces": [
+    {
+      "trace_id": "66666666666666666666666666666666",
+      "confidence": "medium"
     }
-  }
+  ],
+  "error_traces": [
+    {
+      "trace_id": "66666666666666666666666666666666",
+      "error_span_count": 4,
+      "confidence": "high"
+    }
+  ]
 }
 ```
 

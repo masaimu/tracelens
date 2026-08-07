@@ -294,6 +294,12 @@ crates/
 - N+1 模式检测。
 - 检测结果的 confidence 标记。
 
+### 阶段拆分
+
+- M5-A：先实现 `detect` 命令 MVP，覆盖慢 trace 候选、service candidates、错误信号候选、confidence、sample count、p95 参考值，以及 text/JSON 输出。
+- M5-B：继续实现 N+1 候选检测，按相似 child span 聚合，并引入 possible/high confidence 阈值。
+- M5-C：补充更完整的错误传播链展示和 service latency distribution，前提是不会削弱当前候选输出的可解释性。
+
 ### 验收标准
 
 - 慢请求检测能按 trace 和 service 输出候选问题。

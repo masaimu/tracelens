@@ -198,6 +198,91 @@ If a span has `messaging.*` attributes, it is marked as messaging-related.
 
 Messaging spans are not automatically treated as blocking causal paths because messaging semantics vary by system and instrumentation.
 
+## Detect Candidates
+
+`detect` suggests where to look first across a trace file.
+
+```bash
+tracelens detect traces.json --limit 5
+```
+
+The output is a candidate list, not a final root-cause verdict.
+
+### `sample_count`
+
+The number of traces with enough timing information to participate in duration-based detection.
+
+Low sample counts reduce confidence. For example, a trace can be the slowest one in a file with only a few samples, but that does not mean it is globally abnormal.
+
+### `sample_quality`
+
+The current sample-size label:
+
+- `insufficient`: fewer than 5 timed traces
+- `limited`: fewer than 20 timed traces
+- `broad`: 20 or more timed traces
+
+### `p95_duration_ns`
+
+The nearest-rank p95 duration reference for the current file.
+
+It is a local-file reference, not a production latency SLO.
+
+### `confidence`
+
+The confidence marker for a candidate:
+
+- `low`: useful as a hint only
+- `medium`: useful for prioritizing the next inspection step
+- `high`: strong signal in the current trace file
+
+### `slow_traces`
+
+Slow trace candidates are ranked by wall-clock duration.
+
+Each candidate includes:
+
+- `trace_id`
+- `rank`
+- `duration_ns`
+- `p95_duration_ns`
+- `sample_count`
+- `confidence`
+- `service_candidates`
+
+### `service_candidates`
+
+Services inside a slow trace ranked by `span_time_ns`.
+
+This helps answer:
+
+```text
+Which service should I inspect first inside this slow trace?
+```
+
+`span_time_ns` is the sum of span durations for that service in the trace. It is a triage hint, not the same as service self time.
+
+### `error_traces`
+
+Error trace candidates are traces where `tracelens` finds error signals.
+
+Current signals include:
+
+- OTLP `status.code == ERROR`
+- HTTP 5xx
+- gRPC/RPC non-OK status
+- exception events
+
+Each error trace includes:
+
+- `error_span_count`
+- `earliest_error_span`
+- `top_error_span`
+- `error_spans`
+- `confidence`
+
+`earliest_error_span` is the first error span by start time. `top_error_span` is the highest-level error span by trace topology. `error_spans` keeps the full evidence list so later error signals are not hidden when the earliest and top spans are the same.
+
 ## Diagnostics
 
 Diagnostics are warnings or errors about input quality or trace structure.
@@ -247,6 +332,9 @@ Useful top-level JSON areas:
 - `critical_path`
 - `classification`
 - `annotations`
+- `slow_traces`
+- `error_traces`
+- `notes`
 - `diagnostics`
 
 ## Color Output

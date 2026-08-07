@@ -14,16 +14,16 @@
 
 ## 当前快照
 
-- 更新时间：2026-08-06
-- 当前基线提交：`1d2b540`
-- 当前阶段：第五期本地性能测试机完成后
-- 当前整体进度：`53%`
+- 更新时间：2026-08-07
+- 当前基线提交：`6f215f1`（远端 main；工作区包含第六期和第七期待提交改动）
+- 当前阶段：第七期 GitHub Actions CI 质量门禁完成后
+- 当前整体进度：`60%`
 
 ```text
-[###########---------] 53%
+[############--------] 60%
 ```
 
-这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、服务维度 self time 分析，以及本地性能测试机；但关键路径、并发分类、错误传播、N+1、可视化、完整性能基线和发布分发，还没有完成。
+这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类，以及 GitHub Actions CI 质量门禁；但 client/server 与 async 标注、错误传播、N+1、可视化、完整性能基线和发布分发，还没有完成。
 
 ## 计算规则
 
@@ -51,23 +51,23 @@
 | M1：OTLP 输入解析 | 15% | 85% | 12.8% | JSON/JSONL、canonical model、events/links、宽容/strict 基础能力已完成；尚未用 5k-50k spans 样本验证 |
 | M2：Trace 索引与图构建 | 15% | 75% | 11.3% | trace 分组、parent-child、root/orphan/duplicate/missing parent/时间异常 diagnostics 已完成；跨服务边尚未单独显式统计 |
 | M3：基础 CLI 分析命令 | 15% | 95% | 14.3% | `validate`、`summary`、`list-traces`、`tree`、`--output json` 已完成；JSON schema 仍处于 `0.1` 可调整阶段 |
-| M4：耗时分析与关键路径 | 18% | 35% | 6.3% | 已完成 M4-A：wall-clock/root duration、span self time、服务维度 self time、`services` 命令；尚未完成 critical path、并发分类、client/server 与 async 标注 |
+| M4：耗时分析与关键路径 | 18% | 70% | 12.6% | 已完成 M4-A 和 M4-B：`services` 命令、wall-clock/root duration、span self time、服务维度 self time、串行/并发/nested/suspicious 分类、`critical-path` 命令；尚未完成 client/server span pair、async work 和 linked span 标注 |
 | M5：模式检测 | 12% | 0% | 0.0% | 未开始 |
 | M6：终端可视化 | 8% | 0% | 0.0% | 未开始 |
-| M7：性能、稳定性与自动化接口 | 7% | 40% | 2.8% | 已有测试、JSON 输出、本地 synthetic fixture 生成器和 benchmark runner；尚未完成 5k-50k 完整 P95 基线、稳定退出码规范文档 |
+| M7：性能、稳定性与自动化接口 | 7% | 50% | 3.5% | 已有测试、JSON 输出、本地 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path`，并新增 GitHub Actions CI 质量门禁；尚未完成 5k-50k 完整 P95 基线、稳定退出码规范文档 |
 | M8：HTML 报告 | 3% | 0% | 0.0% | 未开始 |
 | M9：发布与分发 | 2% | 10% | 0.2% | CLI 有版本号，已有英文/中文 README 和基础安装使用说明；尚未有 release artifact、checksum、发布流程 |
 
 当前合计：
 
 ```text
-5.0 + 12.8 + 11.3 + 14.3 + 6.3 + 0 + 0 + 2.8 + 0 + 0.2 = 52.7%
+5.0 + 12.8 + 11.3 + 14.3 + 12.6 + 0 + 0 + 3.5 + 0 + 0.2 = 59.7%
 ```
 
 四舍五入后记录为：
 
 ```text
-53%
+60%
 ```
 
 ## 原始需求满足度
@@ -82,19 +82,20 @@
 | 处理缺失 `parent_span_id` | 80% | root span 和 missing parent diagnostics 已支持 |
 | 处理跨服务 span | 45% | span 保留 `service_name`，tree 可展示跨服务结构；尚未统计 cross-service edges |
 | 处理孤儿 span | 85% | orphan span 不丢失，并在 tree/diagnostics 中展示 |
-| 计算端到端 duration | 70% | `services` 已分开展示 wall-clock duration 与唯一 root span duration；后续 critical path 还需复用该语义 |
-| 计算 critical path | 0% | 未开始 |
+| 计算端到端 duration | 75% | `services` 已分开展示 wall-clock duration 与唯一 root span duration；`critical-path` 已展示被选中 root span duration |
+| 计算 critical path | 78% | `critical-path` 已基于 parent-child 拓扑和时间区间输出关键路径片段和 span 聚合；多 root、无 root、child 超出 root 区间均有明确语义；重复 span ID 不会在关键路径汇总中被错误合并；client/server pair 与 async 标注尚未实现 |
 | 计算服务维度 self time | 65% | `services` 已按 service 聚合 self time，child 覆盖时间使用区间并集；后续需与 critical path 和可视化打通 |
-| 识别串行/并发 span | 0% | 未开始 |
+| 识别串行/并发 span | 75% | `critical-path` 输出 serial/concurrent/nested/suspicious 分类计数和明细；尚未在 timeline 可视化中复用 |
 | 检测慢请求 | 20% | 当前只能按 trace duration 排序；尚未有 service latency distribution、p95/p99/p999 |
 | 检测错误传播链 | 15% | 当前有 error span count 和 status/error 标记；尚未推断传播链 |
 | 检测 N+1 调用模式 | 0% | 未开始 |
 | 终端 ASCII flame graph/timeline | 0% | 未开始 |
 | 单页 HTML report | 0% | 未开始 |
-| 子命令式真实 CLI | 75% | `validate/summary/list-traces/tree/services` 已完成；后续还需要 `critical-path/detect/report` |
-| 核心单元测试 | 65% | 已有 17 个单元测试和 15 个 CLI 端到端测试；后续 critical path、detect、可视化还需要继续补 |
-| P95 样本处理耗时小于 2 秒 | 25% | 已有 synthetic fixture 生成器和 benchmark runner，并完成 5k smoke；尚未跑完整 5k-50k 多轮 P95 矩阵 |
-| 可脚本化 JSON 输出 | 60% | 基础命令和 `services` 已有 `--output json` 与 `schema_version: "0.1"`；schema 尚未稳定 |
+| 子命令式真实 CLI | 85% | `validate/summary/list-traces/tree/services/critical-path` 已完成；后续还需要 `detect/report` |
+| 核心单元测试 | 78% | 已有 27 个单元测试和 21 个 CLI 端到端测试；后续 detect、可视化还需要继续补 |
+| CI 检查与工程化质量门禁 | 55% | 已新增 GitHub Actions CI，在 push、pull request 和手动触发时运行格式化检查、测试、clippy 和构建；尚未配置分支保护和 release workflow |
+| P95 样本处理耗时小于 2 秒 | 30% | 已有 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path`，并完成 5k critical-path smoke；尚未跑完整 5k-50k 多轮 P95 矩阵 |
+| 可脚本化 JSON 输出 | 62% | 基础命令、`services` 和 `critical-path` 已有 `--output json` 与 `schema_version: "0.1"`；schema 尚未稳定 |
 | 远程下载使用 | 8% | 有版本号、本地构建、README 安装说明和使用示例；尚未发布 release artifact |
 
 ## 当前已具备的能力
@@ -107,6 +108,7 @@ tracelens summary <file>
 tracelens list-traces <file>
 tracelens tree <file> --trace-id <id>
 tracelens services <file> --trace-id <id>
+tracelens critical-path <file> --trace-id <id>
 ```
 
 当前输入能力：
@@ -159,39 +161,54 @@ tracelens services <file> --trace-id <id>
 - 服务维度 self time 聚合。
 - 服务维度 span time、child covered time、span count、error span count。
 - `services` 文本输出包含中文字段说明。
+- 基于 parent-child 拓扑和时间区间的关键路径计算。
+- 关键路径片段完整覆盖唯一 root span 区间，并发 child 窗口归因给结束最晚的 child。
+- 多 root 选择最长 root 并输出 note，同时展示被选中 root span 的 duration/service/name；无 root 输出 unavailable；wall-clock 大于 root 区间输出 note。
+- 重复 span ID 参与关键路径时，span 汇总按内部 span 实例聚合，不把不同实例错误合并。
+- serial/concurrent/nested/suspicious span 分类计数与明细。
+- `critical-path` 文本输出包含中文字段说明，已知 critical-path note 在文本输出中中文化，JSON 输出保持结构化。
 
 当前性能验证能力：
 
 - synthetic OTLP JSON fixture 生成器。
 - synthetic OTLP JSONL fixture 生成器。
 - 本地 benchmark runner。
+- benchmark runner 默认覆盖 `critical-path` 命令。
+- 5k spans wide/overlap critical-path smoke 已跑通。
 - wall time 统计。
 - Unix/macOS max RSS 统计。
 - JSON 和 Markdown benchmark 报告。
 - `perf-data/` 和 `perf-results/` 被 `.gitignore` 忽略。
+
+当前自动化能力：
+
+- GitHub Actions CI workflow。
+- push、pull request 和手动触发。
+- CI 运行 `cargo fmt --check`、`cargo test --locked`、`cargo clippy --locked --all-targets -- -D warnings`、`cargo build --locked`。
+- CI 使用只读仓库权限。
+- CI 缓存 Cargo registry、Cargo git db 和 `target/`。
 
 当前开源展示能力：
 
 - 默认英文 README。
 - 中文 README。
 - 本地 SVG logo。
+- README CI 状态徽章。
 - 当前能力、安装方式、使用示例和路线图说明。
 
 当前验证能力：
 
+- `cargo fmt`。
 - `cargo test`。
 - `cargo clippy --all-targets -- -D warnings`。
 - `cargo build`。
-- 17 个单元测试。
-- 15 个 CLI 端到端测试。
+- 27 个单元测试。
+- 21 个 CLI 端到端测试。
 
 ## 当前主要缺口
 
-下一批最重要的缺口仍在 M4：
+下一批最重要的缺口仍在 M4-C：
 
-- 分类 serial、concurrent、nested、suspicious spans。
-- 设计 critical path 算法。
-- 实现 `critical-path` 命令。
 - 标注 client/server span pair。
 - 标注 async work 和 linked span。
 
@@ -199,7 +216,7 @@ tracelens services <file> --trace-id <id>
 
 - M5：慢请求、错误传播链、N+1 检测。
 - M6：ASCII timeline/flame graph。
-- M7：完整 5k-50k 多轮 P95 性能基线、稳定 JSON schema、退出码规范。
+- M7：完整 5k-50k 多轮 P95 性能基线、稳定 JSON schema、退出码规范、可选分支保护规则。
 - M8：HTML report。
 - M9：GitHub Releases、跨平台 artifact、checksum、发布流程。
 

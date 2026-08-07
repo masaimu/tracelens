@@ -269,7 +269,7 @@ crates/
 
 - child span 重叠时，self time 使用区间并集计算，不直接累加 child duration。
 - wall-clock duration 和 root span duration 分开展示。
-- 多 root、孤儿 span、child 超出 parent 时间范围时有清晰 diagnostics。
+- 多 root、孤儿 span、child 超出 parent 时间范围时有清晰 diagnostics；多 root 计算关键路径时必须展示被选中的 root span 信息。
 - client/server span pair 不被强行合并为一个耗时节点。
 - span links 不进入阻塞关键路径。
 
@@ -347,6 +347,7 @@ crates/
 - 样本 benchmark。
 - P95 处理耗时统计。
 - 本地性能测试机，包括 synthetic fixture 生成器和 benchmark runner。
+- GitHub Actions CI 质量门禁。
 - 稳定的 JSON 输出结构。
 - 错误码和退出码规范。
 - 核心模块单元测试。
@@ -355,6 +356,8 @@ crates/
 ### 验收标准
 
 - 生成的大规模 synthetic fixture 和本地 benchmark 结果不进入 Git。
+- benchmark runner 应覆盖 `critical-path` 等核心分析命令，避免新增命令绕过性能验收。
+- GitHub Actions 在 push 和 pull request 时运行格式化检查、测试、clippy 和构建。
 - 对 5k 到 50k spans 的样本，解析、建图和核心分析 P95 小于 2 秒。
 - `validate`、`summary`、`tree`、`critical-path`、`detect` 有端到端测试。
 - JSON 输出包含 `schema_version`。
@@ -365,6 +368,7 @@ crates/
 - 不把 HTML report 纳入核心性能目标。
 - 不承诺 JSON schema 进入 1.0 前完全稳定。
 - 不实现长期存储。
+- 不在 M7 中发布 release artifact。
 
 ## 里程碑 M8：HTML 报告
 

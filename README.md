@@ -12,13 +12,19 @@
   <a href="README.zh-CN.md">中文</a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/masaimu/tracelens/actions/workflows/ci.yml">
+    <img src="https://github.com/masaimu/tracelens/actions/workflows/ci.yml/badge.svg" alt="CI status" />
+  </a>
+</p>
+
 ## What Is tracelens?
 
 `tracelens` is a command-line tool for exploring OpenTelemetry trace exports on your local machine.
 
 It is built for the moments when you have a trace file, not a running trace backend. Give `tracelens` an OTLP JSON or JSONL export, and it helps you validate the file, list traces, inspect span trees, and produce script-friendly JSON output.
 
-The project is still early. The current codebase is a foundation CLI, not a full trace backend and not yet a critical-path analyzer.
+The project is still early. The current codebase is a local analysis CLI, not a full trace backend.
 
 ## Why It Exists
 
@@ -54,6 +60,7 @@ tracelens summary <file>
 tracelens list-traces <file>
 tracelens tree <file> --trace-id <id>
 tracelens services <file> --trace-id <id>
+tracelens critical-path <file> --trace-id <id>
 ```
 
 ## Installation
@@ -110,6 +117,12 @@ Explain service-level self time for one trace:
 tracelens services tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D269B633813FC60C
 ```
 
+Show the critical path and span execution classification for one trace:
+
+```bash
+tracelens critical-path tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+```
+
 Produce JSON output:
 
 ```bash
@@ -154,13 +167,15 @@ Implemented:
 - OTLP JSON and JSONL parsing.
 - Basic trace graph construction.
 - Service-level self time analysis.
+- Critical path analysis based on parent-child topology and time intervals.
+- Serial, concurrent, nested, and suspicious span classification.
 - Validation diagnostics.
 - Text and JSON output.
 
 Not implemented yet:
 
-- Critical path analysis.
-- Serial versus concurrent span classification.
+- Client/server span pair annotation.
+- Async work and linked span annotation.
 - Slow request detection.
 - Error propagation analysis.
 - N+1 detection.

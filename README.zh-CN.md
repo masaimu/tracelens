@@ -12,13 +12,19 @@
   <a href="README.md">English</a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/masaimu/tracelens/actions/workflows/ci.yml">
+    <img src="https://github.com/masaimu/tracelens/actions/workflows/ci.yml/badge.svg" alt="CI 状态" />
+  </a>
+</p>
+
 ## tracelens 是什么？
 
 `tracelens` 是一个用于本地分析 OpenTelemetry Trace 导出文件的命令行工具。
 
 它面向一种很常见的场景：你手里有一份 trace 文件，但暂时没有可用的 Trace 后端。把 OTLP JSON 或 JSONL 文件交给 `tracelens`，它可以帮助你校验文件、列出 trace、查看 span 树，并输出适合脚本消费的 JSON。
 
-项目仍处在早期阶段。当前版本是基础 CLI，不是完整 Trace 后端，也还不是关键路径分析器。
+项目仍处在早期阶段。当前版本是本地分析 CLI，不是完整 Trace 后端。
 
 ## 为什么需要它？
 
@@ -54,6 +60,7 @@ tracelens summary <file>
 tracelens list-traces <file>
 tracelens tree <file> --trace-id <id>
 tracelens services <file> --trace-id <id>
+tracelens critical-path <file> --trace-id <id>
 ```
 
 ## 安装
@@ -110,6 +117,12 @@ tracelens tree tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D269B63
 tracelens services tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D269B633813FC60C
 ```
 
+查看某条 trace 的关键路径和 span 执行分类：
+
+```bash
+tracelens critical-path tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+```
+
 输出 JSON：
 
 ```bash
@@ -154,13 +167,15 @@ tracelens validate tests/fixtures/otlp-basic.json --strict
 - OTLP JSON 和 JSONL 解析。
 - 基础 trace graph 构建。
 - 服务维度 self time 分析。
+- 基于 parent-child 拓扑和时间区间的关键路径分析。
+- 串行、并发、nested、suspicious span 分类。
 - validation diagnostics。
 - 文本和 JSON 输出。
 
 尚未实现：
 
-- 关键路径分析。
-- 串行/并发 span 分类。
+- client/server span pair 标注。
+- async work 和 linked span 标注。
 - 慢请求检测。
 - 错误传播分析。
 - N+1 检测。

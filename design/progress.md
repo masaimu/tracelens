@@ -15,15 +15,15 @@
 ## 当前快照
 
 - 更新时间：2026-08-07
-- 当前基线提交：`d625121`（远端 main；工作区包含产品传播规约和首批产品传播文档待提交改动）
-- 当前阶段：第十二期产品传播文档首批落地后
+- 当前基线提交：`593f216`（远端 main；工作区包含第十三期 detect MVP 草稿）
+- 当前阶段：第十期 Benchmark Workflow 自动触发与 Actions summary 增强后
 - 当前整体进度：`66%`
 
 ```text
 [#############-------] 66%
 ```
 
-这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、手动性能 smoke benchmark，以及语义化彩色终端输出；但错误传播、N+1、ASCII timeline/flame graph、完整性能基线、CI/performance/comparison 等传播文档和发布分发，还没有完成。
+这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark，以及语义化彩色终端输出；但错误传播、N+1、ASCII timeline/flame graph、完整性能基线、CI/performance/comparison 等传播文档和发布分发，还没有完成。
 
 ## 计算规则
 
@@ -54,14 +54,14 @@
 | M4：耗时分析与关键路径 | 18% | 90% | 16.2% | 已完成 M4-A/M4-B/M4-C：`services`、`critical-path`、串行/并发/nested/suspicious 分类，以及 client/server span pair、async work、linked span 标注；后续仍需与 timeline/report 进一步联动 |
 | M5：模式检测 | 12% | 0% | 0.0% | 未开始 |
 | M6：终端可视化 | 8% | 15% | 1.2% | 已完成彩色终端输出语义层和 `--color` 控制；尚未实现 ASCII timeline/flame graph |
-| M7：性能、稳定性与自动化接口 | 7% | 60% | 4.2% | 已有测试、JSON 输出、本地 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path`，新增 CI、安全检查和手动 benchmark workflows，并支持脚本友好的 `--color never`；尚未完成 5k-50k 完整 P95 基线、稳定退出码规范文档 |
+| M7：性能、稳定性与自动化接口 | 7% | 62% | 4.3% | 已有测试、JSON 输出、本地 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path`，新增 CI、安全检查、自动/手动 benchmark workflows 和 Actions summary 报告，并支持脚本友好的 `--color never`；尚未完成 5k-50k 完整 P95 基线、稳定退出码规范文档 |
 | M8：HTML 报告 | 3% | 0% | 0.0% | 未开始 |
 | M9：发布与分发 | 2% | 25% | 0.5% | CLI 有版本号，已有英文/中文 README、基础安装使用说明、产品传播规约，以及 why/use-cases/examples/output-guide 首批传播文档；尚未有 release artifact、checksum、发布流程，CI/performance/comparison 文档也未补齐 |
 
 当前合计：
 
 ```text
-5.0 + 12.8 + 11.3 + 14.3 + 16.2 + 0 + 1.2 + 4.2 + 0 + 0.5 = 65.5%
+5.0 + 12.8 + 11.3 + 14.3 + 16.2 + 0 + 1.2 + 4.3 + 0 + 0.5 = 65.6%
 ```
 
 四舍五入后记录为：
@@ -93,8 +93,8 @@
 | 单页 HTML report | 0% | 未开始 |
 | 子命令式真实 CLI | 87% | `validate/summary/list-traces/tree/services/critical-path` 已完成，tree/critical-path 已补充语义标注；后续还需要 `detect/report` |
 | 核心单元测试 | 82% | 已有 30 个单元测试和 29 个 CLI 端到端测试；后续 detect、可视化还需要继续补 |
-| CI 检查与工程化质量门禁 | 70% | 已新增 GitHub Actions CI、安全检查和手动性能 benchmark workflow；尚未配置分支保护和 release workflow |
-| P95 样本处理耗时小于 2 秒 | 35% | 已有 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path`，支持通过 GitHub Actions 手动运行 smoke benchmark 并上传结果；尚未跑完整 5k-50k 多轮 P95 矩阵 |
+| CI 检查与工程化质量门禁 | 72% | 已新增 GitHub Actions CI、安全检查和自动/手动性能 benchmark workflow；Benchmark 会在 main 相关变更、定时和手动触发时运行，并展示 Actions summary；尚未配置分支保护和 release workflow |
+| P95 样本处理耗时小于 2 秒 | 36% | 已有 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path`，支持通过 GitHub Actions 自动/手动运行 smoke benchmark、展示 summary 并上传结果；尚未跑完整 5k-50k 多轮 P95 矩阵 |
 | 可脚本化 JSON 输出 | 70% | 基础命令、`services`、`tree` 和 `critical-path` 已有 `--output json` 与 `schema_version: "0.1"`，并输出结构化 annotations；`--output json` 不受彩色输出影响；schema 尚未稳定 |
 | 远程下载使用 | 12% | 有版本号、本地构建、README 安装说明、使用示例和首批产品传播文档；尚未发布 release artifact |
 
@@ -199,8 +199,8 @@ tracelens --color auto|always|never <command>
 - push、pull request 和手动触发。
 - CI 运行 `cargo fmt --check`、`cargo test --locked`、`cargo clippy --locked --all-targets -- -D warnings`、`cargo build --locked`。
 - security workflow 在依赖文件变化、每周定时和手动触发时运行 `cargo audit`。
-- benchmark workflow 支持手动输入 spans、traces、formats、shapes、commands 和 iterations。
-- benchmark workflow 上传 `perf-results/` artifact。
+- benchmark workflow 在 main 相关代码或工具变更时自动运行，也支持定时运行和手动输入 spans、traces、formats、shapes、commands 和 iterations。
+- benchmark workflow 将 Markdown 报告写入 Actions summary，并上传 `perf-results/` artifact。
 - CI 使用只读仓库权限。
 - workflows 缓存 Cargo registry、Cargo git db、`target/` 或 cargo-audit 相关目录。
 

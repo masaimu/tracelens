@@ -1,6 +1,19 @@
 name: Benchmark
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - Cargo.toml
+      - Cargo.lock
+      - src/**
+      - tests/fixtures/**
+      - tools/generate_synthetic_traces.py
+      - tools/run_perf_benchmark.py
+      - .github/workflows/benchmark.yml
+  schedule:
+    - cron: "37 3 * * 2"
   workflow_dispatch:
     inputs:
       spans:
@@ -65,19 +78,36 @@ jobs:
         run: python3 --version
 
       - name: Run benchmark
+        env:
+          BENCHMARK_SPANS: ${{ github.event.inputs.spans || '5000' }}
+          BENCHMARK_TRACES: ${{ github.event.inputs.traces || '20' }}
+          BENCHMARK_FORMATS: ${{ github.event.inputs.formats || 'json' }}
+          BENCHMARK_SHAPES: ${{ github.event.inputs.shapes || 'balanced,overlap' }}
+          BENCHMARK_COMMANDS: ${{ github.event.inputs.commands || 'validate,summary,list-traces,services,critical-path' }}
+          BENCHMARK_ITERATIONS: ${{ github.event.inputs.iterations || '1' }}
         run: |
           python3 tools/run_perf_benchmark.py \
-            --spans "${{ inputs.spans }}" \
-            --traces "${{ inputs.traces }}" \
-            --formats "${{ inputs.formats }}" \
-            --shapes "${{ inputs.shapes }}" \
-            --commands "${{ inputs.commands }}" \
-            --iterations "${{ inputs.iterations }}"
+            --spans "$BENCHMARK_SPANS" \
+            --traces "$BENCHMARK_TRACES" \
+            --formats "$BENCHMARK_FORMATS" \
+            --shapes "$BENCHMARK_SHAPES" \
+            --commands "$BENCHMARK_COMMANDS" \
+            --iterations "$BENCHMARK_ITERATIONS"
+
+      - name: Add benchmark summary
+        if: always()
+        run: |
+          latest_report="$(find perf-results -maxdepth 1 -name '*.md' -print | sort | tail -n 1)"
+          if [ -n "$latest_report" ]; then
+            cat "$latest_report" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No benchmark report was generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload benchmark reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark-results
+          name: benchmark-results-${{ github.run_id }}
           path: perf-results/
-          if-no-files-found: error
+          if-no-files-found: warn

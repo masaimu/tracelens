@@ -15,15 +15,15 @@
 - `.github/workflows/security.yml`。
 - `.github/workflows/benchmark.yml`。
 - 依赖安全检查可以定时、手动、以及在依赖文件变更时运行。
-- 性能 smoke benchmark 可以在 GitHub Actions 页面手动触发。
-- benchmark 结果以 artifact 形式保存，便于后续对比。
+- 性能 smoke benchmark 可以在 GitHub Actions 页面手动触发，也可以在 main 上相关代码或 benchmark 工具变更时自动运行。
+- benchmark 结果以 Actions summary 和 artifact 形式保存，便于后续对比。
 
 ## 本期用户价值
 
 第七期已经有基础 CI，可以防止格式、测试、lint 和构建回归。但 Rust CLI 项目还需要两类更专门的自动化：
 
 - 依赖安全风险不一定伴随代码变更出现，需要定期检查。
-- 性能 benchmark 不适合每次 PR 必跑，但需要可以随时在远端复现 smoke 结果。
+- 性能 benchmark 不适合每次 PR 必跑，但需要可以随时在远端复现 smoke 结果，并在 main 上相关实现变更后留下可见的 benchmark run。
 
 本期完成后，项目会具备更清晰的 Workflow 分层：
 
@@ -65,6 +65,8 @@ Workflow 文件：
 
 触发方式：
 
+- `push` 到 `main`，且 Rust 代码、fixture、benchmark 工具、Cargo 文件或 benchmark workflow 自身变化。
+- 每周二 UTC 03:37 定时运行。
 - `workflow_dispatch` 手动触发。
 
 手动输入参数：
@@ -89,6 +91,8 @@ python3 tools/run_perf_benchmark.py \
 ```
 
 benchmark workflow 会上传 `perf-results/` 作为 artifact。生成的 `perf-data/` 和 `perf-results/` 仍然不进入 Git。
+
+benchmark workflow 也会把最新 Markdown benchmark 报告写入 `$GITHUB_STEP_SUMMARY`，这样可以直接在 GitHub Actions run 页面查看 smoke 结果。
 
 ## 本期范围
 
@@ -119,7 +123,7 @@ benchmark workflow 会上传 `perf-results/` 作为 artifact。生成的 `perf-d
 - 不上传 checksum。
 - 不配置 GitHub secrets。
 - 不配置分支保护规则。
-- 不把 benchmark workflow 设为 push/PR 必跑。
+- 不把 benchmark workflow 设为 PR 必跑。
 - 不把 benchmark 结果提交到 Git。
 
 原因：
@@ -135,8 +139,11 @@ benchmark workflow 会上传 `perf-results/` 作为 artifact。生成的 `perf-d
 - security workflow 支持依赖文件变更触发、定时触发和手动触发。
 - security workflow 运行 `cargo audit`。
 - 仓库包含 `.github/workflows/benchmark.yml`。
+- benchmark workflow 支持 main 上相关代码或工具变更时自动运行。
+- benchmark workflow 支持每周定时运行。
 - benchmark workflow 支持手动输入 spans、traces、formats、shapes、commands 和 iterations。
 - benchmark workflow 运行 `tools/run_perf_benchmark.py`。
+- benchmark workflow 将 Markdown 报告写入 Actions summary。
 - benchmark workflow 上传 `perf-results/` artifact。
 - 两个 workflow 都使用只读仓库权限。
 - `design/progress.md` 更新 M7 进度和当前能力。
@@ -166,9 +173,9 @@ benchmark workflow 会上传 `perf-results/` 作为 artifact。生成的 `perf-d
 - security workflow 使用只读 `contents: read` 权限。
 - security workflow 安装并运行 `cargo audit`。
 - 新增 `.github/workflows/benchmark.yml`。
-- benchmark workflow 支持手动输入 `spans`、`traces`、`formats`、`shapes`、`commands` 和 `iterations`。
+- benchmark workflow 支持 main 上相关代码或工具变更时自动运行、每周定时运行，以及手动输入 `spans`、`traces`、`formats`、`shapes`、`commands` 和 `iterations`。
 - benchmark workflow 运行 `tools/run_perf_benchmark.py`。
-- benchmark workflow 上传 `perf-results/` artifact。
+- benchmark workflow 将最新 Markdown 报告写入 Actions summary，并上传 `perf-results/` artifact。
 - `design/milestones.md` 将安全检查和手动性能 smoke benchmark 补充到 M7。
 - `design/progress.md` 将 M7 完成度从 `53%` 更新为 `60%`，整体进度从 `61%` 更新为 `62%`。
 

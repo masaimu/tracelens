@@ -16,6 +16,12 @@
   <a href="https://github.com/masaimu/tracelens/actions/workflows/ci.yml">
     <img src="https://github.com/masaimu/tracelens/actions/workflows/ci.yml/badge.svg" alt="CI status" />
   </a>
+  <a href="https://github.com/masaimu/tracelens/actions/workflows/benchmark.yml">
+    <img src="https://github.com/masaimu/tracelens/actions/workflows/benchmark.yml/badge.svg" alt="Benchmark status" />
+  </a>
+  <a href="https://github.com/masaimu/tracelens/actions/workflows/security.yml">
+    <img src="https://github.com/masaimu/tracelens/actions/workflows/security.yml/badge.svg" alt="Security status" />
+  </a>
 </p>
 
 ## What Is tracelens?

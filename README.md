@@ -73,7 +73,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - Parent-child span graph construction.
 - Service-level self time analysis.
 - Critical path analysis and span execution classification.
-- ASCII timeline output for a single trace, including critical path, error, orphan, and overlap markers.
+- ASCII timeline output for a single trace, including critical path, error, orphan, and overlap markers, with two layouts: a horizontal time bar (`--mode bar`, default) and a vertical flame view (`--mode flame`). Large traces can be folded with `--max-rows` so the terminal stays readable.
 - Detect output for slow trace candidates, service latency distribution, error propagation chains, error-signal candidates, and N+1 candidates.
 - Client/server, async work, messaging, and linked span annotations in tree and critical-path output.
 - OpenTelemetry metadata preservation for schema URLs, trace state, flags, status messages, dropped counts, and nested attribute values.
@@ -165,6 +165,13 @@ Draw an ASCII timeline for one trace:
 tracelens timeline tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 ```
 
+Draw a vertical flame view of the same trace, or fold a large trace:
+
+```bash
+tracelens timeline tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC --mode flame
+tracelens timeline tests/fixtures/otlp-n-plus-one.json --trace-id 88888888888888888888888888888888 --max-rows 10
+```
+
 Detect slow trace, error, and N+1 candidates:
 
 ```bash
@@ -240,7 +247,7 @@ Implemented:
 - Basic trace graph construction.
 - Service-level self time analysis.
 - Critical path analysis based on parent-child topology and time intervals.
-- ASCII timeline output for trace time structure.
+- ASCII timeline output for trace time structure, in horizontal bar and vertical flame layouts, with large-trace folding.
 - Serial, concurrent, nested, and suspicious span classification.
 - Detect output for slow trace candidates, service latency distribution, error propagation chains, error-signal candidates, and N+1 candidates.
 - Client/server span pair annotation.
@@ -253,7 +260,6 @@ Implemented:
 
 Not implemented yet:
 
-- ASCII flame graph.
 - HTML report.
 - Release artifacts for remote download.
 

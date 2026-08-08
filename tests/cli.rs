@@ -986,6 +986,203 @@ fn timeline_rejects_invalid_width() {
 }
 
 #[test]
+fn timeline_flame_mode_renders_indented_rows_without_axis() {
+    let fixture = fixture("otlp-concurrent.json");
+    let output = tracelens()
+        .args([
+            "--color",
+            "never",
+            "timeline",
+            fixture.as_str(),
+            "--trace-id",
+            "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+            "--mode",
+            "flame",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(!contains_ansi(&stdout));
+    assert!(stdout.contains("Trace Timeline (flame)"));
+    assert!(stdout.contains("flame 视图按调用深度纵向缩进"));
+    // flame layout has no horizontal time axis or ASCII bar fills.
+    assert!(!stdout.contains("axis: 0ns"));
+    assert!(!stdout.contains("=============="));
+    assert!(!stdout.contains("#############"));
+    // child spans still appear, indented by depth.
+    assert!(stdout.contains("GET /checkout"));
+    assert!(stdout.contains("GET /cart"));
+    // critical-path marking semantics are unchanged in flame mode.
+    assert!(stdout.contains("* 表示该 span 出现在关键路径中"));
+}
+
+#[test]
+fn timeline_flame_mode_outputs_json_with_mode_and_collapse_fields() {
+    let json = run_json(&[
+        "--color",
+        "never",
+        "timeline",
+        fixture("otlp-concurrent.json").as_str(),
+        "--trace-id",
+        "cccccccccccccccccccccccccccccccc",
+        "--mode",
+        "flame",
+        "--output",
+        "json",
+    ]);
+
+    assert_eq!(json["schema_version"], "0.1");
+    assert_eq!(json["timeline"]["mode"], "flame");
+    assert_eq!(json["timeline"]["collapsed"]["enabled"], true);
+    assert_eq!(json["timeline"]["collapsed"]["omitted_rows"], 0);
+    assert!(json["timeline"]["collapsed"]["preserved_reasons"].is_array());
+
+    let rows = json["timeline"]["rows"]
+        .as_array()
+        .expect("timeline rows should be an array");
+    assert!(!rows.is_empty());
+    for row in rows {
+        assert_eq!(row["mode"], "flame");
+        assert_eq!(row["is_collapse_marker"], false);
+    }
+
+    // the flame JSON must still satisfy the published output schema, which now
+    // requires the per-row mode/is_collapse_marker and top-level collapsed.
+    assert_matches_output_schema(&json);
+}
+
+#[test]
+fn timeline_max_rows_collapses_middle_rows() {
+    // trace 88888888 in otlp-n-plus-one.json is a concurrent fan-out (GET /cart
+    // + 6 GET /inventory children); only the root and one child are on the
+    // critical path, so the non-critical middle children can be collapsed.
+    // The serial N+1 trace (77777777...) has every span on the critical path
+    // and cannot collapse, so it is intentionally not used here.
+    let fixture = fixture("otlp-n-plus-one.json");
+    let text_output = tracelens()
+        .args([
+            "--color",
+            "never",
+            "timeline",
+            fixture.as_str(),
+            "--trace-id",
+            "88888888888888888888888888888888",
+            "--max-rows",
+            "6",
+        ])
+        .output()
+        .expect("command should run");
+    assert!(text_output.status.success());
+    let text_stdout = String::from_utf8(text_output.stdout).expect("stdout should be utf8");
+    assert!(text_stdout.contains("collapsed"));
+    assert!(text_stdout.contains("omitted: 4"));
+
+    let json = run_json(&[
+        "--color",
+        "never",
+        "timeline",
+        fixture.as_str(),
+        "--trace-id",
+        "88888888888888888888888888888888",
+        "--max-rows",
+        "6",
+        "--output",
+        "json",
+    ]);
+
+    assert_eq!(json["timeline"]["collapsed"]["enabled"], true);
+    assert_eq!(json["timeline"]["collapsed"]["omitted_rows"], 4);
+    assert!(
+        json["timeline"]["collapsed"]["preserved_reasons"]
+            .as_array()
+            .expect("preserved_reasons should be an array")
+            .iter()
+            .any(|reason| reason == "critical_path")
+    );
+
+    let rows = json["timeline"]["rows"]
+        .as_array()
+        .expect("timeline rows should be an array");
+    assert!(
+        rows.iter().any(|row| row["is_collapse_marker"] == true),
+        "expected a collapse marker row"
+    );
+    // critical-path rows are preserved through collapse.
+    assert!(
+        rows.iter()
+            .any(|row| row["name"] == "GET /cart" && row["is_critical_path"] == true)
+    );
+    assert!(
+        rows.iter()
+            .any(|row| row["name"] == "GET /inventory/1" && row["is_critical_path"] == true)
+    );
+
+    assert_matches_output_schema(&json);
+}
+
+#[test]
+fn timeline_max_rows_zero_keeps_all_rows() {
+    let fixture = fixture("otlp-n-plus-one.json");
+    let args = |max_rows: &str| {
+        vec![
+            "--color".to_string(),
+            "never".to_string(),
+            "timeline".to_string(),
+            fixture.clone(),
+            "--trace-id".to_string(),
+            "88888888888888888888888888888888".to_string(),
+            "--max-rows".to_string(),
+            max_rows.to_string(),
+            "--output".to_string(),
+            "json".to_string(),
+        ]
+    };
+
+    let zero = run_json(&args("0").iter().map(String::as_str).collect::<Vec<_>>());
+    let default = run_json(&args("40").iter().map(String::as_str).collect::<Vec<_>>());
+
+    assert_eq!(zero["timeline"]["collapsed"]["enabled"], false);
+    assert_eq!(zero["timeline"]["collapsed"]["omitted_rows"], 0);
+    assert_eq!(
+        zero["timeline"]["collapsed"]["preserved_reasons"]
+            .as_array()
+            .map(Vec::len),
+        Some(0)
+    );
+    let zero_rows = zero["timeline"]["rows"]
+        .as_array()
+        .expect("timeline rows should be an array");
+    let default_rows = default["timeline"]["rows"]
+        .as_array()
+        .expect("timeline rows should be an array");
+    assert_eq!(zero_rows.len(), default_rows.len());
+    assert!(
+        zero_rows
+            .iter()
+            .all(|row| row["is_collapse_marker"] == false)
+    );
+    // all spans are still present without collapse.
+    for name in [
+        "GET /cart",
+        "GET /inventory/1",
+        "GET /inventory/2",
+        "GET /inventory/3",
+        "GET /inventory/4",
+        "GET /inventory/5",
+        "GET /inventory/6",
+    ] {
+        assert!(
+            zero_rows.iter().any(|row| row["name"] == name),
+            "expected span {name} to remain without collapse"
+        );
+    }
+
+    assert_matches_output_schema(&zero);
+}
+
+#[test]
 fn tree_outputs_semantic_annotations_with_chinese_explanations() {
     let fixture = fixture("otlp-semantic-annotations.json");
     let output = tracelens()

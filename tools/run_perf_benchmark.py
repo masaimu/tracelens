@@ -190,6 +190,20 @@ def command_argv(binary: Path, command: str, fixture: Path) -> list[object]:
             "--width",
             "48",
         ]
+    if command == "timeline-flame":
+        return [
+            binary,
+            "--color",
+            "never",
+            "timeline",
+            fixture,
+            "--trace-id",
+            FIRST_TRACE_ID,
+            "--width",
+            "48",
+            "--mode",
+            "flame",
+        ]
     if command == "detect":
         return [binary, "detect", fixture, "--output", "json"]
     if command == "tree":

@@ -233,6 +233,51 @@ Markers:
 
 Use this view after `critical-path` or `detect` when you need a quick visual feel for span order and overlap.
 
+## Draw a Flame View
+
+Switch the same trace to a vertical flame view to read parent-above-children structure:
+
+```bash
+tracelens timeline tests/fixtures/otlp-concurrent.json \
+  --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC   --mode flame
+```
+
+Useful output:
+
+```text
+Trace Timeline (flame)
+trace_id: cccccccccccccccccccccccccccccccc
+wall-clock duration: 1.100s
+spans: 7  roots: 1  orphans: 0  diagnostics: 1  mode: flame  shown: 7  omitted: 0
+critical path: available  duration: 1.000s
+
+*   GET /checkout         0ns      1.000s  0000000000000001
+*     GET /cart   100.000ms   300.000ms  0000000000000002
+*     POST /charge   500.000ms   400.000ms  0000000000000003
+*       SELECT payments   550.000ms   150.000ms  0000000000000004
+```
+
+The `*` / `!` / `?` markers keep the same meaning as in the bar view. Rows are indented by call depth instead of being laid out on a time axis.
+
+## Fold a Large Trace
+
+When a trace has more spans than fit a screen, fold the middle rows by counting boundaries plus critical / error / orphan rows:
+
+```bash
+tracelens timeline tests/fixtures/otlp-n-plus-one.json \
+  --trace-id 88888888888888888888888888888888 \
+  --max-rows 3
+```
+
+Omitted rows are reported as a single collapse marker row, never silently truncated:
+
+```text
+shown: 4  omitted: 4
+...
+      ... collapsed: 4 rows omitted ...
+...
+```
+
 ## Inspect Client/server and Async Annotations
 
 ```bash

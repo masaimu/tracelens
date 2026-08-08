@@ -25,7 +25,7 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 - local-first
 - OpenTelemetry / OTLP JSON / OTLP JSONL
 - critical path
-- ASCII timeline
+- ASCII timeline (bar + flame layouts, large-trace folding)
 - service self time
 - slow/error candidates
 - service latency distribution

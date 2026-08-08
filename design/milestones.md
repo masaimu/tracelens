@@ -348,6 +348,9 @@ crates/
 
 - M6-A：实现 ASCII timeline MVP，支持 `--trace-id`、`--width`、critical path/error/orphan 标记、中文说明、text/JSON 输出，以及 benchmark runner 的可选命令支持。
 - M6-B：后续视需要补充更紧凑的 flame graph、超大单 trace 折叠/过滤策略，或更稳定的快照测试基线。
+  - M6-B-1（已落地）：ASCII 火焰图布局，作为 `timeline --mode flame` 可选输出，复用 `critical-path` 分析结果做标注（第二十一期 `design/iteration-21-ascii-flamegraph-and-collapse.md`）。
+  - M6-B-2（已落地）：超大单 trace 折叠与裁剪（`--max-rows`），优先保留 critical / error / orphan 行，中段给折叠提示（第二十一期同上）。
+  - M6-B-3：更稳定的快照测试基线，作为可选后续打磨项，暂未进入具体迭代。
 
 ### 验收标准
 

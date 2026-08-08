@@ -996,7 +996,9 @@
         "is_error",
         "is_critical_path",
         "is_orphan",
-        "is_unattached"
+        "is_unattached",
+        "mode",
+        "is_collapse_marker"
       ],
       "properties": {
         "depth": {
@@ -1054,6 +1056,14 @@
         "is_unattached": {
           "type": "boolean",
           "description": "Whether this row could not be attached under a selected root in the visible tree."
+        },
+        "mode": {
+          "$ref": "#/$defs/timelineMode",
+          "description": "Timeline layout mode used for this row, mirroring the top-level timeline mode so downstream consumers can distinguish bar vs flame rendering without inspecting the parent object."
+        },
+        "is_collapse_marker": {
+          "type": "boolean",
+          "description": "Whether this row is a synthetic collapse marker that summarizes omitted spans during --max-rows collapse instead of representing a real span."
         }
       },
       "description": "One row in the ASCII timeline representation of a trace."
@@ -1666,6 +1676,8 @@
           "additionalProperties": true,
           "required": [
             "width",
+            "mode",
+            "collapsed",
             "rows",
             "notes"
           ],
@@ -1687,6 +1699,42 @@
                 "type": "string"
               },
               "description": "Explanatory analysis notes and caveats. Notes are hints, not final root-cause proof."
+            },
+            "mode": {
+              "$ref": "#/$defs/timelineMode",
+              "description": "Timeline layout mode selected for this output: \"bar\" renders the horizontal time axis with ASCII bars, \"flame\" renders a vertically indented ASCII flame graph without bars."
+            },
+            "collapsed": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": [
+                "enabled",
+                "max_rows",
+                "omitted_rows",
+                "preserved_reasons"
+              ],
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Whether row collapse is enabled. True when --max-rows is greater than 0; false when --max-rows is 0 (collapse disabled, all rows emitted)."
+                },
+                "max_rows": {
+                  "$ref": "#/$defs/uint",
+                  "description": "Configured maximum number of rows before collapse triggers. 0 means collapse is disabled and all rows are emitted."
+                },
+                "omitted_rows": {
+                  "$ref": "#/$defs/uint",
+                  "description": "Number of non-preserved middle rows omitted and replaced by collapse marker rows. 0 means no rows were omitted."
+                },
+                "preserved_reasons": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Categories of rows preserved during collapse, e.g. critical_path, error, orphan, unattached, boundary. Empty when no rows were omitted (omitted_rows is 0)."
+                }
+              },
+              "description": "Summary of timeline row collapse behavior, including how many rows were omitted and why rows were preserved."
             }
           },
           "description": "Timeline analysis object for the selected trace."
@@ -2287,6 +2335,14 @@
         }
       },
       "description": "JSON output produced by `tracelens detect` across a trace file."
+    },
+    "timelineMode": {
+      "type": "string",
+      "enum": [
+        "bar",
+        "flame"
+      ],
+      "description": "Timeline layout mode: \"bar\" renders the horizontal ASCII time axis, \"flame\" renders a vertically indented ASCII flame graph. The mode only changes rendering, never the trace analysis."
     }
   }
 }

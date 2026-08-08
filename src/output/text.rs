@@ -16,7 +16,7 @@ use crate::analysis::detect::{
 };
 use crate::analysis::duration::{ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
-use crate::analysis::timeline::{TimelineAnalysis, TimelineRow};
+use crate::analysis::timeline::{TimelineAnalysis, TimelineMode, TimelineRow};
 use crate::graph::trace_graph::{TraceCollection, TraceGraph};
 use crate::model::diagnostic::{Diagnostic, Severity};
 use crate::model::span::CanonicalSpan;
@@ -656,8 +656,14 @@ pub fn format_timeline(
     style: TextStyle,
 ) -> String {
     let mut output = String::new();
+    let is_flame = timeline.mode == TimelineMode::Flame;
+    let section_title = if is_flame {
+        "Trace Timeline (flame)"
+    } else {
+        "Trace Timeline"
+    };
 
-    writeln!(output, "{}", style.section("Trace Timeline")).expect("write to string");
+    writeln!(output, "{}", style.section(section_title)).expect("write to string");
     writeln!(output, "trace_id: {}", style.identifier(&timeline.trace_id))
         .expect("write to string");
     writeln!(
@@ -666,16 +672,40 @@ pub fn format_timeline(
         style.duration(format_duration(timeline.duration_ns))
     )
     .expect("write to string");
-    writeln!(
-        output,
-        "spans: {}  roots: {}  orphans: {}  diagnostics: {}  bar_width: {}",
-        trace.spans.len(),
-        trace.root_indices.len(),
-        trace.orphan_indices.len(),
-        style_count_by_risk(style, trace.diagnostics.len()),
-        timeline.width
-    )
-    .expect("write to string");
+
+    let shown = timeline.rows.len();
+    let omitted = timeline.collapsed.omitted_rows;
+    let omitted_label = if omitted > 0 {
+        style.warning(omitted)
+    } else {
+        style.muted(omitted)
+    };
+    if is_flame {
+        writeln!(
+            output,
+            "spans: {}  roots: {}  orphans: {}  diagnostics: {}  mode: flame  shown: {}  omitted: {}",
+            trace.spans.len(),
+            trace.root_indices.len(),
+            trace.orphan_indices.len(),
+            style_count_by_risk(style, trace.diagnostics.len()),
+            shown,
+            omitted_label,
+        )
+        .expect("write to string");
+    } else {
+        writeln!(
+            output,
+            "spans: {}  roots: {}  orphans: {}  diagnostics: {}  mode: bar  bar_width: {}  shown: {}  omitted: {}",
+            trace.spans.len(),
+            trace.root_indices.len(),
+            trace.orphan_indices.len(),
+            style_count_by_risk(style, trace.diagnostics.len()),
+            timeline.width,
+            shown,
+            omitted_label,
+        )
+        .expect("write to string");
+    }
     match &critical_path.status {
         CriticalPathStatus::Available => {
             writeln!(
@@ -704,12 +734,21 @@ pub fn format_timeline(
         )
         .expect("write to string");
     }
-    writeln!(
-        output,
-        "{}",
-        style.muted("说明：横轴表示从 trace start 到 trace end 的相对时间；横条重叠表示这些 span 在时间上并发执行，不代表被串行排队。")
-    )
-    .expect("write to string");
+    if is_flame {
+        writeln!(
+            output,
+            "{}",
+            style.muted("说明：flame 视图按调用深度纵向缩进，父在上、子在正下方缩进；相同深度的兄弟并排，* ! ? 标记含义不变。")
+        )
+        .expect("write to string");
+    } else {
+        writeln!(
+            output,
+            "{}",
+            style.muted("说明：横轴表示从 trace start 到 trace end 的相对时间；横条重叠表示这些 span 在时间上并发执行，不代表被串行排队。")
+        )
+        .expect("write to string");
+    }
     writeln!(
         output,
         "{}",
@@ -727,36 +766,61 @@ pub fn format_timeline(
     }
 
     writeln!(output).expect("write to string");
-    writeln!(
-        output,
-        "axis: {} |{}| {}",
-        style.duration("0ns"),
-        "-".repeat(timeline.width),
-        style.duration(format_duration(timeline.duration_ns))
-    )
-    .expect("write to string");
-    write_timeline_rows(&mut output, &timeline.rows, timeline.width, style);
+    if is_flame {
+        write_timeline_flame_rows(&mut output, &timeline.rows, style);
+    } else {
+        writeln!(
+            output,
+            "axis: {} |{}| {}",
+            style.duration("0ns"),
+            "-".repeat(timeline.width),
+            style.duration(format_duration(timeline.duration_ns))
+        )
+        .expect("write to string");
+        write_timeline_rows(&mut output, &timeline.rows, timeline.width, style);
+    }
 
     writeln!(output).expect("write to string");
     writeln!(output, "{}", style.section("字段说明：")).expect("write to string");
-    writeln!(
-        output,
-        "{}",
-        style.muted("- start：span start 相对 trace start 的偏移时间。")
-    )
-    .expect("write to string");
-    writeln!(
-        output,
-        "{}",
-        style.muted("- duration：span 自身持续时间；并发 span 的 duration 相加可能大于 wall-clock duration。")
-    )
-    .expect("write to string");
-    writeln!(
-        output,
-        "{}",
-        style.muted("- bar_width：只控制 ASCII 时间轴条宽，不代表整行终端宽度。")
-    )
-    .expect("write to string");
+    if is_flame {
+        writeln!(
+            output,
+            "{}",
+            style.muted("- depth：调用深度，root span 在第 0 层，每深入一层缩进两格。")
+        )
+        .expect("write to string");
+        writeln!(
+            output,
+            "{}",
+            style.muted("- start / duration：与横向时间轴语义一致，分别是相对 trace start 的偏移与 span 自身耗时。")
+        )
+        .expect("write to string");
+        writeln!(
+            output,
+            "{}",
+            style.muted("- 折叠提示行：当行数超过 --max-rows 时，中段非关键行会被合并为一行提示，不静默截断。")
+        )
+        .expect("write to string");
+    } else {
+        writeln!(
+            output,
+            "{}",
+            style.muted("- start：span start 相对 trace start 的偏移时间。")
+        )
+        .expect("write to string");
+        writeln!(
+            output,
+            "{}",
+            style.muted("- duration：span 自身持续时间；并发 span 的 duration 相加可能大于 wall-clock duration。")
+        )
+        .expect("write to string");
+        writeln!(
+            output,
+            "{}",
+            style.muted("- bar_width：只控制 ASCII 时间轴条宽，不代表整行终端宽度。")
+        )
+        .expect("write to string");
+    }
 
     if !trace.diagnostics.is_empty() {
         writeln!(output).expect("write to string");
@@ -764,6 +828,60 @@ pub fn format_timeline(
     }
 
     output
+}
+
+fn write_timeline_flame_rows(output: &mut String, rows: &[TimelineRow], style: TextStyle) {
+    if rows.is_empty() {
+        writeln!(output, "(no spans)").expect("write to string");
+        return;
+    }
+
+    for row in rows {
+        if row.is_collapse_marker {
+            write_timeline_collapse_marker(output, row, style);
+            continue;
+        }
+        let marker = format_timeline_marker(row, style);
+        let indent = "  ".repeat(row.depth.min(8));
+        let name = timeline_flame_display_name(row);
+        let name = truncate_chars(&name, 48);
+        let name = if row.is_error {
+            style.error(name)
+        } else if row.is_critical_path {
+            style.critical(name)
+        } else {
+            name
+        };
+        let start = format!("{:>10}", format_duration(row.start_offset_ns));
+        let duration = format!("{:>10}", format_duration(row.duration_ns));
+
+        writeln!(
+            output,
+            "{}  {}{}  {}  {}  {}",
+            marker,
+            indent,
+            name,
+            style.duration(start),
+            style.duration(duration),
+            style.identifier(&row.span_id),
+        )
+        .expect("write to string");
+    }
+}
+
+fn timeline_flame_display_name(row: &TimelineRow) -> String {
+    let mut name = row.name.clone();
+    if row.is_unattached {
+        name.push_str(" (unattached)");
+    } else if row.is_orphan {
+        name.push_str(" (orphan)");
+    }
+    name
+}
+
+fn write_timeline_collapse_marker(output: &mut String, row: &TimelineRow, style: TextStyle) {
+    let indent = "  ".repeat(row.depth.min(8));
+    writeln!(output, "    {}{}", indent, style.muted(&row.name)).expect("write to string");
 }
 
 fn write_slow_trace_candidates(
@@ -1360,6 +1478,10 @@ fn write_timeline_rows(output: &mut String, rows: &[TimelineRow], width: usize, 
     .expect("write to string");
 
     for row in rows {
+        if row.is_collapse_marker {
+            write_timeline_collapse_marker(output, row, style);
+            continue;
+        }
         let marker = format_timeline_marker(row, style);
         let service = pad_right(&truncate_chars(&row.service_name, 18), 18);
         let service = style.service(service);

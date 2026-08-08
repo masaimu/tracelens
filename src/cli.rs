@@ -11,7 +11,8 @@ use crate::analysis::detect::analyze_detect;
 use crate::analysis::duration::analyze_trace_duration;
 use crate::analysis::summary::{TraceSummary, summarize};
 use crate::analysis::timeline::{
-    DEFAULT_TIMELINE_WIDTH, MAX_TIMELINE_WIDTH, MIN_TIMELINE_WIDTH, analyze_timeline,
+    DEFAULT_TIMELINE_MAX_ROWS, DEFAULT_TIMELINE_WIDTH, MAX_TIMELINE_WIDTH, MIN_TIMELINE_WIDTH,
+    analyze_timeline,
 };
 use crate::exit_code;
 use crate::graph::trace_graph::TraceCollection;
@@ -165,6 +166,16 @@ enum Commands {
         #[arg(long, default_value_t = DEFAULT_TIMELINE_WIDTH)]
         width: usize,
 
+        /// Timeline layout mode: `bar` for the horizontal time axis, `flame`
+        /// for a vertically indented ASCII flame graph.
+        #[arg(long, value_enum, default_value_t = TimelineMode::Bar)]
+        mode: TimelineMode,
+
+        /// Maximum number of timeline rows before non-essential middle rows are
+        /// collapsed into summary marker rows. `0` disables collapse.
+        #[arg(long, default_value_t = DEFAULT_TIMELINE_MAX_ROWS)]
+        max_rows: usize,
+
         /// Output format.
         #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
         output: OutputFormat,
@@ -231,6 +242,21 @@ enum TraceSort {
     Duration,
     Spans,
     Errors,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+enum TimelineMode {
+    Bar,
+    Flame,
+}
+
+impl From<TimelineMode> for crate::analysis::timeline::TimelineMode {
+    fn from(value: TimelineMode) -> Self {
+        match value {
+            TimelineMode::Bar => Self::Bar,
+            TimelineMode::Flame => Self::Flame,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
@@ -432,6 +458,8 @@ pub fn run() -> Result<ExitCode> {
             file,
             trace_id,
             width,
+            mode,
+            max_rows,
             output,
         } => {
             if !(MIN_TIMELINE_WIDTH..=MAX_TIMELINE_WIDTH).contains(&width) {
@@ -449,7 +477,7 @@ pub fn run() -> Result<ExitCode> {
                 .get(&normalized_trace_id)
                 .ok_or_else(|| anyhow!("trace_id not found: {normalized_trace_id}"))?;
             let critical_path = analyze_critical_path(trace);
-            let timeline = analyze_timeline(trace, &critical_path, width);
+            let timeline = analyze_timeline(trace, &critical_path, width, mode.into(), max_rows);
 
             match output {
                 OutputFormat::Text => print!(

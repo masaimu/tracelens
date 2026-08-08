@@ -161,7 +161,26 @@ Which spans contributed the most blocking time?
 tracelens timeline traces.json --trace-id <trace-id>
 ```
 
-It keeps the parent-child order from the trace graph, but uses horizontal bars to show when each span starts and how long it runs.
+It keeps the parent-child order from the trace graph. There are two layouts:
+
+- `--mode bar` (default): horizontal bars show when each span starts and how long it runs, with concurrent overlap readable across the time axis.
+- `--mode flame`: a vertical flame view. Each span gets one row indented by call depth, with the parent above and children directly below indented, so the widest and deepest call stacks are visible at a glance.
+
+Both layouts reuse the same analysis model and carry the same `*` / `!` / `?` markers, so the choice is about reading preference, not different data.
+
+```bash
+tracelens timeline traces.json --trace-id <trace-id> --mode flame
+```
+
+### Folding large traces
+
+When a single trace has many spans, the default output can fill more than a screen. Use `--max-rows <n>` to fold the middle rows:
+
+```bash
+tracelens timeline traces.json --trace-id <trace-id> --max-rows 40
+```
+
+Folding keeps the first and last rows as boundaries, plus any rows on the critical path, any error spans, and any orphan or unattached spans. Omitted rows are reported as a single collapse marker row (`... collapsed: N rows omitted ...`), never silently truncated. Pass `--max-rows 0` to show every row.
 
 ### Markers
 
@@ -226,7 +245,9 @@ JSON output includes structured rows:
   "is_critical_path": true,
   "is_error": false,
   "is_orphan": false,
-  "is_unattached": false
+  "is_unattached": false,
+  "mode": "bar",
+  "is_collapse_marker": false
 }
 ```
 

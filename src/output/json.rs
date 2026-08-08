@@ -253,12 +253,19 @@ pub fn format_timeline_json(
             "diagnostics_count": trace.diagnostics.len(),
         },
         "timeline": {
+            "mode": timeline.mode.label(),
             "width": timeline.width,
             "rows": timeline
                 .rows
                 .iter()
-                .map(timeline_row_to_json)
+                .map(|row| timeline_row_to_json(row, timeline.mode.label()))
                 .collect::<Vec<_>>(),
+            "collapsed": {
+                "enabled": timeline.collapsed.enabled,
+                "max_rows": timeline.collapsed.max_rows,
+                "omitted_rows": timeline.collapsed.omitted_rows,
+                "preserved_reasons": timeline.collapsed.preserved_reasons,
+            },
             "notes": timeline.notes,
         },
         "critical_path": {
@@ -471,7 +478,7 @@ fn critical_path_root_span_to_json(root: &CriticalPathRootSpan) -> Value {
     })
 }
 
-fn timeline_row_to_json(row: &TimelineRow) -> Value {
+fn timeline_row_to_json(row: &TimelineRow, mode: &str) -> Value {
     json!({
         "depth": row.depth,
         "span_id": row.span_id,
@@ -487,6 +494,8 @@ fn timeline_row_to_json(row: &TimelineRow) -> Value {
         "is_critical_path": row.is_critical_path,
         "is_orphan": row.is_orphan,
         "is_unattached": row.is_unattached,
+        "mode": mode,
+        "is_collapse_marker": row.is_collapse_marker,
     })
 }
 

@@ -46,6 +46,20 @@ python3 tools/run_perf_benchmark.py \
 
 `timeline` is not part of the default CI smoke command list yet because it renders one row per span in the selected trace. Use a focused run when changing timeline layout or rendering behavior.
 
+The runner also accepts `timeline-flame` as an independent command label, which runs the same timeline path with `--mode flame`. Both layouts can be covered in one focused run:
+
+```bash
+python3 tools/run_perf_benchmark.py \
+  --spans 50000 \
+  --traces 20 \
+  --formats json \
+  --shapes balanced \
+  --commands timeline,timeline-flame \
+  --iterations 1
+```
+
+Folding (`--max-rows`) does not run as a separate benchmark command, because the default `--max-rows 40` already applies on every timeline run, so its cost is folded into the `timeline` and `timeline-flame` measurements.
+
 For a focused 50k `detect` run:
 
 ```bash
@@ -135,7 +149,7 @@ Use them to answer:
 
 - Did a command regress obviously?
 - Does `detect` still handle 50k spans?
-- Does a timeline layout change need a focused `timeline` benchmark?
+- Does a timeline layout or flame view change need a focused `timeline` (or `timeline-flame`) benchmark?
 - Are generated fixtures and benchmark outputs staying out of Git?
 - Does a new analysis command need targeted optimization before it becomes part of the default workflow?
 

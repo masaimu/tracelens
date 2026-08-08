@@ -166,6 +166,12 @@ Why it matters:
 
 Tables are precise, but they can make timing hard to feel. The timeline view keeps the parent-child order while showing relative start, duration, and overlap in one terminal-friendly view.
 
+For deep call stacks, switch to `--mode flame` to see the parent-above-children structure vertically instead of scanning a wide time axis. For traces with many spans, combine it with `--max-rows` so only boundaries and critical/error/orphan rows stay on screen:
+
+```bash
+tracelens timeline traces.json --trace-id <trace-id> --mode flame --max-rows 40
+```
+
 ## 8. Keep CI Logs Clean
 
 Use this when you want trace checks in CI, scripts, or automation.

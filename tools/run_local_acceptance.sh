@@ -176,6 +176,9 @@ run_step "tree" "$TRACELENS_BIN" --color never tree tests/fixtures/otlp-basic.js
 run_step "services" "$TRACELENS_BIN" --color never services tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D269B633813FC60C
 run_step "critical path" "$TRACELENS_BIN" --color never critical-path tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 run_step "timeline" "$TRACELENS_BIN" --color never timeline tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+run_step "timeline flame" "$TRACELENS_BIN" --color never timeline tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC --mode flame
+run_step "timeline collapse" "$TRACELENS_BIN" --color never timeline tests/fixtures/otlp-n-plus-one.json --trace-id 88888888888888888888888888888888 --max-rows 3
+run_shell_step "timeline flame json smoke" '"$TRACELENS_BIN" --color always timeline tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC --mode flame --output json >/dev/null'
 run_step "detect" "$TRACELENS_BIN" --color never detect tests/fixtures/otlp-n-plus-one.json --limit 5
 
 run_shell_step "detect json smoke" '"$TRACELENS_BIN" --color always detect tests/fixtures/otlp-n-plus-one.json --limit 5 --output json >/dev/null'

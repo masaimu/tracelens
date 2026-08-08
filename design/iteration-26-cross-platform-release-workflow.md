@@ -211,3 +211,16 @@ B 层 tag 验收指引（需你在 GitHub 操作；Agent 无法在本地终端�
 
 - 已更新：README/中文 README 的 Installation 段（三路径 + 跨平台校验示例）、`docs/versioning.md`（tag 命名与 prerelease 规则）、`CHANGELOG.md`（0.1.0 段状态）、产品传播规约关键词与状态条目均已体现第二十六期发布分发能力。文案承诺"版本 tag 发布跨平台预编译二进制 + checksum 到 GitHub Releases"，不承诺包管理器分发；在首个 tag 发布前 README 仍标注用本地构建，保持诚实。用户可从项目首页理解从任意平台获取并校验 `tracelens` 的完整方式。
 
+
+### B 层首次实测发现与修复（紧随 v0.1.0 tag 触发之后）
+
+首次 `v0.1.0` tag（指向 `2c10602`，无 `release.yml`）未触发任何 Release workflow——该 tag 被误打在了 iter-25 commit 上。已修复为指向 iter-26 commit（`d50f931`）。随后 Release workflow 触发并起跑，但 matrix 的 `x86_64-apple-darwin` job 在 `macos-13`（Intel mac）runner 上排队 40+ 分钟仍未获 runner：GitHub 对 `macos-13` Intel runner 供给不足。
+
+本期追加修复（仍属 A 工程层，已本地验收）：
+
+- `tools/build_release.sh` 增加可选首参 `<target>`：传入时执行 `rustup target add <target>` 与 `cargo build --release --locked --target <target>`，产物取 `target/<target>/release/`，artifact 名用 target；省略则仍是 host（向后兼容第二十五/二十六期本地 smoke）。脚本自检 `--version` 仅在 `target == host` 执行，避免在构建机上跑非本机架构二进制。
+- `.github/workflows/release.yml`：`x86_64-apple-darwin` 从 `macos-13` 改为在 `macos-14`（arm64）上交叉编译；matrix 增加 `verify_exec` 标志，验证步对 cross target 只做 `file`/`ls` 不执行（避免无 Rosetta 时跑 x86_64 二进制失败）；mac arm64/linux/win 仍 native 可直接 `--version`。
+- 本地预演：在本机（arm64）跑 `bash tools/build_release.sh x86_64-apple-darwin` 交叉编译，`Finished release`、产物 `Mach-O 64-bit executable x86_64`、`shasum -c` OK、经 Rosetta 执行输出 `tracelens 0.1.0`——证明该路径在 `macos-14` runner 上会成功，不再依赖 Intel mac runner。
+- 本地验收 Pipeline 32 步仍全过（release smoke 改为传显式 `aarch64-apple-darwin`，走 target 代码路径）。
+
+下一步由你在 GitHub 操作：取消那条仍卡在 `macos-13` 排队的旧 run；我会把本修复提交、push main，并把 `v0.1.0` tag 重新指到修复后的 commit（delete+recreate 必触发）让 Release workflow 用新 matrix 重跑。

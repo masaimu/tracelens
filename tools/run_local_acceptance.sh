@@ -164,7 +164,7 @@ run_step "cargo install local binary" cargo install --path . --force --root "$IN
 export TRACELENS_BIN
 
 run_step "installed version" "$TRACELENS_BIN" --version
-run_shell_step "local release artifact" 'bash tools/build_release.sh >/tmp/tl_release.log 2>&1; bin="$(ls dist/tracelens-*-* | grep -v "\.sha256$")"; test -n "$bin"; (cd dist && shasum -a 256 -c "$(basename "$bin").sha256" >/dev/null); "$bin" --version | grep -qE "^tracelens [0-9]+\.[0-9]+\.[0-9]+$"'
+run_shell_step "local release artifact" 'bash tools/build_release.sh aarch64-apple-darwin >/tmp/tl_release.log 2>&1; bin="$(ls dist/tracelens-*-* | grep -v "\.sha256$")"; test -n "$bin"; (cd dist && shasum -a 256 -c "$(basename "$bin").sha256" >/dev/null); "$bin" --version | grep -qE "^tracelens [0-9]+\.[0-9]+\.[0-9]+$"'
 run_shell_step "release workflow lint" 'if command -v actionlint >/dev/null 2>&1; then actionlint .github/workflows/release.yml; else echo "actionlint not installed, skip"; fi'
 run_step "schema help" "$TRACELENS_BIN" schema --help
 run_step "schema text" "$TRACELENS_BIN" schema --command detect --output text

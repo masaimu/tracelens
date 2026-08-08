@@ -27,14 +27,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # native builds: the runner can execute the produced binary.
           - os: macos-14
             target: aarch64-apple-darwin
-          - os: macos-13
+            verify_exec: true
+          # x86_64-apple-darwin is cross-compiled on the arm64 macos-14 runner
+          # to avoid the supply-constrained macos-13 (Intel) runner queue;
+          # it cannot be executed on the build runner without Rosetta.
+          - os: macos-14
             target: x86_64-apple-darwin
+            verify_exec: false
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+            verify_exec: true
           - os: windows-2022
             target: x86_64-pc-windows-msvc
+            verify_exec: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -50,16 +58,19 @@ jobs:
           key: release-${{ matrix.target }}-${{ hashFiles('Cargo.lock') }}
 
       - name: Build release artifact + checksum
-        run: bash tools/build_release.sh
-        env:
-          # Hint for diagnostics only; the script detects the host itself.
-          RELEASE_TARGET: ${{ matrix.target }}
+        run: bash tools/build_release.sh "${{ matrix.target }}"
 
-      - name: Verify artifact runs
+      - name: Verify artifact
         run: |
           bin="$(ls dist/tracelens-* | grep -v '\.sha256$' | head -1)"
           test -n "$bin"
-          ./"$bin" --version
+          if [ "${{ matrix.verify_exec }}" = "true" ]; then
+            ./"$bin" --version
+          else
+            ls -l "$bin"
+            file "$bin" 2>/dev/null || true
+            echo "cross-target artifact: exec skipped (needs target arch runtime)"
+          fi
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

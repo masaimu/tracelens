@@ -115,7 +115,7 @@ tour() {
 tour_dry() {
     echo "[dry-run] platform: $OS/$ARCH"
     echo "[dry-run] release target: $TARGET"
-    echo "[dry-run] asset name pattern: tracelens-<latest-tag>-${TARGET}${EXE} (+ .sha256)"
+    echo "[dry-run] asset name pattern: tracelens-<version-without-leading-v>-${TARGET}${EXE} (+ .sha256)"
 
     step() { printf '\n========================================================\n'; echo "$1"; }
     step "1. original requirement: input + scale (OTLP JSON ~5k span) -> tracelens summary"
@@ -157,28 +157,34 @@ WORK="$(mktemp -d 2>/dev/null || mktemp -d -t tracelens)"
 cleanup() { rm -rf "$WORK"; }
 trap cleanup EXIT
 
-echo "Fetching latest release metadata..."
-JSON="$(curl -fsSL -H "User-Agent: ${UA}" "${API}/releases/latest")"
-TAG="$(printf '%s' "$JSON" | grep -oE '"tag_name"[[:space:]]*:[[:space:]]*"[^"]+"' | head -1 | sed -E 's/.*:"([^"]+)"/\1/')"
-if [ -z "${TAG:-}" ]; then
-    echo "could not determine latest release tag" >&2
+echo "Resolving latest release tag..."
+# Resolve the latest release tag via the /releases/latest WEB redirect instead
+# of the api.github.com JSON. The api endpoint is unauth-rate-limited (60/h per
+# IP); the web redirect (github.com, not api.github.com) is NOT API-rate-limited,
+# so this one-liner keeps working even after the caller's unauth API quota is gone.
+LATEST_URL="$(curl -fsSL -o /dev/null -w '%{url_effective}' -H "User-Agent: ${UA}" "https://github.com/${OWNER}/${REPO}/releases/latest" 2>/dev/null)" || {
+    echo "could not reach https://github.com/${OWNER}/${REPO}/releases/latest" >&2
+    exit 1
+}
+# Final URL has the shape https://github.com/<owner>/<repo>/releases/tag/<TAG>.
+TAG="${LATEST_URL##*/}"
+if [ -z "${TAG:-}" ] || [ "$TAG" = "latest" ]; then
+    echo "could not determine latest release tag from: $LATEST_URL" >&2
+    echo "open https://github.com/${OWNER}/${REPO}/releases/latest to find the tag" >&2
     exit 1
 fi
 echo "Latest release: $TAG"
 
-BIN_NAME="${BINARY}-${TAG}-${TARGET}${EXE}"
+# Strip the leading 'v' from the tag: published assets are named with the bare
+# package version (tracelens-<version>-<target>) by tools/build_release.sh, while
+# the git tag carries the 'v'. Then build the download URL directly from the
+# deterministic naming convention, so we never depend on api.github.com at all.
+VERSION="${TAG#v}"
+BIN_NAME="${BINARY}-${VERSION}-${TARGET}${EXE}"
 SHA_NAME="${BIN_NAME}.sha256"
-
-URLS="$(printf '%s' "$JSON" | grep -oE '"browser_download_url"[[:space:]]*:[[:space:]]*"https://[^"]+"' | sed -E 's/.*"(https:\/\/[^"]+)"/\1/')"
-BIN_URL="$(printf '%s\n' "$URLS" | grep -E -- "/${BIN_NAME}\$")"
-SHA_URL="$(printf '%s\n' "$URLS" | grep -E -- "/${SHA_NAME}\$")"
-
-if [ -z "${BIN_URL:-}" ] || [ -z "${SHA_URL:-}" ]; then
-    echo "could not locate artifact for $TARGET in release $TAG" >&2
-    echo "available artifacts:" >&2
-    printf '%s\n' "$URLS" >&2
-    exit 1
-fi
+DL_BASE="https://github.com/${OWNER}/${REPO}/releases/download/${TAG}"
+BIN_URL="${DL_BASE}/${BIN_NAME}"
+SHA_URL="${DL_BASE}/${SHA_NAME}"
 
 echo "Downloading $BIN_NAME ..."
 curl -fsSL -o "$WORK/$BIN_NAME" "$BIN_URL"

@@ -44,7 +44,7 @@
 
 Jaeger、Tempo、Zipkin 和各类厂商平台都很强大，但它们通常默认数据已经被接入某个后端。
 
-在调试、面试、CI 检查、故障复盘、离线分析或 trace 数据交接时，你经常只有一份本地导出文件。`tracelens` 聚焦的就是这个工作流：
+在调试、录屏说明、CI 检查、故障复盘、离线分析或 trace 数据交接时，你经常只有一份本地导出文件。`tracelens` 聚焦的就是这个工作流：
 
 ```text
 trace file -> parse -> normalize -> build graph -> analyze -> report
@@ -62,6 +62,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - [OpenTelemetry 兼容性说明](docs/opentelemetry-compatibility.md)
 - [性能说明](docs/performance.md)
 - [CI 集成说明](docs/ci-integration.md)
+- [产品对比](docs/comparison.md)
 
 ## 当前能力
 
@@ -106,7 +107,22 @@ tracelens schema
 
 ## 安装
 
-项目目前还没有发布远程下载的 release artifact。现在可以从本地源码安装：
+项目目前还没有发布可远程下载的预编译二进制。从本地源码，你可以用两种方式得到可运行的 `tracelens`。
+
+为本机构建一份本地 release artifact（stripped 二进制 + sha256 校验文件）：
+
+```bash
+tools/build_release.sh
+```
+
+命令会打印 artifact 路径，并在 `dist/` 下产出 `tracelens-0.1.0-<host>` 和对应的 `.sha256`。校验并运行：
+
+```bash
+( cd dist && shasum -a 256 -c *.sha256 )
+./dist/tracelens-0.1.0-<host> --version
+```
+
+或用 cargo 从源码安装：
 
 ```bash
 cargo install --path .
@@ -125,6 +141,8 @@ tracelens --help
 cargo build
 ./target/debug/tracelens --help
 ```
+
+版本号规则见 [Versioning](docs/versioning.md)。从 GitHub Releases 远端下载预编译二进制会在后续迭代落地。
 
 ## 快速开始
 
@@ -266,10 +284,11 @@ tracelens report tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCC
 - 面向 Agent 和自动化消费的 JSON Schema 与 CLI 可发现字段说明。
 - OpenTelemetry 兼容性说明文档。
 - 退出码与 CI 集成说明文档。
+- 本地 release artifact 构建脚本（`tools/build_release.sh`），为本机产出 stripped 二进制与 sha256 校验文件。
 
 尚未实现：
 
-- 可远程下载的 release artifact。
+- 从 GitHub Releases 远端下载的预编译二进制。
 
 参考：
 

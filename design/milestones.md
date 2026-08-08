@@ -535,6 +535,24 @@ crates/
 - 不要求提供自动更新机制。
 - 不把发布流程和 Trace 后端绑定。
 
+### 当前推进状态（第二十五期）
+
+第二十五期已落地的 M9 交付物：
+
+- 版本号规则文档化：`docs/versioning.md`，`tracelens --version` 输出 `tracelens 0.1.0`，与 `Cargo.toml` 一致并由端到端测试钉死。
+- `docs/comparison.md`：与 Jaeger/Tempo/Zipkin/厂商平台的定位差异，互补不替代。
+- `CHANGELOG.md`：M0–M8 能力归档，作为 release note 来源。
+- 安装说明打磨：README/中文 README 双路径（本机 artifact + `cargo install`），中英一致。
+- 本机 release 构建脚本 `tools/build_release.sh`：产出当前 host（mac arm64）的 stripped 二进制 + `.sha256`，可本地复现并验收。
+
+第二十五期明确不做的 M9 交付物（留第二十六期）：
+
+- 远端 GitHub Releases 下载：本期不产可从远端下载的预编译二进制；用户可用本机构建脚本得到 artifact，或 `cargo install`。
+- 跨平台 artifact（linux x86_64 / windows x86_64 / macOS x86_64）：必须靠 CI runner 产出与验证，本机无法产出。
+- CI 自动发布流程与 git tag 触发。
+
+因此第二十五期完成后 M9 约 `60%`，"从远端下载可执行命令"尚未落地；待第二十六期 M9 收口到 `100%`。包管理器分发（Homebrew/crates.io/npm）列为 M9 后续增强项，不阻塞远端下载。
+
 ## 暂不进入里程碑的范围
 
 以下内容目前明确不做，除非后续先修改本文档：

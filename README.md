@@ -44,7 +44,7 @@ The project is still early. The current codebase is a local analysis CLI, not a 
 
 Trace backends such as Jaeger, Tempo, Zipkin, and vendor platforms are powerful, but they usually assume your data has already been ingested somewhere.
 
-During debugging, interviews, CI checks, incident review, offline analysis, or trace handoff, you may only have a local trace export. `tracelens` focuses on that workflow:
+During debugging, recorded walkthroughs, CI checks, incident review, offline analysis, or trace handoff, you may only have a local trace export. `tracelens` focuses on that workflow:
 
 ```text
 trace file -> parse -> normalize -> build graph -> analyze -> report
@@ -60,6 +60,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - [OpenTelemetry compatibility](docs/opentelemetry-compatibility.md)
 - [Performance](docs/performance.md)
 - [CI integration](docs/ci-integration.md)
+- [Comparison](docs/comparison.md)
 
 ## Current Capabilities
 
@@ -104,7 +105,22 @@ tracelens schema
 
 ## Installation
 
-The project does not publish release artifacts yet. For now, install from a local checkout:
+The project does not publish prebuilt binaries for remote download yet. From a local checkout, you can get a runnable `tracelens` two ways.
+
+Build a local release artifact (a stripped binary plus a sha256 checksum) for the current host:
+
+```bash
+tools/build_release.sh
+```
+
+The command prints the artifact path and produces `dist/tracelens-0.1.0-<host>` with a matching `.sha256`. Verify and run it:
+
+```bash
+( cd dist && shasum -a 256 -c *.sha256 )
+./dist/tracelens-0.1.0-<host> --version
+```
+
+Or install from source with cargo:
 
 ```bash
 cargo install --path .
@@ -123,6 +139,8 @@ You can also run the debug binary without installing:
 cargo build
 ./target/debug/tracelens --help
 ```
+
+See [Versioning](docs/versioning.md) for the version rule. Remote download of prebuilt binaries from GitHub Releases is planned for a later iteration.
 
 ## Quick Start
 
@@ -270,10 +288,11 @@ Implemented:
 - JSON Schema and CLI-discoverable field descriptions for agent and automation consumers.
 - OpenTelemetry compatibility documentation.
 - Exit-code and CI integration documentation.
+- Local release artifact build script (`tools/build_release.sh`) producing a stripped binary and a sha256 checksum for the current host.
 
 Not implemented yet:
 
-- Release artifacts for remote download.
+- Prebuilt binaries published to GitHub Releases for remote download.
 
 See:
 

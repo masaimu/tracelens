@@ -42,6 +42,10 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 - OpenTelemetry compatibility
 - CI-friendly
 - explainable trace analysis
+- release artifact + sha256 checksum
+- CHANGELOG / release notes
+- comparison (local-first vs trace backends)
+- versioning policy
 
 ## 目标用户
 
@@ -71,12 +75,15 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 | `docs/performance.md` | 性能说明 | 必须说明性能目标、benchmark 方法、当前规模验证和本地结果解释 |
 | `docs/local-acceptance-pipeline.md` | 本地验收流程 | 必须说明提交前本地 Pipeline、hook setup 和验收结果位置 |
 | `docs/ci-integration.md` | CI 集成说明 | 必须说明 `--output json`、`--color never`、退出码和 CI 接入方式 |
+| `docs/comparison.md` | 定位对比 | 必须说明与 Jaeger/Tempo/Zipkin/厂商平台互补不替代 |
+| `docs/versioning.md` | 版本号规则 | 必须说明 `Cargo.toml` 与 `--version` 口径一致、pre-1.0 语义 |
+| `CHANGELOG.md` | 变更记录 | 必须作为 release note 来源，归档 user-visible 能力 |
 
 后续建议逐步新增：
 
 | 文件 | 作用 | 优先级 |
 | --- | --- | --- |
-| `docs/comparison.md` | 克制比较 Jaeger/Tempo/Zipkin 与 tracelens 的适用场景 | 中 |
+| `docs/comparison.md` | 与 Jaeger/Tempo/Zipkin/厂商平台定位对比 | 必须（第二十五期已落地） |
 
 ## 每次迭代后的强制检查
 
@@ -118,6 +125,7 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 - 第十九期新增的 `tracelens schema --output text|json`、按命令字段说明和 help 发现入口，已同步进入 `README.md`、`README.zh-CN.md`、`docs/why-tracelens.md`、`docs/use-cases.md`、`docs/examples.md`、`docs/output-guide.md`、`docs/json-schema.md` 和 `docs/local-acceptance-pipeline.md`。
 - 当前传播文案只承诺本地 CLI 可输出 schema 与字段说明，不承诺 JSON Schema 已稳定到 `1.0`，也不承诺远程 schema registry。
 - 第二十期新增的退出码规范与 CI 集成说明，已同步进入 `README.md`、`README.zh-CN.md`、`docs/ci-integration.md`、`docs/use-cases.md`、`docs/examples.md`、`docs/output-guide.md` 和 `docs/local-acceptance-pipeline.md`。
+- 第二十五期新增的发布准备内容，已同步进入 `README.md`、`README.zh-CN.md` 的 Installation 段（双路径：本机 artifact + cargo install）、`docs/comparison.md`、`docs/versioning.md` 和 `CHANGELOG.md`；`tools/build_release.sh` 的本机 release 产物（stripped 二进制 + sha256）已在本地验收 Pipeline 中加入 smoke。当前传播文案只承诺本机 artifact 与源码安装，**不**承诺从远端下载预编译二进制，也不承诺跨平台 artifact（均属第二十六期）。
 
 ## 文案原则
 

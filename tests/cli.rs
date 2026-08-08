@@ -1917,3 +1917,23 @@ fn report_renders_nav_heatmap_and_slow_badge() {
     assert!(html.contains("慢请求候选"));
     assert!(html.contains("heat-4"));
 }
+
+#[test]
+fn version_command_reports_pkg_version() {
+    // `--version` is the public version claim and must mirror Cargo.toml's
+    // [package] version, which clap renders from CARGO_PKG_VERSION. They must
+    // never drift; this test is the single-source-of-truth guard.
+    let output = tracelens()
+        .arg("--version")
+        .output()
+        .expect("command should run");
+
+    assert_exit_code(&output, EXIT_SUCCESS);
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    let expected = format!("tracelens {}", env!("CARGO_PKG_VERSION"));
+    assert_eq!(
+        stdout.trim_end(),
+        expected,
+        "`--version` must mirror Cargo.toml's package version"
+    );
+}

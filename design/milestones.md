@@ -298,7 +298,7 @@ crates/
 
 - M5-A：先实现 `detect` 命令 MVP，覆盖慢 trace 候选、service candidates、错误信号候选、confidence、sample count、p95 参考值，以及 text/JSON 输出。
 - M5-B：继续实现 N+1 候选检测，按相似 child span 聚合，并引入 possible/high confidence 阈值。
-- M5-C：补充更完整的错误传播链展示和 service latency distribution，前提是不会削弱当前候选输出的可解释性。
+- M5-C：补充更完整的错误传播链展示和 service latency distribution，前提是不会削弱当前候选输出的可解释性。第十七期已实现可观察 parent-child 错误传播链和按 service 聚合的 p50/p95/max 耗时分布。
 
 ### 验收标准
 
@@ -306,6 +306,8 @@ crates/
 - 样本量不足时，percentile 输出必须显示 sample count，并避免过度确定的表述。
 - 错误检测考虑 OTLP `status.code == ERROR`、HTTP 5xx、RPC/gRPC status、exception events。
 - 错误传播展示时间上最早的错误和拓扑上较高层的 ancestor error。
+- 错误传播链展示 root/orphan 入口到 earliest error 的 parent-child path，并列出 top error 下游的错误 span 证据。
+- service latency distribution 展示服务维度 p50、p95、max、total、span count、trace count、error count 和慢 span 样本。
 - N+1 检测按相似 child span 聚合。
 - 相似 child span 重复 `>= 5` 时输出可能 N+1。
 - 重复 `>= 10` 且多数串行时输出高置信度 N+1。

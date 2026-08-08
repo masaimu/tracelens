@@ -66,9 +66,12 @@ What to look for:
 - `sample_count` and `p95` duration reference
 - `confidence`
 - service candidates inside each slow trace
+- service latency distribution across the file
 - error trace candidates
 - earliest error span
 - topologically higher error span
+- parent-child path to the earliest visible error
+- downstream error spans below the top error span
 - error signals such as OTLP ERROR, HTTP 5xx, gRPC/RPC non-OK, or exception events
 - N+1 candidates under a single parent span
 - repeated child count
@@ -76,7 +79,7 @@ What to look for:
 
 Why it matters:
 
-`detect` turns raw trace lists into triage hints. It is intentionally conservative: low sample counts lower confidence, and current output is a candidate list rather than a final root-cause verdict. N+1 detection uses same-parent direct child spans, so candidates should still be checked against business semantics.
+`detect` turns raw trace lists into triage hints. It is intentionally conservative: low sample counts lower confidence, and current output is a candidate list rather than a final root-cause verdict. Error propagation chains show observable parent-child evidence, not guaranteed causality. N+1 detection uses same-parent direct child spans, so candidates should still be checked against business semantics.
 
 ## 4. Inspect the Span Tree
 
@@ -180,7 +183,7 @@ What to look for:
 - JSON fields under `diagnostics`
 - JSON fields under `critical_path`
 - JSON fields under `timeline`
-- JSON fields under `slow_traces` and `error_traces`
+- JSON fields under `slow_traces`, `service_latency_distribution`, `error_traces`, and `error_propagation_chains`
 - JSON fields under `annotations`
 
 Why it matters:

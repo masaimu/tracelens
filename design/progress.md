@@ -15,15 +15,15 @@
 ## 当前快照
 
 - 更新时间：2026-08-08
-- 当前基线提交：当前工作区基于 `bb6b81b`，第十六期：本地验收 Pipeline 与提交前自动触发已完成并落库
-- 当前阶段：第十六期本地验收 Pipeline 完成后
-- 当前整体进度：`83%`
+- 当前基线提交：当前工作区基于 `bb6b81b`，第十七期：detect 错误传播链与服务耗时分布已完成，尚未提交
+- 当前阶段：第十七期 detect 增强完成后
+- 当前整体进度：`85%`
 
 ```text
-[#################---] 83%
+[#################---] 85%
 ```
 
-这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark、本地验收 Pipeline 与提交前 hook、语义化彩色终端输出、`detect` 的慢 trace 候选、错误信号候选和 N+1 候选、5k/50k spans JSON/JSONL 规模验证，以及 `timeline` ASCII 时间轴 MVP；但完整错误传播链推断、service latency distribution、超大单 trace timeline 打磨、完整多 shape 性能基线、CI integration/comparison 等传播文档和发布分发，还没有完成。
+这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark、本地验收 Pipeline 与提交前 hook、语义化彩色终端输出、`detect` 的慢 trace 候选、错误信号候选、错误传播链、service latency distribution 和 N+1 候选、5k/50k spans JSON/JSONL 规模验证，以及 `timeline` ASCII 时间轴 MVP；但超大单 trace timeline 打磨、完整多 shape 性能基线、稳定退出码规范、CI integration/comparison 等传播文档和发布分发，还没有完成。
 
 ## 计算规则
 
@@ -52,7 +52,7 @@
 | M2：Trace 索引与图构建 | 15% | 75% | 11.3% | trace 分组、parent-child、root/orphan/duplicate/missing parent/时间异常 diagnostics 已完成；跨服务边尚未单独显式统计 |
 | M3：基础 CLI 分析命令 | 15% | 95% | 14.3% | `validate`、`summary`、`list-traces`、`tree`、`--output json` 已完成；JSON schema 仍处于 `0.1` 可调整阶段 |
 | M4：耗时分析与关键路径 | 18% | 90% | 16.2% | 已完成 M4-A/M4-B/M4-C：`services`、`critical-path`、串行/并发/nested/suspicious 分类，以及 client/server span pair、async work、linked span 标注；后续仍需与 timeline/report 进一步联动 |
-| M5：模式检测 | 12% | 75% | 9.0% | 已完成 M5-A/M5-B：`detect` 包含慢 trace 候选、service candidates、错误信号候选和 N+1 候选；完整错误传播链推断和 service latency distribution 仍未完成 |
+| M5：模式检测 | 12% | 92% | 11.0% | 已完成 M5-A/M5-B/M5-C：`detect` 包含慢 trace 候选、service candidates、错误信号候选、错误传播链、service latency distribution 和 N+1 候选；后续仅保留跨 trace 聚合、SQL AST 相似判断、p99/p999 等增强项 |
 | M6：终端可视化 | 8% | 75% | 6.0% | 已完成彩色终端输出语义层、`--color` 控制和 `timeline` ASCII 时间轴 MVP；后续可继续打磨超大单 trace 折叠/过滤、可选 flame graph 或更稳定快照基线 |
 | M7：性能、稳定性与自动化接口 | 7% | 85% | 6.0% | 已有测试、JSON 输出、本地 synthetic fixture 生成器、benchmark runner、本地验收 Pipeline 和提交前 hook；runner 已覆盖 `critical-path` 和 `detect`，并可选支持 `timeline`；新增 CI、安全检查、自动/手动 benchmark workflows 和 Actions summary 报告，并支持脚本友好的 `--color never`；已完成 5k/50k JSON/JSONL smoke 验证和 50k detect 3 轮 benchmark；尚未完成多 shape 完整 P95 矩阵、稳定退出码规范文档 |
 | M8：HTML 报告 | 3% | 0% | 0.0% | 未开始 |
@@ -61,13 +61,13 @@
 当前合计：
 
 ```text
-5.0 + 14.3 + 11.3 + 14.3 + 16.2 + 9.0 + 6.0 + 6.0 + 0 + 0.5 = 82.6%
+5.0 + 14.3 + 11.3 + 14.3 + 16.2 + 11.0 + 6.0 + 6.0 + 0 + 0.5 = 84.6%
 ```
 
 四舍五入后记录为：
 
 ```text
-83%
+85%
 ```
 
 ## 原始需求满足度
@@ -86,8 +86,8 @@
 | 计算 critical path | 90% | `critical-path` 已基于 parent-child 拓扑和时间区间输出关键路径片段和 span 聚合；多 root、无 root、child 超出 root 区间均有明确语义；重复 span ID 不会在关键路径汇总中被错误合并；已补充 client/server、async work 和 linked span 语义标注 |
 | 计算服务维度 self time | 65% | `services` 已按 service 聚合 self time，child 覆盖时间使用区间并集；后续需与 critical path 和可视化打通 |
 | 识别串行/并发 span | 85% | `critical-path` 输出 serial/concurrent/nested/suspicious 分类计数和明细；`timeline` 通过横向 bar 重叠展示并发关系 |
-| 检测慢请求 | 50% | `detect` 已按 trace wall-clock duration 输出慢 trace 候选、sample count、p95 reference、confidence 和 service candidates；尚未有 service latency distribution、p99/p999 |
-| 检测错误传播链 | 45% | `detect` 已识别 status error、HTTP 5xx、gRPC/RPC 非 OK 和 exception event，并输出 earliest/top/error spans 证据；尚未做完整传播链推断 |
+| 检测慢请求 | 68% | `detect` 已按 trace wall-clock duration 输出慢 trace 候选、sample count、p95 reference、confidence、service candidates 和 service latency distribution；尚未有 p99/p999 或长期趋势 |
+| 检测错误传播链 | 72% | `detect` 已识别 status error、HTTP 5xx、gRPC/RPC 非 OK 和 exception event，并输出 earliest/top/error spans 证据、root/orphan 到 earliest error 的 parent-child path，以及 top error 下游错误证据；尚未做完整异步因果推断 |
 | 检测 N+1 调用模式 | 75% | `detect` 已按同 parent 直接 child span 聚合相似调用，重复 `>= 5` 输出 medium candidate，重复 `>= 10` 且多数串行输出 high confidence；尚未做跨 trace 聚合或 SQL AST 级相似判断 |
 | 终端 ASCII flame graph/timeline | 70% | 已完成彩色终端输出基础设施、稳定颜色语义和 `timeline` ASCII 时间轴 MVP；尚未做 flame graph 或超大单 trace 折叠/过滤 |
 | 单页 HTML report | 0% | 未开始 |
@@ -95,7 +95,7 @@
 | 核心单元测试 | 90% | 已有 34 个单元测试和 37 个 CLI 端到端测试；后续 report 和更完整性能基线还需要继续补 |
 | CI 检查与工程化质量门禁 | 82% | 已新增 GitHub Actions CI、安全检查、自动/手动性能 benchmark workflow、本地验收 Pipeline 和提交前 hook；Benchmark 默认覆盖 5k/50k spans 和 `detect`，会展示 Actions summary；本地 hook 需每个开发者执行 setup 后生效；尚未配置分支保护和 release workflow |
 | P95 样本处理耗时小于 2 秒 | 65% | 已有 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path` 和 `detect`；本地 50k spans `detect` 3 轮 P95 为 466.123ms；尚未跑完整多 shape 多轮 P95 矩阵 |
-| 可脚本化 JSON 输出 | 82% | 基础命令、`services`、`tree`、`critical-path`、`detect` 和 `timeline` 已有 `--output json` 与 `schema_version: "0.1"`，并输出结构化 annotations / slow_traces / error_traces / n_plus_one_candidates / timeline rows；`--output json` 不受彩色输出影响；schema 尚未稳定 |
+| 可脚本化 JSON 输出 | 85% | 基础命令、`services`、`tree`、`critical-path`、`detect` 和 `timeline` 已有 `--output json` 与 `schema_version: "0.1"`，并输出结构化 annotations / slow_traces / service_latency_distribution / error_traces / error_propagation_chains / n_plus_one_candidates / timeline rows；`--output json` 不受彩色输出影响；schema 尚未稳定 |
 | 远程下载使用 | 12% | 有版本号、本地构建、README 安装说明、使用示例和首批产品传播文档；尚未发布 release artifact |
 
 ## 当前已具备的能力
@@ -193,15 +193,18 @@ tracelens --color auto|always|never <command>
 - 慢 trace 候选按 wall-clock duration 排序。
 - 慢 trace 候选输出 rank、duration、sample count、sample quality、p95 reference 和 confidence。
 - 慢 trace 候选输出 service candidates，帮助用户优先查看慢 trace 内的服务。
+- service latency distribution 按 service 聚合当前文件中的 span duration，输出 trace count、span count、error count、total、p50、p95、max 和 slow span samples。
 - 样本数少于 5 时标记 low confidence；样本数少于 20 时提示 limited sample。
 - 错误候选识别 OTLP `status.code == ERROR`、HTTP 5xx、gRPC/RPC 非 OK 和 exception event。
 - 错误候选输出 earliest error span、top error span、完整 error spans 证据列表和 confidence。
+- 错误传播链输出从可见 root 或 orphan 入口到 earliest error 的 parent-child path。
+- 错误传播链输出 top error span 下游的错误 span 证据、affected span count 和 affected services。
 - N+1 候选基于同一个 parent 下相似直接 child span 聚合。
 - 相似 child span 重复 `>= 5` 输出 medium confidence candidate。
 - 相似 child span 重复 `>= 10` 且 `serial_ratio >= 80%` 输出 high confidence candidate。
 - N+1 分组会归一化 span name 中的数字参数，并考虑 `db.system`、`db.operation`、`rpc.system`、`http.method`、`http.route` 等属性。
 - `detect` 文本输出包含中文说明和字段解释。
-- `detect` JSON 输出包含 `summary`、`slow_traces`、`error_traces`、`n_plus_one_candidates`、`notes` 和 `diagnostics`。
+- `detect` JSON 输出包含 `summary`、`slow_traces`、`service_latency_distribution`、`error_traces`、`error_propagation_chains`、`n_plus_one_candidates`、`notes` 和 `diagnostics`。
 
 当前性能验证能力：
 
@@ -270,7 +273,7 @@ tracelens --color auto|always|never <command>
 
 下一批最重要的缺口：
 
-- M5：完整错误传播链推断、service latency distribution。
+- M5：后续增强项包括跨 trace N+1 聚合、SQL AST 相似判断、p99/p999、以及完整异步因果推断；这些不阻塞当前第一版候选检测主路径。
 - M6：超大单 trace timeline 折叠/过滤、可选 ASCII flame graph 或更稳定快照基线。
 - M7：完整多 shape、多轮 P95 性能基线、稳定 JSON schema、退出码规范、可选分支保护规则、远端 required checks 兜底。
 - M8：HTML report。

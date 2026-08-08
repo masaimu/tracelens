@@ -300,9 +300,14 @@ fn detect_outputs_chinese_explanations() {
     assert!(stdout.contains("慢请求候选"));
     assert!(stdout.contains("service candidates"));
     assert!(stdout.contains("checkout-service"));
+    assert!(stdout.contains("服务耗时分布"));
+    assert!(stdout.contains("slow span samples"));
     assert!(stdout.contains("错误传播候选"));
     assert!(stdout.contains("earliest:"));
     assert!(stdout.contains("top:"));
+    assert!(stdout.contains("错误传播链"));
+    assert!(stdout.contains("path: root -> earliest error"));
+    assert!(stdout.contains("downstream errors"));
     assert!(stdout.contains("status_code_error(OTLP ERROR)"));
     assert!(stdout.contains("http_5xx(HTTP 5xx)"));
     assert!(stdout.contains("grpc_non_zero(gRPC 非 0)"));
@@ -326,6 +331,8 @@ fn detect_outputs_json() {
     assert_eq!(value["summary"]["sample_count"], 6);
     assert_eq!(value["summary"]["sample_quality"], "limited");
     assert_eq!(value["summary"]["p95_duration_ns"], 900_000_000_u64);
+    assert_eq!(value["summary"]["error_propagation_chain_count"], 1);
+    assert_eq!(value["summary"]["service_latency_distribution_count"], 5);
     assert_eq!(
         value["slow_traces"][0]["trace_id"],
         "66666666666666666666666666666666"
@@ -347,6 +354,41 @@ fn detect_outputs_json() {
         .as_array()
         .expect("signals should be array");
     assert!(signals.iter().any(|signal| signal == "status_code_error"));
+    assert_eq!(
+        value["error_propagation_chains"][0]["trace_id"],
+        "66666666666666666666666666666666"
+    );
+    assert_eq!(
+        value["error_propagation_chains"][0]["path_to_earliest_error"]
+            .as_array()
+            .expect("path_to_earliest_error should be array")
+            .len(),
+        1
+    );
+    assert_eq!(
+        value["error_propagation_chains"][0]["downstream_error_span_count"],
+        3
+    );
+    assert!(
+        value["error_propagation_chains"][0]["downstream_error_spans"]
+            .as_array()
+            .expect("downstream_error_spans should be array")
+            .iter()
+            .any(|span| span["span_id"] == "6600000000000002")
+    );
+    let service_distribution = value["service_latency_distribution"]
+        .as_array()
+        .expect("service_latency_distribution should be array");
+    let checkout = service_distribution
+        .iter()
+        .find(|service| service["service_name"] == "checkout-service")
+        .expect("checkout distribution should exist");
+    assert_eq!(checkout["p95_duration_ns"], 900_000_000_u64);
+    assert_eq!(checkout["max_span_duration_ns"], 900_000_000_u64);
+    assert_eq!(
+        checkout["slow_span_samples"][0]["span_id"],
+        "6600000000000001"
+    );
     assert_eq!(value["summary"]["n_plus_one_candidate_count"], 0);
     assert!(
         value["n_plus_one_candidates"]

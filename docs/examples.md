@@ -60,6 +60,7 @@ Detect 检测概览
 traces: 6  spans: 9  diagnostics: 0  limit: 2
 样本数: 6  样本质量: limited  p95 耗时参考: 900.000ms
 慢请求候选: 2  错误 trace 候选: 1  N+1 候选: 0  错误 span: 4
+错误传播链: 1  服务耗时分布: 2
 
 慢请求候选
 rank  trace_id                          duration  confidence  spans  services  errors  diagnostics
@@ -67,6 +68,17 @@ rank  trace_id                          duration  confidence  spans  services  e
       service candidates:
       - [checkout-service] span_time=900.000ms max_span=900.000ms spans=1 errors=1
       - [payment-service] span_time=250.000ms max_span=250.000ms spans=1 errors=1
+```
+
+`detect` also ranks services by latency distribution across the file:
+
+```text
+服务耗时分布
+service              p50        p95        max        total      spans  traces  errors
+checkout-service      900.000ms  900.000ms  900.000ms  900.000ms      1       1       1
+  slow span samples:
+  - GET /checkout trace_id=66666666666666666666666666666666 span_id=6600000000000001 duration=900.000ms status=ERROR signals=status_code_error(OTLP ERROR)
+payment-service       250.000ms  250.000ms  250.000ms  250.000ms      1       1       1
 ```
 
 The same command also prints error evidence:
@@ -77,6 +89,17 @@ The same command also prints error evidence:
   earliest: [checkout-service] GET /checkout span_id=6600000000000001 depth=0 duration=900.000ms signals=status_code_error(OTLP ERROR)
   top:      [checkout-service] GET /checkout span_id=6600000000000001 depth=0 duration=900.000ms signals=status_code_error(OTLP ERROR)
   signals: exception_event(exception 事件),grpc_non_zero(gRPC 非 0),http_5xx(HTTP 5xx),status_code_error(OTLP ERROR)
+```
+
+And the observable propagation chain:
+
+```text
+错误传播链
+- trace_id=66666666666666666666666666666666  confidence=high  affected_spans=4  downstream_errors=3  services=checkout-service,inventory-service,payment-service,postgres-service
+  path: root -> earliest error
+  - [checkout-service] GET /checkout span_id=6600000000000001 depth=0 duration=900.000ms status=ERROR signals=status_code_error(OTLP ERROR)
+  downstream errors: showing 3 of 3
+  - [payment-service] POST /charge span_id=6600000000000002 depth=1 duration=250.000ms status=ERROR signals=http_5xx(HTTP 5xx)
 ```
 
 `detect` output is a candidate list. Use `tree`, `services`, or `critical-path` next when you need deeper evidence.
@@ -248,8 +271,17 @@ Useful JSON fields:
   "summary": {
     "sample_count": 2,
     "sample_quality": "insufficient",
+    "service_latency_distribution_count": 3,
+    "error_propagation_chain_count": 0,
     "n_plus_one_candidate_count": 2
   },
+  "service_latency_distribution": [
+    {
+      "service_name": "checkout-service",
+      "p95_duration_ns": 200000000,
+      "max_span_duration_ns": 200000000
+    }
+  ],
   "n_plus_one_candidates": [
     {
       "trace_id": "77777777777777777777777777777777",

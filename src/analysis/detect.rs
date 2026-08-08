@@ -57,7 +57,9 @@ pub struct DetectSummary {
     pub p95_duration_ns: Option<u64>,
     pub slow_trace_candidate_count: usize,
     pub error_trace_candidate_count: usize,
+    pub error_propagation_chain_count: usize,
     pub n_plus_one_candidate_count: usize,
+    pub service_latency_distribution_count: usize,
     pub error_span_count: usize,
 }
 
@@ -110,6 +112,33 @@ pub struct ErrorTraceCandidate {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ErrorPropagationStep {
+    pub span_id: String,
+    pub parent_span_id: Option<String>,
+    pub service_name: String,
+    pub name: String,
+    pub depth: usize,
+    pub start_ns: u64,
+    pub duration_ns: u64,
+    pub is_error: bool,
+    pub signals: Vec<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ErrorPropagationChain {
+    pub trace_id: String,
+    pub confidence: Confidence,
+    pub earliest_error_span: ErrorSpanCandidate,
+    pub top_error_span: ErrorSpanCandidate,
+    pub path_to_earliest_error: Vec<ErrorPropagationStep>,
+    pub downstream_error_spans: Vec<ErrorPropagationStep>,
+    pub downstream_error_span_count: usize,
+    pub affected_span_count: usize,
+    pub affected_services: Vec<String>,
+    pub explanation: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NPlusOneSpanRef {
     pub span_id: String,
     pub parent_span_id: Option<String>,
@@ -145,12 +174,39 @@ pub struct NPlusOneCandidate {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ServiceLatencySpanSample {
+    pub trace_id: String,
+    pub span_id: String,
+    pub parent_span_id: Option<String>,
+    pub name: String,
+    pub start_ns: u64,
+    pub duration_ns: u64,
+    pub is_error: bool,
+    pub signals: Vec<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ServiceLatencyDistribution {
+    pub service_name: String,
+    pub trace_count: usize,
+    pub span_count: usize,
+    pub error_span_count: usize,
+    pub total_span_time_ns: u64,
+    pub p50_duration_ns: u64,
+    pub p95_duration_ns: u64,
+    pub max_span_duration_ns: u64,
+    pub slow_span_samples: Vec<ServiceLatencySpanSample>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DetectAnalysis {
     pub limit: usize,
     pub summary: DetectSummary,
     pub slow_traces: Vec<SlowTraceCandidate>,
     pub error_traces: Vec<ErrorTraceCandidate>,
+    pub error_propagation_chains: Vec<ErrorPropagationChain>,
     pub n_plus_one_candidates: Vec<NPlusOneCandidate>,
+    pub service_latency_distribution: Vec<ServiceLatencyDistribution>,
     pub notes: Vec<String>,
 }
 
@@ -179,7 +235,9 @@ pub fn analyze_detect(collection: &TraceCollection, limit: usize) -> DetectAnaly
 
     let slow_traces = slow_trace_candidates(collection, limit, p95_duration_ns, sample_count);
     let error_traces = error_trace_candidates(collection, limit);
+    let error_propagation_chains = error_propagation_chains(collection, limit);
     let n_plus_one_candidates = n_plus_one_candidates(collection, limit);
+    let service_latency_distribution = service_latency_distribution(collection, limit);
     let error_span_count = collection
         .traces
         .values()
@@ -214,12 +272,16 @@ pub fn analyze_detect(collection: &TraceCollection, limit: usize) -> DetectAnaly
             p95_duration_ns,
             slow_trace_candidate_count: slow_traces.len(),
             error_trace_candidate_count: error_traces.len(),
+            error_propagation_chain_count: error_propagation_chains.len(),
             n_plus_one_candidate_count: n_plus_one_candidates.len(),
+            service_latency_distribution_count: service_latency_distribution.len(),
             error_span_count,
         },
         slow_traces,
         error_traces,
+        error_propagation_chains,
         n_plus_one_candidates,
+        service_latency_distribution,
         notes,
     }
 }
@@ -405,6 +467,261 @@ fn error_trace_candidate(trace: &TraceGraph) -> Option<ErrorTraceCandidate> {
         error_spans,
         explanation: "error signals were found in this trace; inspect earliest_error_span for the first visible signal and top_error_span for the highest-level failing span".to_string(),
     })
+}
+
+fn error_propagation_chains(
+    collection: &TraceCollection,
+    limit: usize,
+) -> Vec<ErrorPropagationChain> {
+    let mut chains = collection
+        .traces
+        .values()
+        .filter_map(error_propagation_chain)
+        .collect::<Vec<_>>();
+
+    chains.sort_by(|left, right| {
+        confidence_rank(right.confidence)
+            .cmp(&confidence_rank(left.confidence))
+            .then(
+                right
+                    .downstream_error_span_count
+                    .cmp(&left.downstream_error_span_count),
+            )
+            .then(right.affected_span_count.cmp(&left.affected_span_count))
+            .then(left.trace_id.cmp(&right.trace_id))
+    });
+    chains.truncate(limit);
+    chains
+}
+
+fn error_propagation_chain(trace: &TraceGraph) -> Option<ErrorPropagationChain> {
+    let mut error_indices = trace
+        .spans
+        .iter()
+        .enumerate()
+        .filter_map(|(index, span)| {
+            if error_signals(span).is_empty() {
+                None
+            } else {
+                Some(index)
+            }
+        })
+        .collect::<Vec<_>>();
+
+    if error_indices.is_empty() {
+        return None;
+    }
+
+    error_indices.sort_by(|left, right| {
+        trace.spans[*left]
+            .start_ns
+            .cmp(&trace.spans[*right].start_ns)
+            .then(trace.spans[*left].span_id.cmp(&trace.spans[*right].span_id))
+    });
+
+    let earliest_index = error_indices[0];
+    let top_index = topological_highest_error_index(trace, &error_indices);
+    let confidence = error_confidence(trace, &error_indices);
+
+    let path_indices = path_to_span(trace, earliest_index);
+    let path_to_earliest_error = path_indices
+        .iter()
+        .map(|index| error_propagation_step(trace, *index))
+        .collect::<Vec<_>>();
+
+    let descendant_indices = descendant_indices(trace, &trace.spans[top_index].span_id);
+    let affected_span_count = descendant_indices.len().saturating_add(1);
+    let mut downstream_error_indices = descendant_indices
+        .into_iter()
+        .filter(|index| *index != top_index && !error_signals(&trace.spans[*index]).is_empty())
+        .collect::<Vec<_>>();
+    downstream_error_indices.sort_by(|left, right| {
+        trace.spans[*left]
+            .start_ns
+            .cmp(&trace.spans[*right].start_ns)
+            .then(span_depth(trace, *left).cmp(&span_depth(trace, *right)))
+            .then(trace.spans[*left].span_id.cmp(&trace.spans[*right].span_id))
+    });
+
+    let downstream_error_span_count = downstream_error_indices.len();
+    let downstream_error_spans = downstream_error_indices
+        .iter()
+        .take(10)
+        .map(|index| error_propagation_step(trace, *index))
+        .collect::<Vec<_>>();
+
+    let mut affected_services = BTreeSet::new();
+    affected_services.insert(trace.spans[top_index].service_name.clone());
+    for index in path_indices.iter().chain(downstream_error_indices.iter()) {
+        affected_services.insert(trace.spans[*index].service_name.clone());
+    }
+
+    Some(ErrorPropagationChain {
+        trace_id: trace.trace_id.clone(),
+        confidence,
+        earliest_error_span: error_span_candidate(trace, earliest_index),
+        top_error_span: error_span_candidate(trace, top_index),
+        path_to_earliest_error,
+        downstream_error_spans,
+        downstream_error_span_count,
+        affected_span_count,
+        affected_services: affected_services.into_iter().collect(),
+        explanation: "path_to_earliest_error follows parent-child topology from the visible root or orphan entry point to the first error signal; downstream_error_spans lists later error evidence below top_error_span".to_string(),
+    })
+}
+
+fn path_to_span(trace: &TraceGraph, index: usize) -> Vec<usize> {
+    let id_to_index = first_span_id_to_index(trace);
+    let mut path = Vec::new();
+    let mut cursor_index = index;
+    let mut visited = BTreeSet::new();
+
+    loop {
+        let span = &trace.spans[cursor_index];
+        if !visited.insert(span.span_id.as_str()) {
+            break;
+        }
+        path.push(cursor_index);
+
+        let Some(parent_span_id) = span.parent_span_id.as_deref() else {
+            break;
+        };
+        let Some(parent_index) = id_to_index.get(parent_span_id).copied() else {
+            break;
+        };
+        cursor_index = parent_index;
+    }
+
+    path.reverse();
+    path
+}
+
+fn descendant_indices(trace: &TraceGraph, span_id: &str) -> Vec<usize> {
+    let mut descendants = Vec::new();
+    let mut stack = trace
+        .children_by_parent
+        .get(span_id)
+        .cloned()
+        .unwrap_or_default();
+    let mut visited = BTreeSet::new();
+
+    while let Some(index) = stack.pop() {
+        if !visited.insert(index) {
+            continue;
+        }
+        descendants.push(index);
+        let child_span_id = &trace.spans[index].span_id;
+        if let Some(children) = trace.children_by_parent.get(child_span_id) {
+            stack.extend(children.iter().copied());
+        }
+    }
+
+    descendants.sort_by(|left, right| {
+        trace.spans[*left]
+            .start_ns
+            .cmp(&trace.spans[*right].start_ns)
+            .then(span_depth(trace, *left).cmp(&span_depth(trace, *right)))
+            .then(trace.spans[*left].span_id.cmp(&trace.spans[*right].span_id))
+    });
+    descendants
+}
+
+fn error_propagation_step(trace: &TraceGraph, index: usize) -> ErrorPropagationStep {
+    let span = &trace.spans[index];
+    let signals = error_signals(span);
+    ErrorPropagationStep {
+        span_id: span.span_id.clone(),
+        parent_span_id: span.parent_span_id.clone(),
+        service_name: span.service_name.clone(),
+        name: span.name.clone(),
+        depth: span_depth(trace, index),
+        start_ns: span.start_ns,
+        duration_ns: span.duration_ns(),
+        is_error: !signals.is_empty(),
+        signals,
+    }
+}
+
+fn service_latency_distribution(
+    collection: &TraceCollection,
+    limit: usize,
+) -> Vec<ServiceLatencyDistribution> {
+    #[derive(Default)]
+    struct ServiceLatencyAccumulator {
+        trace_ids: BTreeSet<String>,
+        durations: Vec<u64>,
+        error_span_count: usize,
+        total_span_time_ns: u64,
+        slow_span_samples: Vec<ServiceLatencySpanSample>,
+    }
+
+    let mut by_service: BTreeMap<String, ServiceLatencyAccumulator> = BTreeMap::new();
+
+    for trace in collection.traces.values() {
+        for span in &trace.spans {
+            let entry = by_service.entry(span.service_name.clone()).or_default();
+            let duration_ns = span.duration_ns();
+            let signals = error_signals(span);
+
+            entry.trace_ids.insert(trace.trace_id.clone());
+            entry.durations.push(duration_ns);
+            entry.total_span_time_ns = entry.total_span_time_ns.saturating_add(duration_ns);
+            if !signals.is_empty() {
+                entry.error_span_count += 1;
+            }
+            entry.slow_span_samples.push(ServiceLatencySpanSample {
+                trace_id: trace.trace_id.clone(),
+                span_id: span.span_id.clone(),
+                parent_span_id: span.parent_span_id.clone(),
+                name: span.name.clone(),
+                start_ns: span.start_ns,
+                duration_ns,
+                is_error: !signals.is_empty(),
+                signals,
+            });
+        }
+    }
+
+    let mut distributions = by_service
+        .into_iter()
+        .filter_map(|(service_name, mut accumulator)| {
+            accumulator.durations.sort_unstable();
+            let p50_duration_ns = percentile_nearest_rank(&accumulator.durations, 50)?;
+            let p95_duration_ns = percentile_nearest_rank(&accumulator.durations, 95)?;
+            let max_span_duration_ns = accumulator.durations.last().copied()?;
+            accumulator.slow_span_samples.sort_by(|left, right| {
+                right
+                    .duration_ns
+                    .cmp(&left.duration_ns)
+                    .then(left.trace_id.cmp(&right.trace_id))
+                    .then(left.span_id.cmp(&right.span_id))
+            });
+            accumulator.slow_span_samples.truncate(3);
+
+            Some(ServiceLatencyDistribution {
+                service_name,
+                trace_count: accumulator.trace_ids.len(),
+                span_count: accumulator.durations.len(),
+                error_span_count: accumulator.error_span_count,
+                total_span_time_ns: accumulator.total_span_time_ns,
+                p50_duration_ns,
+                p95_duration_ns,
+                max_span_duration_ns,
+                slow_span_samples: accumulator.slow_span_samples,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    distributions.sort_by(|left, right| {
+        right
+            .p95_duration_ns
+            .cmp(&left.p95_duration_ns)
+            .then(right.max_span_duration_ns.cmp(&left.max_span_duration_ns))
+            .then(right.total_span_time_ns.cmp(&left.total_span_time_ns))
+            .then(left.service_name.cmp(&right.service_name))
+    });
+    distributions.truncate(limit);
+    distributions
 }
 
 fn n_plus_one_candidates(collection: &TraceCollection, limit: usize) -> Vec<NPlusOneCandidate> {
@@ -796,6 +1113,8 @@ mod tests {
 
         assert_eq!(analysis.summary.sample_count, 6);
         assert_eq!(analysis.summary.p95_duration_ns, Some(900_000_000));
+        assert_eq!(analysis.summary.error_propagation_chain_count, 1);
+        assert_eq!(analysis.summary.service_latency_distribution_count, 3);
         assert_eq!(
             analysis.slow_traces[0].trace_id,
             "66666666666666666666666666666666"
@@ -822,6 +1141,29 @@ mod tests {
                 .signals
                 .contains(&"status_code_error".to_string())
         );
+
+        let chain = analysis
+            .error_propagation_chains
+            .iter()
+            .find(|chain| chain.trace_id == "66666666666666666666666666666666")
+            .expect("error propagation chain should be detected");
+        assert_eq!(chain.path_to_earliest_error.len(), 1);
+        assert_eq!(chain.downstream_error_span_count, 3);
+        assert_eq!(chain.affected_span_count, 4);
+        assert!(
+            chain
+                .affected_services
+                .contains(&"payment-service".to_string())
+        );
+
+        let checkout = analysis
+            .service_latency_distribution
+            .iter()
+            .find(|service| service.service_name == "checkout-service")
+            .expect("checkout latency distribution should be present");
+        assert_eq!(checkout.p95_duration_ns, 900_000_000);
+        assert_eq!(checkout.max_span_duration_ns, 900_000_000);
+        assert_eq!(checkout.error_span_count, 1);
     }
 
     #[test]

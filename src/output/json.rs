@@ -9,8 +9,9 @@ use crate::analysis::critical_path::{
     CriticalPathStatus,
 };
 use crate::analysis::detect::{
-    DetectAnalysis, ErrorSpanCandidate, ErrorTraceCandidate, NPlusOneCandidate, NPlusOneChildGroup,
-    NPlusOneSpanRef, ServiceSlowCandidate, SlowTraceCandidate,
+    DetectAnalysis, ErrorPropagationChain, ErrorPropagationStep, ErrorSpanCandidate,
+    ErrorTraceCandidate, NPlusOneCandidate, NPlusOneChildGroup, NPlusOneSpanRef,
+    ServiceLatencyDistribution, ServiceLatencySpanSample, ServiceSlowCandidate, SlowTraceCandidate,
 };
 use crate::analysis::duration::{RootSpanDuration, ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
@@ -130,7 +131,9 @@ pub fn format_detect_json(analysis: &DetectAnalysis, collection: &TraceCollectio
             "p95_duration_ns": analysis.summary.p95_duration_ns,
             "slow_trace_candidate_count": analysis.summary.slow_trace_candidate_count,
             "error_trace_candidate_count": analysis.summary.error_trace_candidate_count,
+            "error_propagation_chain_count": analysis.summary.error_propagation_chain_count,
             "n_plus_one_candidate_count": analysis.summary.n_plus_one_candidate_count,
+            "service_latency_distribution_count": analysis.summary.service_latency_distribution_count,
             "error_span_count": analysis.summary.error_span_count,
         },
         "slow_traces": analysis
@@ -143,10 +146,20 @@ pub fn format_detect_json(analysis: &DetectAnalysis, collection: &TraceCollectio
             .iter()
             .map(error_trace_candidate_to_json)
             .collect::<Vec<_>>(),
+        "error_propagation_chains": analysis
+            .error_propagation_chains
+            .iter()
+            .map(error_propagation_chain_to_json)
+            .collect::<Vec<_>>(),
         "n_plus_one_candidates": analysis
             .n_plus_one_candidates
             .iter()
             .map(n_plus_one_candidate_to_json)
+            .collect::<Vec<_>>(),
+        "service_latency_distribution": analysis
+            .service_latency_distribution
+            .iter()
+            .map(service_latency_distribution_to_json)
             .collect::<Vec<_>>(),
         "notes": analysis.notes,
         "diagnostics": diagnostics_to_json(&collection.diagnostics),
@@ -319,6 +332,43 @@ fn error_span_candidate_to_json(candidate: &ErrorSpanCandidate) -> Value {
     })
 }
 
+fn error_propagation_chain_to_json(chain: &ErrorPropagationChain) -> Value {
+    json!({
+        "trace_id": chain.trace_id,
+        "confidence": chain.confidence.label(),
+        "earliest_error_span": error_span_candidate_to_json(&chain.earliest_error_span),
+        "top_error_span": error_span_candidate_to_json(&chain.top_error_span),
+        "path_to_earliest_error": chain
+            .path_to_earliest_error
+            .iter()
+            .map(error_propagation_step_to_json)
+            .collect::<Vec<_>>(),
+        "downstream_error_spans": chain
+            .downstream_error_spans
+            .iter()
+            .map(error_propagation_step_to_json)
+            .collect::<Vec<_>>(),
+        "downstream_error_span_count": chain.downstream_error_span_count,
+        "affected_span_count": chain.affected_span_count,
+        "affected_services": chain.affected_services,
+        "explanation": chain.explanation,
+    })
+}
+
+fn error_propagation_step_to_json(step: &ErrorPropagationStep) -> Value {
+    json!({
+        "span_id": step.span_id,
+        "parent_span_id": step.parent_span_id,
+        "service_name": step.service_name,
+        "name": step.name,
+        "depth": step.depth,
+        "start_ns": step.start_ns,
+        "duration_ns": step.duration_ns,
+        "is_error": step.is_error,
+        "signals": step.signals,
+    })
+}
+
 fn n_plus_one_candidate_to_json(candidate: &NPlusOneCandidate) -> Value {
     json!({
         "trace_id": candidate.trace_id,
@@ -359,6 +409,37 @@ fn n_plus_one_span_ref_to_json(span: &NPlusOneSpanRef) -> Value {
         "depth": span.depth,
         "start_ns": span.start_ns,
         "duration_ns": span.duration_ns,
+    })
+}
+
+fn service_latency_distribution_to_json(distribution: &ServiceLatencyDistribution) -> Value {
+    json!({
+        "service_name": distribution.service_name,
+        "trace_count": distribution.trace_count,
+        "span_count": distribution.span_count,
+        "error_span_count": distribution.error_span_count,
+        "total_span_time_ns": distribution.total_span_time_ns,
+        "p50_duration_ns": distribution.p50_duration_ns,
+        "p95_duration_ns": distribution.p95_duration_ns,
+        "max_span_duration_ns": distribution.max_span_duration_ns,
+        "slow_span_samples": distribution
+            .slow_span_samples
+            .iter()
+            .map(service_latency_span_sample_to_json)
+            .collect::<Vec<_>>(),
+    })
+}
+
+fn service_latency_span_sample_to_json(sample: &ServiceLatencySpanSample) -> Value {
+    json!({
+        "trace_id": sample.trace_id,
+        "span_id": sample.span_id,
+        "parent_span_id": sample.parent_span_id,
+        "name": sample.name,
+        "start_ns": sample.start_ns,
+        "duration_ns": sample.duration_ns,
+        "is_error": sample.is_error,
+        "signals": sample.signals,
     })
 }
 

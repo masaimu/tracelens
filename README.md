@@ -28,7 +28,7 @@
 
 `tracelens` is a command-line tool for exploring OpenTelemetry trace exports on your local machine.
 
-It is built for the moments when you have a trace file, not a running trace backend. Give `tracelens` an OTLP JSON or JSONL export, and it helps you validate the file, list traces, inspect span trees, explain service self time, analyze critical paths, draw an ASCII timeline, detect slow/error/N+1 candidates, and produce script-friendly JSON output.
+It is built for the moments when you have a trace file, not a running trace backend. Give `tracelens` an OTLP JSON or JSONL export, and it helps you validate the file, list traces, inspect span trees, explain service self time, analyze critical paths, draw an ASCII timeline, detect slow/error/N+1 candidates, explain observable error propagation, and produce script-friendly JSON output.
 
 The project is still early. The current codebase is a local analysis CLI, not a full trace backend.
 
@@ -36,7 +36,7 @@ The project is still early. The current codebase is a local analysis CLI, not a 
 
 - **Local-first:** inspect OTLP JSON or JSONL files directly from disk.
 - **Explainable:** understand service self time, critical path segments, timeline overlap, concurrency, suspicious timing, and semantic annotations.
-- **Proactive triage:** surface slow trace, error-signal, and N+1 candidates with confidence markers.
+- **Proactive triage:** surface slow trace, service latency distribution, error propagation, and N+1 candidates with confidence markers.
 - **Automation-friendly:** use `--output json` and `--color never` in scripts, CI, and agent workflows.
 - **Conservative semantics:** client/server pairs are annotated, not merged; span links are not converted into parent-child edges.
 
@@ -71,7 +71,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - Service-level self time analysis.
 - Critical path analysis and span execution classification.
 - ASCII timeline output for a single trace, including critical path, error, orphan, and overlap markers.
-- Detect MVP for slow trace candidates, service candidates, error-signal candidates, and N+1 candidates.
+- Detect output for slow trace candidates, service latency distribution, error propagation chains, error-signal candidates, and N+1 candidates.
 - Client/server, async work, messaging, and linked span annotations in tree and critical-path output.
 - Root span, orphan span, missing parent, duplicate span ID, multiple root, no root, and suspicious timing diagnostics.
 - Text output for humans.
@@ -218,7 +218,7 @@ Implemented:
 - Critical path analysis based on parent-child topology and time intervals.
 - ASCII timeline output for trace time structure.
 - Serial, concurrent, nested, and suspicious span classification.
-- Detect MVP for slow trace candidates, error-signal candidates, and N+1 candidates.
+- Detect output for slow trace candidates, service latency distribution, error propagation chains, error-signal candidates, and N+1 candidates.
 - Client/server span pair annotation.
 - Async work, messaging, and linked span annotation.
 - Validation diagnostics.

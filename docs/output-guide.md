@@ -341,6 +341,30 @@ Which service should I inspect first inside this slow trace?
 
 `span_time_ns` is the sum of span durations for that service in the trace. It is a triage hint, not the same as service self time.
 
+### `service_latency_distribution`
+
+Service latency distribution is aggregated across the current file.
+
+Each service includes:
+
+- `service_name`
+- `trace_count`
+- `span_count`
+- `error_span_count`
+- `total_span_time_ns`
+- `p50_duration_ns`
+- `p95_duration_ns`
+- `max_span_duration_ns`
+- `slow_span_samples`
+
+This helps answer:
+
+```text
+Which service looks slow across this trace file?
+```
+
+The distribution uses span duration, not service self time. It is useful for triage, while `tracelens services <file> --trace-id <id>` remains the better command for precise self-time analysis inside one trace.
+
 ### `error_traces`
 
 Error trace candidates are traces where `tracelens` finds error signals.
@@ -361,6 +385,28 @@ Each error trace includes:
 - `confidence`
 
 `earliest_error_span` is the first error span by start time. `top_error_span` is the highest-level error span by trace topology. `error_spans` keeps the full evidence list so later error signals are not hidden when the earliest and top spans are the same.
+
+### `error_propagation_chains`
+
+Error propagation chains show observable parent-child evidence for traces with error signals.
+
+Each chain includes:
+
+- `trace_id`
+- `confidence`
+- `earliest_error_span`
+- `top_error_span`
+- `path_to_earliest_error`
+- `downstream_error_spans`
+- `downstream_error_span_count`
+- `affected_span_count`
+- `affected_services`
+
+`path_to_earliest_error` follows parent links from the visible root or orphan entry point to the earliest visible error span. It may be short when the root span itself is already marked as error.
+
+`downstream_error_spans` lists error spans below `top_error_span`. This helps show whether a high-level failure also appears in child services such as payment, inventory, database, or messaging work.
+
+This is still a candidate explanation, not a root-cause proof. Missing parents, orphan spans, async work, and instrumentation behavior can all affect what the chain can show.
 
 ### `n_plus_one_candidates`
 
@@ -470,7 +516,9 @@ Useful top-level JSON areas:
 - `classification`
 - `annotations`
 - `slow_traces`
+- `service_latency_distribution`
 - `error_traces`
+- `error_propagation_chains`
 - `n_plus_one_candidates`
 - `notes`
 - `diagnostics`

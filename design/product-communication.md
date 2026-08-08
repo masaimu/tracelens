@@ -28,6 +28,8 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 - ASCII timeline
 - service self time
 - slow/error candidates
+- service latency distribution
+- error propagation chains
 - N+1 candidates
 - confidence markers
 - diagnostics

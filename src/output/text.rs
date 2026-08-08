@@ -10,8 +10,9 @@ use crate::analysis::critical_path::{
     CriticalPathAnalysis, CriticalPathSegment, CriticalPathSpanTotal, CriticalPathStatus,
 };
 use crate::analysis::detect::{
-    Confidence, DetectAnalysis, ErrorSpanCandidate, NPlusOneCandidate, NPlusOneSpanRef,
-    SampleQuality, ServiceSlowCandidate, SlowTraceCandidate,
+    Confidence, DetectAnalysis, ErrorPropagationChain, ErrorPropagationStep, ErrorSpanCandidate,
+    NPlusOneCandidate, NPlusOneSpanRef, SampleQuality, ServiceLatencyDistribution,
+    ServiceLatencySpanSample, ServiceSlowCandidate, SlowTraceCandidate,
 };
 use crate::analysis::duration::{ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
@@ -410,6 +411,13 @@ pub fn format_detect(
     .expect("write to string");
     writeln!(
         output,
+        "错误传播链: {}  服务耗时分布: {}",
+        style_count_by_risk(style, analysis.summary.error_propagation_chain_count),
+        analysis.summary.service_latency_distribution_count
+    )
+    .expect("write to string");
+    writeln!(
+        output,
         "{}",
         style.muted(
             "说明：detect 输出的是候选问题和证据，不是最终根因结论；样本数不足时会降低 confidence。"
@@ -437,6 +445,16 @@ pub fn format_detect(
     write_slow_trace_candidates(&mut output, &analysis.slow_traces, style);
 
     writeln!(output).expect("write to string");
+    writeln!(output, "{}", style.section("服务耗时分布")).expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("说明：这里按 service 聚合 span duration 分布，p50/p95/max 用来判断哪个服务在当前文件里更容易拖慢 trace。")
+    )
+    .expect("write to string");
+    write_service_latency_distribution(&mut output, &analysis.service_latency_distribution, style);
+
+    writeln!(output).expect("write to string");
     writeln!(output, "{}", style.section("错误传播候选")).expect("write to string");
     writeln!(
         output,
@@ -445,6 +463,16 @@ pub fn format_detect(
     )
     .expect("write to string");
     write_error_trace_candidates(&mut output, &analysis.error_traces, style);
+
+    writeln!(output).expect("write to string");
+    writeln!(output, "{}", style.section("错误传播链")).expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("说明：path 表示从可见 root 或 orphan 入口沿 parent-child 拓扑走到最早错误；downstream errors 表示 top error span 下游继续出现的错误证据。")
+    )
+    .expect("write to string");
+    write_error_propagation_chains(&mut output, &analysis.error_propagation_chains, style);
 
     writeln!(output).expect("write to string");
     writeln!(output, "{}", style.section("N+1 候选")).expect("write to string");
@@ -468,6 +496,18 @@ pub fn format_detect(
         output,
         "{}",
         style.muted("- service candidates：慢 trace 中按 span_time 排序的服务候选，帮助定位下一步该看哪个服务。")
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("- service latency distribution：按服务聚合的 span duration 分布；p95/max 高的服务通常更值得优先排查。")
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "{}",
+        style.muted("- error propagation chain：错误传播链不是最终根因，只展示当前 trace 中可观察到的 parent-child 路径和下游错误证据。")
     )
     .expect("write to string");
     writeln!(
@@ -793,6 +833,53 @@ fn write_service_candidates(
     }
 }
 
+fn write_service_latency_distribution(
+    output: &mut String,
+    distributions: &[ServiceLatencyDistribution],
+    style: TextStyle,
+) {
+    if distributions.is_empty() {
+        writeln!(output, "(no service latency distribution)").expect("write to string");
+        return;
+    }
+
+    writeln!(
+        output,
+        "{}",
+        style.table_header(
+            "service              p50        p95        max        total      spans  traces  errors"
+        )
+    )
+    .expect("write to string");
+
+    for distribution in distributions {
+        writeln!(
+            output,
+            "{:<20} {:>10} {:>10} {:>10} {:>10} {:>6} {:>7} {:>7}",
+            style.service(&distribution.service_name),
+            style.duration(format_duration(distribution.p50_duration_ns)),
+            style.duration(format_duration(distribution.p95_duration_ns)),
+            style.duration(format_duration(distribution.max_span_duration_ns)),
+            style.duration(format_duration(distribution.total_span_time_ns)),
+            distribution.span_count,
+            distribution.trace_count,
+            style_count_by_risk(style, distribution.error_span_count)
+        )
+        .expect("write to string");
+        if !distribution.slow_span_samples.is_empty() {
+            writeln!(output, "  slow span samples:").expect("write to string");
+            for sample in &distribution.slow_span_samples {
+                writeln!(
+                    output,
+                    "  - {}",
+                    format_service_latency_span_sample(sample, style)
+                )
+                .expect("write to string");
+            }
+        }
+    }
+}
+
 fn write_error_trace_candidates(
     output: &mut String,
     candidates: &[crate::analysis::detect::ErrorTraceCandidate],
@@ -834,6 +921,62 @@ fn write_error_trace_candidates(
         for span in &candidate.error_spans {
             writeln!(output, "  - {}", format_error_span_candidate(span, style))
                 .expect("write to string");
+        }
+    }
+}
+
+fn write_error_propagation_chains(
+    output: &mut String,
+    chains: &[ErrorPropagationChain],
+    style: TextStyle,
+) {
+    if chains.is_empty() {
+        writeln!(output, "(no error propagation chains)").expect("write to string");
+        return;
+    }
+
+    for chain in chains {
+        writeln!(
+            output,
+            "- trace_id={}  confidence={}  affected_spans={}  downstream_errors={}  services={}",
+            style.identifier(&chain.trace_id),
+            style_confidence(style, chain.confidence),
+            chain.affected_span_count,
+            style_count_by_risk(style, chain.downstream_error_span_count),
+            chain.affected_services.join(",")
+        )
+        .expect("write to string");
+        writeln!(
+            output,
+            "  earliest: {}",
+            format_error_span_candidate(&chain.earliest_error_span, style)
+        )
+        .expect("write to string");
+        writeln!(
+            output,
+            "  top:      {}",
+            format_error_span_candidate(&chain.top_error_span, style)
+        )
+        .expect("write to string");
+        writeln!(output, "  path: root -> earliest error").expect("write to string");
+        for step in &chain.path_to_earliest_error {
+            writeln!(output, "  - {}", format_error_propagation_step(step, style))
+                .expect("write to string");
+        }
+        if chain.downstream_error_spans.is_empty() {
+            writeln!(output, "  downstream errors: (none)").expect("write to string");
+        } else {
+            writeln!(
+                output,
+                "  downstream errors: showing {} of {}",
+                chain.downstream_error_spans.len(),
+                chain.downstream_error_span_count
+            )
+            .expect("write to string");
+            for step in &chain.downstream_error_spans {
+                writeln!(output, "  - {}", format_error_propagation_step(step, style))
+                    .expect("write to string");
+            }
         }
     }
 }
@@ -935,6 +1078,44 @@ fn format_error_span_candidate(candidate: &ErrorSpanCandidate, style: TextStyle)
     )
 }
 
+fn format_service_latency_span_sample(
+    sample: &ServiceLatencySpanSample,
+    style: TextStyle,
+) -> String {
+    let marker = if sample.is_error {
+        style.error("ERROR")
+    } else {
+        style.ok("ok")
+    };
+    format!(
+        "{} trace_id={} span_id={} duration={} status={} signals={}",
+        sample.name,
+        style.identifier(&sample.trace_id),
+        style.identifier(&sample.span_id),
+        style.duration(format_duration(sample.duration_ns)),
+        marker,
+        format_error_signals(&sample.signals, style)
+    )
+}
+
+fn format_error_propagation_step(step: &ErrorPropagationStep, style: TextStyle) -> String {
+    let marker = if step.is_error {
+        style.error("ERROR")
+    } else {
+        style.ok("ok")
+    };
+    format!(
+        "[{}] {} span_id={} depth={} duration={} status={} signals={}",
+        style.service(&step.service_name),
+        step.name,
+        style.identifier(&step.span_id),
+        step.depth,
+        style.duration(format_duration(step.duration_ns)),
+        marker,
+        format_error_signals(&step.signals, style)
+    )
+}
+
 fn slow_candidate_explanation(candidate: &SlowTraceCandidate, style: TextStyle) -> String {
     if candidate.sample_count < 5 {
         return style.warning(format!(
@@ -1002,6 +1183,18 @@ fn localize_error_signal(signal: &str) -> String {
         "exception_event" => "exception_event(exception 事件)".to_string(),
         _ => signal.to_string(),
     }
+}
+
+fn format_error_signals(signals: &[String], style: TextStyle) -> String {
+    if signals.is_empty() {
+        return style.muted("<none>");
+    }
+
+    signals
+        .iter()
+        .map(|signal| style.warning(localize_error_signal(signal)))
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 fn aggregate_error_signals(

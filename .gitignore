@@ -21,6 +21,10 @@ __pycache__/
 perf-data/
 perf-results/
 
+# Local acceptance pipeline artifacts
+.local/
+acceptance-results/
+
 # RustRover
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore

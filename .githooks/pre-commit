@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "$ROOT_DIR"
+
+echo "[tracelens] running local acceptance pipeline before commit"
+exec tools/run_local_acceptance.sh --mode pre-commit

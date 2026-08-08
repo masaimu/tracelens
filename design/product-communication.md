@@ -59,6 +59,7 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 | `docs/examples.md` | 可复制示例 | 必须使用真实 fixture、真实命令和真实输出片段 |
 | `docs/output-guide.md` | 输出字段说明 | 必须解释核心指标、语义标注、diagnostics 和 JSON 输出 |
 | `docs/performance.md` | 性能说明 | 必须说明性能目标、benchmark 方法、当前规模验证和本地结果解释 |
+| `docs/local-acceptance-pipeline.md` | 本地验收流程 | 必须说明提交前本地 Pipeline、hook setup 和验收结果位置 |
 
 后续建议逐步新增：
 

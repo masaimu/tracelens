@@ -111,6 +111,35 @@ assets/
 产品传播内容 review：已更新/无需更新，并说明原因。
 ```
 
+### 5. 每次提交前必须通过本地验收 Pipeline
+
+每次功能开发完成后，提交前必须通过本地验收 Pipeline：
+
+```text
+tools/run_local_acceptance.sh
+```
+
+本项目提供本地 `pre-commit` hook：
+
+```text
+.githooks/pre-commit
+```
+
+启用方式：
+
+```text
+tools/setup_local_hooks.sh
+```
+
+启用后，每次执行 `git commit` 都会自动运行本地验收 Pipeline。Pipeline 失败时，commit 必须失败。
+
+重要边界：
+
+- Git 出于安全原因，不会在 clone 仓库后自动启用仓库内 hooks。
+- 每个开发者或 Agent 的本地工作区都必须先执行 `tools/setup_local_hooks.sh`。
+- 如果当前工作区没有启用 hook，Agent 必须在提交前手动运行 `tools/run_local_acceptance.sh`，不能绕过。
+- 本地验收产物写入 `.local/` 和 `acceptance-results/`，这些目录不进入 Git。
+
 ## 开发约束
 
 - 默认使用中文维护设计和项目文档。
@@ -126,6 +155,12 @@ cargo clippy --all-targets -- -D warnings
 cargo build
 ```
 
+如果本次变更进入提交，还必须在提交前运行：
+
+```text
+tools/run_local_acceptance.sh
+```
+
 如果某个命令无法运行，必须在实施报告中说明原因。
 
 ## 提交流程
@@ -136,6 +171,7 @@ cargo build
 - 文档、代码、测试和进度条已经同步。
 - 实施报告和验收结论已经给出。
 - 验证命令已经通过，或失败原因已经明确说明。
+- 本地验收 Pipeline 已通过，或明确说明无法运行的阻塞原因。
 
 提交信息应简洁描述本次变更，例如：
 

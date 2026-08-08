@@ -246,6 +246,20 @@ cargo clippy --all-targets -- -D warnings
 cargo build
 ```
 
+Enable the local pre-commit acceptance pipeline once per checkout:
+
+```bash
+tools/setup_local_hooks.sh
+```
+
+After setup, every `git commit` installs `tracelens` into `.local/tracelens` and runs the local acceptance command suite before the commit is created. You can run it manually with:
+
+```bash
+tools/run_local_acceptance.sh
+```
+
+See [Local acceptance pipeline](docs/local-acceptance-pipeline.md).
+
 Agent-facing project rules are documented in [AGENTS.md](AGENTS.md).
 
 ## License

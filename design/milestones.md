@@ -372,6 +372,8 @@ crates/
 - GitHub Actions CI 质量门禁。
 - GitHub Actions 依赖安全检查。
 - GitHub Actions 手动性能 smoke benchmark。
+- 本地验收 Pipeline，提交前安装并执行核心 CLI 功能集。
+- 本地 `pre-commit` hook 和一次性 setup 脚本。
 - 稳定的 JSON 输出结构。
 - 错误码和退出码规范。
 - 核心模块单元测试。
@@ -384,6 +386,9 @@ crates/
 - GitHub Actions 在 push 和 pull request 时运行格式化检查、测试、clippy 和构建。
 - GitHub Actions 可以定期或手动运行依赖安全检查。
 - GitHub Actions 可以手动运行性能 smoke benchmark，并保存结果 artifact。
+- 本地验收 Pipeline 必须先用 `cargo install --path . --force --root .local/tracelens` 安装 CLI，再使用安装后的 `tracelens` 执行核心命令集。
+- `pre-commit` hook 启用后，`git commit` 会自动触发本地验收 Pipeline；Pipeline 失败时 commit 失败。
+- 文档必须说明 Git 不会在 clone 后自动启用仓库内 hook，每个开发者本地需要执行一次 setup。
 - 对 5k 到 50k spans 的样本，解析、建图和核心分析 P95 小于 2 秒。
 - `validate`、`summary`、`tree`、`critical-path`、`detect`、`timeline` 有端到端测试。
 - JSON 输出包含 `schema_version`。

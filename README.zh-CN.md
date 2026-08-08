@@ -248,6 +248,20 @@ cargo clippy --all-targets -- -D warnings
 cargo build
 ```
 
+每个本地 checkout 执行一次，启用提交前验收 Pipeline：
+
+```bash
+tools/setup_local_hooks.sh
+```
+
+启用后，每次 `git commit` 都会先把 `tracelens` 安装到 `.local/tracelens`，并执行本地功能验收命令集。也可以手动运行：
+
+```bash
+tools/run_local_acceptance.sh
+```
+
+说明见 [Local acceptance pipeline](docs/local-acceptance-pipeline.md)。
+
 Agent 协作规则见 [AGENTS.md](AGENTS.md)。
 
 ## License

@@ -14,16 +14,16 @@
 
 ## 当前快照
 
-- 更新时间：2026-08-07
-- 当前基线提交：当前工作区基于 `b81df48`，包含第十五期 ASCII timeline MVP 实现
-- 当前阶段：第十五期 ASCII timeline MVP 完成后
-- 当前整体进度：`82%`
+- 更新时间：2026-08-08
+- 当前基线提交：当前工作区基于 `8ca87bc`，包含第十六期本地验收 Pipeline 与提交前自动触发实现
+- 当前阶段：第十六期本地验收 Pipeline 完成后
+- 当前整体进度：`83%`
 
 ```text
-[################----] 82%
+[#################---] 83%
 ```
 
-这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark、语义化彩色终端输出、`detect` 的慢 trace 候选、错误信号候选和 N+1 候选、5k/50k spans JSON/JSONL 规模验证，以及 `timeline` ASCII 时间轴 MVP；但完整错误传播链推断、service latency distribution、超大单 trace timeline 打磨、完整多 shape 性能基线、CI integration/comparison 等传播文档和发布分发，还没有完成。
+这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark、本地验收 Pipeline 与提交前 hook、语义化彩色终端输出、`detect` 的慢 trace 候选、错误信号候选和 N+1 候选、5k/50k spans JSON/JSONL 规模验证，以及 `timeline` ASCII 时间轴 MVP；但完整错误传播链推断、service latency distribution、超大单 trace timeline 打磨、完整多 shape 性能基线、CI integration/comparison 等传播文档和发布分发，还没有完成。
 
 ## 计算规则
 
@@ -54,20 +54,20 @@
 | M4：耗时分析与关键路径 | 18% | 90% | 16.2% | 已完成 M4-A/M4-B/M4-C：`services`、`critical-path`、串行/并发/nested/suspicious 分类，以及 client/server span pair、async work、linked span 标注；后续仍需与 timeline/report 进一步联动 |
 | M5：模式检测 | 12% | 75% | 9.0% | 已完成 M5-A/M5-B：`detect` 包含慢 trace 候选、service candidates、错误信号候选和 N+1 候选；完整错误传播链推断和 service latency distribution 仍未完成 |
 | M6：终端可视化 | 8% | 75% | 6.0% | 已完成彩色终端输出语义层、`--color` 控制和 `timeline` ASCII 时间轴 MVP；后续可继续打磨超大单 trace 折叠/过滤、可选 flame graph 或更稳定快照基线 |
-| M7：性能、稳定性与自动化接口 | 7% | 75% | 5.3% | 已有测试、JSON 输出、本地 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path` 和 `detect`，并可选支持 `timeline`；新增 CI、安全检查、自动/手动 benchmark workflows 和 Actions summary 报告，并支持脚本友好的 `--color never`；已完成 5k/50k JSON/JSONL smoke 验证和 50k detect 3 轮 benchmark；尚未完成多 shape 完整 P95 矩阵、稳定退出码规范文档 |
+| M7：性能、稳定性与自动化接口 | 7% | 85% | 6.0% | 已有测试、JSON 输出、本地 synthetic fixture 生成器、benchmark runner、本地验收 Pipeline 和提交前 hook；runner 已覆盖 `critical-path` 和 `detect`，并可选支持 `timeline`；新增 CI、安全检查、自动/手动 benchmark workflows 和 Actions summary 报告，并支持脚本友好的 `--color never`；已完成 5k/50k JSON/JSONL smoke 验证和 50k detect 3 轮 benchmark；尚未完成多 shape 完整 P95 矩阵、稳定退出码规范文档 |
 | M8：HTML 报告 | 3% | 0% | 0.0% | 未开始 |
 | M9：发布与分发 | 2% | 25% | 0.5% | CLI 有版本号，已有英文/中文 README、基础安装使用说明、产品传播规约，以及 why/use-cases/examples/output-guide 首批传播文档；尚未有 release artifact、checksum、发布流程，CI/performance/comparison 文档也未补齐 |
 
 当前合计：
 
 ```text
-5.0 + 14.3 + 11.3 + 14.3 + 16.2 + 9.0 + 6.0 + 5.3 + 0 + 0.5 = 81.9%
+5.0 + 14.3 + 11.3 + 14.3 + 16.2 + 9.0 + 6.0 + 6.0 + 0 + 0.5 = 82.6%
 ```
 
 四舍五入后记录为：
 
 ```text
-82%
+83%
 ```
 
 ## 原始需求满足度
@@ -93,7 +93,7 @@
 | 单页 HTML report | 0% | 未开始 |
 | 子命令式真实 CLI | 94% | `validate/summary/list-traces/tree/services/critical-path/detect/timeline` 已完成，tree/critical-path/timeline 已补充语义或可视化说明；后续还需要 `report` |
 | 核心单元测试 | 90% | 已有 34 个单元测试和 37 个 CLI 端到端测试；后续 report 和更完整性能基线还需要继续补 |
-| CI 检查与工程化质量门禁 | 76% | 已新增 GitHub Actions CI、安全检查和自动/手动性能 benchmark workflow；Benchmark 默认覆盖 5k/50k spans 和 `detect`，会展示 Actions summary；尚未配置分支保护和 release workflow |
+| CI 检查与工程化质量门禁 | 82% | 已新增 GitHub Actions CI、安全检查、自动/手动性能 benchmark workflow、本地验收 Pipeline 和提交前 hook；Benchmark 默认覆盖 5k/50k spans 和 `detect`，会展示 Actions summary；本地 hook 需每个开发者执行 setup 后生效；尚未配置分支保护和 release workflow |
 | P95 样本处理耗时小于 2 秒 | 65% | 已有 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path` 和 `detect`；本地 50k spans `detect` 3 轮 P95 为 466.123ms；尚未跑完整多 shape 多轮 P95 矩阵 |
 | 可脚本化 JSON 输出 | 82% | 基础命令、`services`、`tree`、`critical-path`、`detect` 和 `timeline` 已有 `--output json` 与 `schema_version: "0.1"`，并输出结构化 annotations / slow_traces / error_traces / n_plus_one_candidates / timeline rows；`--output json` 不受彩色输出影响；schema 尚未稳定 |
 | 远程下载使用 | 12% | 有版本号、本地构建、README 安装说明、使用示例和首批产品传播文档；尚未发布 release artifact |
@@ -208,6 +208,11 @@ tracelens --color auto|always|never <command>
 - synthetic OTLP JSON fixture 生成器。
 - synthetic OTLP JSONL fixture 生成器。
 - 本地 benchmark runner。
+- 本地验收 Pipeline：`tools/run_local_acceptance.sh`。
+- 本地验收 Pipeline 会运行标准 Rust 检查、安装 `.local/tracelens/bin/tracelens`，并用安装后的 CLI 执行核心命令集。
+- 本地 `pre-commit` hook：`.githooks/pre-commit`。
+- 本地 hook setup 脚本：`tools/setup_local_hooks.sh`。
+- 每个开发者本地执行 setup 后，`git commit` 会自动触发验收 Pipeline。
 - benchmark runner 默认覆盖 `critical-path` 命令。
 - benchmark runner 覆盖 `detect` 命令。
 - benchmark runner 可选支持 `timeline` 命令。
@@ -219,12 +224,14 @@ tracelens --color auto|always|never <command>
 - Unix/macOS max RSS 统计。
 - JSON 和 Markdown benchmark 报告。
 - `perf-data/` 和 `perf-results/` 被 `.gitignore` 忽略。
+- `.local/` 和 `acceptance-results/` 被 `.gitignore` 忽略。
 
 当前自动化能力：
 
 - GitHub Actions CI workflow。
 - GitHub Actions security workflow。
 - GitHub Actions benchmark workflow。
+- 本地 pre-commit acceptance hook。
 - push、pull request 和手动触发。
 - CI 运行 `cargo fmt --check`、`cargo test --locked`、`cargo clippy --locked --all-targets -- -D warnings`、`cargo build --locked`。
 - security workflow 在依赖文件变化、每周定时和手动触发时运行 `cargo audit`。
@@ -232,6 +239,7 @@ tracelens --color auto|always|never <command>
 - benchmark workflow 将 Markdown 报告写入 Actions summary，并上传 `perf-results/` artifact。
 - CI 使用只读仓库权限。
 - workflows 缓存 Cargo registry、Cargo git db、`target/` 或 cargo-audit 相关目录。
+- 本地 hook 不会在 clone 后天然启用；必须执行 `tools/setup_local_hooks.sh`。
 
 当前开源展示能力：
 
@@ -246,6 +254,7 @@ tracelens --color auto|always|never <command>
 - `docs/examples.md`：提供基于真实 fixture 的可复制命令和输出片段。
 - `docs/output-guide.md`：解释核心输出字段、detect candidates、critical path、timeline、classification、annotations、diagnostics 和 JSON 输出。
 - `docs/performance.md`：说明性能目标、benchmark runner、synthetic fixtures、Actions benchmark 和当前本地 smoke snapshot。
+- `docs/local-acceptance-pipeline.md`：说明本地提交前验收 Pipeline、hook setup、验收命令集和输出目录。
 
 当前验证能力：
 
@@ -253,6 +262,7 @@ tracelens --color auto|always|never <command>
 - `cargo test`。
 - `cargo clippy --all-targets -- -D warnings`。
 - `cargo build`。
+- `tools/run_local_acceptance.sh`。
 - 34 个单元测试。
 - 37 个 CLI 端到端测试。
 
@@ -262,7 +272,7 @@ tracelens --color auto|always|never <command>
 
 - M5：完整错误传播链推断、service latency distribution。
 - M6：超大单 trace timeline 折叠/过滤、可选 ASCII flame graph 或更稳定快照基线。
-- M7：完整多 shape、多轮 P95 性能基线、稳定 JSON schema、退出码规范、可选分支保护规则。
+- M7：完整多 shape、多轮 P95 性能基线、稳定 JSON schema、退出码规范、可选分支保护规则、远端 required checks 兜底。
 - M8：HTML report。
 - M9：CI integration、comparison 等传播文档，GitHub Releases、跨平台 artifact、checksum、发布流程。
 

@@ -44,6 +44,8 @@ Then it executes the installed binary:
 .local/tracelens/bin/tracelens schema --command detect --output text
 .local/tracelens/bin/tracelens validate tests/fixtures/otlp-basic.json
 .local/tracelens/bin/tracelens validate tests/fixtures/otlp-basic.jsonl
+.local/tracelens/bin/tracelens validate tests/fixtures/otlp-invalid-time.json --strict
+.local/tracelens/bin/tracelens --definitely-invalid
 .local/tracelens/bin/tracelens summary tests/fixtures/otlp-basic.json
 .local/tracelens/bin/tracelens list-traces tests/fixtures/otlp-basic.json --limit 2
 .local/tracelens/bin/tracelens tree tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D269B633813FC60C
@@ -52,6 +54,8 @@ Then it executes the installed binary:
 .local/tracelens/bin/tracelens timeline tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 .local/tracelens/bin/tracelens detect tests/fixtures/otlp-n-plus-one.json --limit 5
 ```
+
+The strict validation command is expected to exit `1`, and the invalid option command is expected to exit `2`; the pipeline treats those exact codes as pass conditions.
 
 It also runs JSON smoke checks for `detect`, `timeline`, and `schema`.
 

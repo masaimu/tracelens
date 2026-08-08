@@ -563,6 +563,22 @@ Useful top-level JSON areas:
 - `notes`
 - `diagnostics`
 
+## Exit Codes
+
+`tracelens` uses this first-version exit-code contract:
+
+| code | meaning |
+| ---: | --- |
+| `0` | command completed and output is usable |
+| `1` | input failure, strict validation failure, invalid analysis request, or unmet analysis precondition |
+| `2` | CLI usage error, such as an unknown option or missing required argument |
+
+Candidate findings are not command failures. For example, `detect` can find slow/error/N+1 candidates and still exit `0`.
+
+Default `validate` can report diagnostics and still exit `0`. Use `validate --strict` when diagnostics should fail CI.
+
+See [CI integration](ci-integration.md) for practical shell and GitHub Actions examples.
+
 ## Color Output
 
 Text output supports:

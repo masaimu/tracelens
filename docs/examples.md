@@ -299,6 +299,14 @@ For CI logs, combine text output with:
 tracelens --color never validate tests/fixtures/otlp-basic.json
 ```
 
+For blocking validation in CI, use strict mode:
+
+```bash
+tracelens --color never validate tests/fixtures/otlp-invalid-time.json --strict
+```
+
+This exits with code `1` and prints `Status: failed`. CLI usage errors, such as unknown options, exit with code `2`.
+
 The JSON output schema lives at:
 
 ```text

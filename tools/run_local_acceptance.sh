@@ -161,11 +161,15 @@ run_step "cargo clippy" cargo clippy --all-targets -- -D warnings
 run_step "cargo build" cargo build
 run_step "cargo install local binary" cargo install --path . --force --root "$INSTALL_ROOT"
 
+export TRACELENS_BIN
+
 run_step "installed version" "$TRACELENS_BIN" --version
 run_step "schema help" "$TRACELENS_BIN" schema --help
 run_step "schema text" "$TRACELENS_BIN" schema --command detect --output text
 run_step "validate otlp json" "$TRACELENS_BIN" --color never validate tests/fixtures/otlp-basic.json
 run_step "validate otlp jsonl" "$TRACELENS_BIN" --color never validate tests/fixtures/otlp-basic.jsonl
+run_shell_step "strict validation exit code" 'set +e; output=$("$TRACELENS_BIN" --color never validate tests/fixtures/otlp-invalid-time.json --strict 2>&1); status=$?; set -e; printf "%s\n" "$output"; test "$status" -eq 1; grep -q "Status: failed" <<<"$output"'
+run_shell_step "usage error exit code" 'set +e; output=$("$TRACELENS_BIN" --definitely-invalid 2>&1); status=$?; set -e; printf "%s\n" "$output"; test "$status" -eq 2; grep -q "unexpected argument" <<<"$output"'
 run_step "summary" "$TRACELENS_BIN" --color never summary tests/fixtures/otlp-basic.json
 run_step "list traces" "$TRACELENS_BIN" --color never list-traces tests/fixtures/otlp-basic.json --limit 2
 run_step "tree" "$TRACELENS_BIN" --color never tree tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D269B633813FC60C
@@ -174,7 +178,6 @@ run_step "critical path" "$TRACELENS_BIN" --color never critical-path tests/fixt
 run_step "timeline" "$TRACELENS_BIN" --color never timeline tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 run_step "detect" "$TRACELENS_BIN" --color never detect tests/fixtures/otlp-n-plus-one.json --limit 5
 
-export TRACELENS_BIN
 run_shell_step "detect json smoke" '"$TRACELENS_BIN" --color always detect tests/fixtures/otlp-n-plus-one.json --limit 5 --output json >/dev/null'
 run_shell_step "timeline json smoke" '"$TRACELENS_BIN" --color always timeline tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC --output json >/dev/null'
 run_shell_step "schema json smoke" '"$TRACELENS_BIN" schema --output json >/dev/null'

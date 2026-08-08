@@ -1,7 +1,11 @@
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Output};
 
 use serde_json::Value;
+
+const EXIT_SUCCESS: i32 = 0;
+const EXIT_FAILURE: i32 = 1;
+const EXIT_USAGE: i32 = 2;
 
 fn tracelens() -> Command {
     Command::new(env!("CARGO_BIN_EXE_tracelens"))
@@ -18,6 +22,16 @@ fn fixture(name: &str) -> String {
 
 fn contains_ansi(value: &str) -> bool {
     value.contains("\x1b[")
+}
+
+fn assert_exit_code(output: &Output, expected: i32) {
+    assert_eq!(
+        output.status.code(),
+        Some(expected),
+        "unexpected exit code\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 fn output_schema() -> Value {
@@ -117,12 +131,25 @@ fn help_mentions_schema_discovery() {
         .output()
         .expect("command should run");
 
+    assert_exit_code(&output, EXIT_SUCCESS);
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
     assert!(stdout.contains("Output schema"));
     assert!(stdout.contains("tracelens schema --output json"));
     assert!(stdout.contains("field descriptions"));
     assert!(stdout.contains("schema"));
+}
+
+#[test]
+fn usage_errors_exit_two() {
+    let output = tracelens()
+        .arg("--definitely-invalid")
+        .output()
+        .expect("command should run");
+
+    assert_exit_code(&output, EXIT_USAGE);
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf8");
+    assert!(stderr.contains("unexpected argument"));
 }
 
 #[test]
@@ -313,6 +340,7 @@ fn strict_validate_fails_on_invalid_time() {
         .output()
         .expect("command should run");
 
+    assert_exit_code(&output, EXIT_FAILURE);
     assert!(!output.status.success());
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
     assert!(stdout.contains("Status: failed"));
@@ -374,11 +402,40 @@ fn validate_outputs_json() {
         .output()
         .expect("command should run");
 
+    assert_exit_code(&output, EXIT_SUCCESS);
     assert!(output.status.success());
     let value: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
     assert_eq!(value["schema_version"], "0.1");
     assert_eq!(value["command"], "validate");
     assert_eq!(value["span_count"], 4);
+}
+
+#[test]
+fn strict_validate_json_failure_exit_contract_matches_payload() {
+    let fixture = fixture("otlp-invalid-time.json");
+    let output = tracelens()
+        .args(["validate", fixture.as_str(), "--strict", "--output", "json"])
+        .output()
+        .expect("command should run");
+
+    assert_exit_code(&output, EXIT_FAILURE);
+    let value: Value = serde_json::from_slice(&output.stdout).expect("stdout should be json");
+    assert_eq!(value["status"], "failed");
+    assert_eq!(value["exit_would_fail"], true);
+    assert_eq!(value["error_diagnostic_count"], 1);
+}
+
+#[test]
+fn summary_without_valid_spans_exits_one() {
+    let fixture = fixture("otlp-all-zero-id.json");
+    let output = tracelens()
+        .args(["summary", fixture.as_str()])
+        .output()
+        .expect("command should run");
+
+    assert_exit_code(&output, EXIT_FAILURE);
+    let stderr = String::from_utf8(output.stderr).expect("stderr should be utf8");
+    assert!(stderr.contains("no valid spans found"));
 }
 
 #[test]
@@ -714,6 +771,7 @@ fn detect_rejects_zero_limit() {
         .output()
         .expect("command should run");
 
+    assert_exit_code(&output, EXIT_FAILURE);
     assert!(!output.status.success());
     let stderr = String::from_utf8(output.stderr).expect("stderr should be utf8");
     assert!(stderr.contains("--limit must be greater than 0"));
@@ -727,6 +785,7 @@ fn strict_validate_fails_on_jsonl_invalid_line() {
         .output()
         .expect("command should run");
 
+    assert_exit_code(&output, EXIT_FAILURE);
     assert!(!output.status.success());
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
     assert!(stdout.contains("malformed_jsonl_line"));
@@ -920,6 +979,7 @@ fn timeline_rejects_invalid_width() {
         .output()
         .expect("command should run");
 
+    assert_exit_code(&output, EXIT_FAILURE);
     assert!(!output.status.success());
     let stderr = String::from_utf8(output.stderr).expect("stderr should be utf8");
     assert!(stderr.contains("--width must be between 40 and 160"));
@@ -1156,6 +1216,7 @@ fn critical_path_fails_for_unknown_trace_id() {
         .output()
         .expect("command should run");
 
+    assert_exit_code(&output, EXIT_FAILURE);
     assert!(!output.status.success());
     let stderr = String::from_utf8(output.stderr).expect("stderr should be utf8");
     assert!(stderr.contains("trace_id not found"));

@@ -13,6 +13,7 @@ use crate::analysis::summary::{TraceSummary, summarize};
 use crate::analysis::timeline::{
     DEFAULT_TIMELINE_WIDTH, MAX_TIMELINE_WIDTH, MIN_TIMELINE_WIDTH, analyze_timeline,
 };
+use crate::exit_code;
 use crate::graph::trace_graph::TraceCollection;
 use crate::input::otlp_json::parse_otlp_file;
 use crate::model::diagnostic::Severity;
@@ -262,7 +263,14 @@ impl From<SchemaCommandFilter> for SchemaCommand {
 }
 
 pub fn run() -> Result<ExitCode> {
-    let cli = Cli::parse();
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(error) => {
+            let code = exit_code::from_clap_code(error.exit_code());
+            error.print()?;
+            return Ok(code);
+        }
+    };
     let text_style = TextStyle::from_mode(cli.color.into());
 
     match cli.command {
@@ -288,9 +296,9 @@ pub fn run() -> Result<ExitCode> {
             }
 
             if strict && has_error {
-                Ok(ExitCode::FAILURE)
+                Ok(exit_code::failure())
             } else {
-                Ok(ExitCode::SUCCESS)
+                Ok(exit_code::success())
             }
         }
         Commands::Summary { file, output } => {
@@ -307,7 +315,7 @@ pub fn run() -> Result<ExitCode> {
                 }
                 OutputFormat::Json => print!("{}", format_summary_json(&summary, &collection)),
             }
-            Ok(ExitCode::SUCCESS)
+            Ok(exit_code::success())
         }
         Commands::ListTraces {
             file,
@@ -329,7 +337,7 @@ pub fn run() -> Result<ExitCode> {
                 }
                 OutputFormat::Json => print!("{}", format_list_traces_json(&traces, limit)),
             }
-            Ok(ExitCode::SUCCESS)
+            Ok(exit_code::success())
         }
         Commands::Detect {
             file,
@@ -353,7 +361,7 @@ pub fn run() -> Result<ExitCode> {
                 }
                 OutputFormat::Json => print!("{}", format_detect_json(&analysis, &collection)),
             }
-            Ok(ExitCode::SUCCESS)
+            Ok(exit_code::success())
         }
         Commands::Tree {
             file,
@@ -375,7 +383,7 @@ pub fn run() -> Result<ExitCode> {
                 OutputFormat::Text => print!("{}", format_tree(trace, &annotations, text_style)),
                 OutputFormat::Json => print!("{}", format_tree_json(trace, &annotations)),
             }
-            Ok(ExitCode::SUCCESS)
+            Ok(exit_code::success())
         }
         Commands::CriticalPath {
             file,
@@ -418,7 +426,7 @@ pub fn run() -> Result<ExitCode> {
                     )
                 ),
             }
-            Ok(ExitCode::SUCCESS)
+            Ok(exit_code::success())
         }
         Commands::Timeline {
             file,
@@ -452,7 +460,7 @@ pub fn run() -> Result<ExitCode> {
                     print!("{}", format_timeline_json(&timeline, &critical_path, trace))
                 }
             }
-            Ok(ExitCode::SUCCESS)
+            Ok(exit_code::success())
         }
         Commands::Services {
             file,
@@ -476,7 +484,7 @@ pub fn run() -> Result<ExitCode> {
                 ),
                 OutputFormat::Json => print!("{}", format_services_json(&analysis, trace)),
             }
-            Ok(ExitCode::SUCCESS)
+            Ok(exit_code::success())
         }
         Commands::Schema { command, output } => {
             let command = SchemaCommand::from(command);
@@ -484,7 +492,7 @@ pub fn run() -> Result<ExitCode> {
                 OutputFormat::Text => print!("{}", format_schema_text(command)?),
                 OutputFormat::Json => print!("{}", format_schema_json()),
             }
-            Ok(ExitCode::SUCCESS)
+            Ok(exit_code::success())
         }
     }
 }

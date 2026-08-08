@@ -392,6 +392,7 @@ crates/
 - `tracelens --help` 必须能引导用户和 Agent 找到完整 JSON Schema 与字段 description。
 - 第十九期已落地：`tracelens schema --output text|json`、`tracelens schema --command <name> --output text`、顶层/业务命令 help 发现入口，以及 schema property description coverage 测试。
 - 错误码和退出码规范。
+- 第二十期已落地：退出码 `0/1/2` 规范、运行时代码常量、关键退出码端到端测试、CI 集成文档和本地验收 Pipeline 退出码 smoke。
 - 核心模块单元测试。
 - 端到端 CLI 测试。
 
@@ -413,6 +414,7 @@ crates/
 - `tracelens schema --output json` 能输出包含字段 `description` 的完整 JSON Schema。
 - `tracelens schema --output text` 能输出按命令组织的字段说明。
 - 核心 JSON 字段缺少 `description` 时应有测试失败，避免 schema 退化为只有类型没有语义。
+- 退出码 `0/1/2` 语义有文档说明和端到端测试覆盖，CI 文档必须解释如何用 `validate --strict` 阻断坏 trace。
 - 非法输入和空文件有明确错误信息。
 
 ### 不做

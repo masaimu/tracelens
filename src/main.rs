@@ -1,5 +1,6 @@
 mod analysis;
 mod cli;
+mod exit_code;
 mod graph;
 mod input;
 mod model;
@@ -12,7 +13,7 @@ fn main() -> ExitCode {
         Ok(code) => code,
         Err(error) => {
             eprintln!("error: {error:#}");
-            ExitCode::FAILURE
+            exit_code::failure()
         }
     }
 }

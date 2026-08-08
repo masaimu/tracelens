@@ -61,6 +61,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - [JSON Schema](docs/json-schema.md)
 - [OpenTelemetry 兼容性说明](docs/opentelemetry-compatibility.md)
 - [性能说明](docs/performance.md)
+- [CI 集成说明](docs/ci-integration.md)
 
 ## 当前能力
 
@@ -83,6 +84,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - 语义化彩色文本输出：`--color auto|always|never`。
 - 面向脚本和 Agent 的 JSON 输出：`--output json`。
 - 当前 JSON 输出结构的 JSON Schema，以及 CLI 可发现的字段说明。
+- 面向 CI 和自动化的退出码规范。
 - 基础 trace 列表和排序。
 
 当前命令：
@@ -204,6 +206,13 @@ tracelens validate tests/fixtures/otlp-basic.jsonl
 tracelens validate tests/fixtures/otlp-basic.json --strict
 ```
 
+在 CI 中使用：
+
+```bash
+tracelens --color never validate traces.json --strict
+tracelens detect traces.json --limit 5 --output json > tracelens-detect.json
+```
+
 ## 支持的输入格式
 
 当前支持：
@@ -242,6 +251,7 @@ tracelens validate tests/fixtures/otlp-basic.json --strict
 - 语义化彩色文本输出和 JSON 输出。
 - 面向 Agent 和自动化消费的 JSON Schema 与 CLI 可发现字段说明。
 - OpenTelemetry 兼容性说明文档。
+- 退出码与 CI 集成说明文档。
 
 尚未实现：
 

@@ -172,6 +172,7 @@ Use this when you want trace checks in CI, scripts, or automation.
 
 ```bash
 tracelens --color never validate traces.json
+tracelens --color never validate traces.json --strict
 tracelens critical-path traces.json --trace-id <trace-id> --output json
 tracelens timeline traces.json --trace-id <trace-id> --output json
 tracelens detect traces.json --output json
@@ -188,7 +189,15 @@ What to look for:
 
 Why it matters:
 
-`--color never` avoids ANSI escapes in logs. `--output json` gives scripts stable structured data.
+`--color never` avoids ANSI escapes in logs. `--output json` gives scripts stable structured data. Use `validate --strict` when malformed trace input should block the CI job.
+
+Exit-code rule of thumb:
+
+- `0`: command completed and output is usable
+- `1`: strict validation, input, or analysis request failed
+- `2`: CLI usage error such as an unknown option
+
+See [CI integration](ci-integration.md) for complete examples.
 
 ## 9. Give an AI Agent a Schema-backed Result
 
@@ -248,4 +257,5 @@ Async traces can be easy to over-interpret. `tracelens` annotates related work w
 | Where do spans sit on the time axis? | `timeline` |
 | Do I need script-friendly output? | add `--output json` |
 | Do I need an explicit output contract for agents? | `tracelens schema --output text` or `tracelens schema --output json` |
+| Do I need CI-friendly failure behavior? | `validate --strict`, `--color never`, and [CI integration](ci-integration.md) |
 | Do I need clean logs? | add `--color never` |

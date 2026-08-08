@@ -59,6 +59,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - [JSON Schema](docs/json-schema.md)
 - [OpenTelemetry compatibility](docs/opentelemetry-compatibility.md)
 - [Performance](docs/performance.md)
+- [CI integration](docs/ci-integration.md)
 
 ## Current Capabilities
 
@@ -81,6 +82,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - Semantic colored text output with `--color auto|always|never`.
 - JSON output for scripts and agents with `--output json`.
 - A published JSON Schema and CLI-discoverable field reference for current `--output json` structures.
+- A documented exit-code contract for CI and automation.
 - Basic trace listing and sorting.
 
 Current commands:
@@ -202,6 +204,13 @@ Use strict mode:
 tracelens validate tests/fixtures/otlp-basic.json --strict
 ```
 
+Use in CI:
+
+```bash
+tracelens --color never validate traces.json --strict
+tracelens detect traces.json --limit 5 --output json > tracelens-detect.json
+```
+
 ## Supported Input
 
 Currently supported:
@@ -240,6 +249,7 @@ Implemented:
 - Semantic colored text output and JSON output.
 - JSON Schema and CLI-discoverable field descriptions for agent and automation consumers.
 - OpenTelemetry compatibility documentation.
+- Exit-code and CI integration documentation.
 
 Not implemented yet:
 

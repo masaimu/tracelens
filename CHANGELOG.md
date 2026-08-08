@@ -4,6 +4,22 @@ This file records user-visible changes to `tracelens`. It is the source for rele
 
 The JSON output `schema_version` is tracked separately and remains at `0.1` until the JSON contract is declared stable at `1.0`.
 
+## 0.1.1 — 2026-08-08
+
+Post-`0.1.0` polish line: the two headline metrics called out in the original brief that were still under-satisfied, plus a one-line quickstart so any platform can experience every original requirement point.
+
+### Added
+
+- `services --output json` and the `services` terminal table now include `self_time_ratio` (service self time over trace wall-clock). It is usually between 0.0 and 1.0; under concurrent services the sum across services can exceed 1.0; null when the trace has no wall-clock duration. (M4 polish.)
+- `detect` service latency distribution now reports `p99_duration_ns` and `p999_duration_ns` (nearest-rank). They are null below a deliberate sample threshold: p99 requires at least 20 spans for the service, p999 requires at least 100, otherwise null to avoid over-certain tail percentiles. (M5 polish, original brief "report p95, p99 and p999 when samples are sufficient".)
+- `samples/traces.json`: a deterministic ~5k-span / 8-service sample dataset shipped in the repository, satisfying the original brief "provide a sample dataset `traces.json`" and making p99/p999 demonstrable on real data.
+- `tools/quickstart.sh`: a one-line cross-platform quickstart (`curl ... | bash`) that downloads the latest release, verifies the checksum, pulls the sample dataset, and walks every original brief requirement point (input/scale, basic parse, key metrics, anomaly detection, visualization, engineering) with `tracelens summary`/`tree`/`services`/`critical-path`/`detect`/`report --html`. Supports `--dry-run` for offline rehearsal. (M9 polish.)
+- README and Chinese README gained a Quickstart / 一键体验 section with the one-line command.
+
+### Compatibility
+
+- `schema_version` stays `"0.1"`; the new JSON fields are additive and optional (not promoted to `required`), so existing consumers keep working.
+
 ## 0.1.0 — 2026-08-08
 
 Local OpenTelemetry trace analysis CLI. The first focused release line covers everything needed to understand a single exported trace file on your machine.

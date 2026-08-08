@@ -194,6 +194,8 @@ pub struct ServiceLatencyDistribution {
     pub total_span_time_ns: u64,
     pub p50_duration_ns: u64,
     pub p95_duration_ns: u64,
+    pub p99_duration_ns: Option<u64>,
+    pub p999_duration_ns: Option<u64>,
     pub max_span_duration_ns: u64,
     pub slow_span_samples: Vec<ServiceLatencySpanSample>,
 }
@@ -688,6 +690,12 @@ fn service_latency_distribution(
             accumulator.durations.sort_unstable();
             let p50_duration_ns = percentile_nearest_rank(&accumulator.durations, 50)?;
             let p95_duration_ns = percentile_nearest_rank(&accumulator.durations, 95)?;
+            let p99_duration_ns = (accumulator.durations.len() >= 20)
+                .then(|| percentile_nearest_rank(&accumulator.durations, 99))
+                .flatten();
+            let p999_duration_ns = (accumulator.durations.len() >= 100)
+                .then(|| percentile_nearest_rank(&accumulator.durations, 999))
+                .flatten();
             let max_span_duration_ns = accumulator.durations.last().copied()?;
             accumulator.slow_span_samples.sort_by(|left, right| {
                 right
@@ -706,6 +714,8 @@ fn service_latency_distribution(
                 total_span_time_ns: accumulator.total_span_time_ns,
                 p50_duration_ns,
                 p95_duration_ns,
+                p99_duration_ns,
+                p999_duration_ns,
                 max_span_duration_ns,
                 slow_span_samples: accumulator.slow_span_samples,
             })
@@ -1100,9 +1110,12 @@ fn percentile_nearest_rank(sorted: &[u64], percentile: usize) -> Option<u64> {
 mod tests {
     use std::path::Path;
 
+    use std::collections::BTreeMap;
+
     use super::{Confidence, analyze_detect};
     use crate::graph::trace_graph::TraceCollection;
-    use crate::input::otlp_json::parse_otlp_file;
+    use crate::input::otlp_json::{ParsedTraceData, parse_otlp_file};
+    use crate::model::span::CanonicalSpan;
 
     #[test]
     fn detects_slow_and_error_trace_candidates() {
@@ -1194,5 +1207,84 @@ mod tests {
         assert_eq!(concurrent.repeated_count, 6);
         assert_eq!(concurrent.serial_ratio_per_mille, 0);
         assert_eq!(concurrent.confidence, Confidence::Medium);
+    }
+
+    #[test]
+    fn service_latency_distribution_reports_p99_p999_when_sample_large_enough() {
+        let collection = latency_collection(120);
+        let analysis = analyze_detect(&collection, 10);
+        let svc = analysis
+            .service_latency_distribution
+            .iter()
+            .find(|distribution| distribution.service_name == "svc")
+            .expect("svc latency distribution should be present");
+        assert_eq!(svc.span_count, 120);
+        assert_eq!(svc.p99_duration_ns, Some(1_000));
+        assert_eq!(svc.p999_duration_ns, Some(1_000));
+    }
+
+    #[test]
+    fn service_latency_distribution_p99_p999_null_for_small_samples() {
+        let medium = analyze_detect(&latency_collection(25), 10)
+            .service_latency_distribution
+            .into_iter()
+            .find(|distribution| distribution.service_name == "svc")
+            .expect("svc latency distribution should be present");
+        assert_eq!(medium.span_count, 25);
+        assert_eq!(medium.p99_duration_ns, Some(1_000));
+        assert_eq!(medium.p999_duration_ns, None);
+
+        let small = analyze_detect(&latency_collection(5), 10)
+            .service_latency_distribution
+            .into_iter()
+            .find(|distribution| distribution.service_name == "svc")
+            .expect("svc latency distribution should be present");
+        assert_eq!(small.span_count, 5);
+        assert_eq!(small.p99_duration_ns, None);
+        assert_eq!(small.p999_duration_ns, None);
+    }
+
+    fn latency_collection(span_count: usize) -> TraceCollection {
+        let spans = (0..span_count)
+            .map(|index| latency_span(&format!("s{index}"), "svc", 0, 1_000))
+            .collect::<Vec<_>>();
+        TraceCollection::build(ParsedTraceData {
+            spans,
+            diagnostics: Vec::new(),
+        })
+    }
+
+    fn latency_span(
+        span_id: &str,
+        service_name: &str,
+        start_ns: u64,
+        end_ns: u64,
+    ) -> CanonicalSpan {
+        CanonicalSpan {
+            trace_id: "trace".to_string(),
+            span_id: span_id.to_string(),
+            parent_span_id: None,
+            trace_state: None,
+            flags: None,
+            service_name: service_name.to_string(),
+            name: "op".to_string(),
+            kind: None,
+            start_ns,
+            end_ns,
+            status_code: None,
+            status_message: None,
+            attributes: BTreeMap::new(),
+            dropped_attributes_count: None,
+            resource_attributes: BTreeMap::new(),
+            resource_schema_url: None,
+            scope_name: None,
+            scope_version: None,
+            scope_attributes: BTreeMap::new(),
+            scope_schema_url: None,
+            events: Vec::new(),
+            dropped_events_count: None,
+            links: Vec::new(),
+            dropped_links_count: None,
+        }
     }
 }

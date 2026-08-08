@@ -569,6 +569,40 @@ crates/
 
 B 层验收已通过：首版 `v0.1.0` tag 已触发跨平台 release workflow 并发布到 GitHub Releases（mac arm64/x86_64、linux x86_64、windows x86_64 四平台二进制 + 各自 `.sha256`，release note 源自 `CHANGELOG.md`）。Agent 独立走陌生用户全链路：Releases API 拉资产元数据（8 资产、prerelease=false）→ 下载 mac arm64 产物 → `shasum -a 256 -c` OK → `--version` 出 `tracelens 0.1.0` → `--help` 退出 0 → `summary`/`detect` 实测分析通过。M9 收口到 `100%`、整体 `96%`，第一版分发闭环。包管理器分发（Homebrew/crates.io/npm）列为 M9 后续增强项，不阻塞第一版分发。
 
+
+
+## 后续打磨线（post-v0.1.0，0.1.x 迭代）
+
+第一版核心需求闭环后（`v0.1.0`，整体 `96%`），剩余 4% 是 M1–M8 各里程碑内"非阻塞可选打磨项"。这些项不影响第一版"可用且可分发"，但其中两项恰好是 `design/introduction.md` 点名的 headline 能力（服务维度 self time、慢请求 p99/p999），优先级最高。为避免把这些零散打磨项混入"暂不进入里程碑的范围"造成范围模糊，单独开一条 `0.1.x` 打磨线：每期按 patch/minor 节奏推进，都先归入本线的候选清单，再开独立 `design/iteration-*.md` 契约，走完四件套与本地验收再提交。第一版核心里程碑（M0–M9）的交付物与验收标准不受本线影响。
+
+### 0.1.x 打磨线候选项（按里程碑归集）
+
+- **M4**：服务维度 self time 已按 `service.name` 聚合并用 child 区间并集（原始需求满足度 `65%`）；缺口是 self time 占 wall-clock **占比**输出、以及与 `critical-path`/`timeline`/`report` 的联动展示。
+- **M5**：慢请求检测已输出 service latency distribution 的 `p50/p95/max`（满足度 `68%`）；缺口是 `p99`/`p999`（`introduction.md` 在"慢请求检测"一节明确点名"在样本量足够时报告 p95、p99 和 p999"）。
+- **M5**：错误传播链（`72%`）的跨 trace 聚合、完整异步因果推断；N+1（`75%`）的 SQL AST 级相似判断、跨 trace 聚合。
+- **M6**：更稳定的可视化快照测试基线（M6-B-3 可选项）。
+- **M7**：多 shape、多轮 P95 矩阵基线落 `docs/performance.md`（P95<2s 满足度 `65%`）；JSON Schema `1.0` 稳定化。
+- **M9**：包管理器分发（Homebrew tap / crates.io / npm wrapper / Windows 包管理器），属本次 0.1.x 增强项。
+
+### 0.1.1（第二十七期）范围
+
+第二十七期 `design/iteration-27-v011-selftime-ratio-p999-quickstart.md` 落地 0.1.x 打磨线首批，范围限定为四项：
+
+1. **M4**：`services` 输出补服务维度 **self time 占 wall-clock 占比**（text 列 + `--output json` 字段 + schema description + 单元/E2E 测试）。
+2. **M5**：`detect` 服务 latency distribution 补 **p99 / p999**，小样本时按阈值降级展示（text + JSON + schema + 单元/E2E 测试），呼应 `introduction.md` 对 p99/p999 的样本量要求。
+3. **M9 增强 / 产品传播**：AI 可执行的 `tools/quickstart.sh`（bash 跨平台，tour 按原始 brief 功能点基础解析/关键指标/异常检测/可视化/工程化组织，每步明确"这一需求 → 用某能力满足"），让用户一行命令完成"下载 → 校验 → 跑示例 → 看 HTML 报告"，并在 README/中文 README 提供 curl|bash 一行体验入口。
+4. **样例数据集**：随仓库 raw 提供规模化样本 `samples/traces.json`（约 5k spans），兑现原始 brief "提供样例数据集 traces.json" 交付，并支撑 quickstart 真演示 p99/p999 与样例集 P95<2s 计时实测。
+
+> 状态（2026-08-08）：第二十七期实现层（A 工程层）已全部落地——`services` self_time_ratio、`detect` p99/p999（样本降级）、`samples/traces.json`、`tools/quickstart.sh`（需求驱动 tour + `--dry-run`）、`Cargo.toml` 0.1.1、CHANGELOG 0.1.1 段、README/中文 README 一键体验章节、`docs/quickstart.md`、schemas 三字段 description、本地验收 Pipeline 新增 4 步烟雾全过、四件套全绿。B 层 `v0.1.1` tag 验收可选，由你触发。
+
+本期不做的 0.1.x 项（留 `0.1.2` / `0.2`）：多 shape 多轮 P95 矩阵、错误传播链跨 trace 聚合、SQL AST N+1、完整异步因果推断、JSON Schema `1.0` 稳定化、包管理器分发、PowerShell 版 quickstart。
+
+### 版本与 JSON schema 口径（0.1.x）
+
+- `Cargo.toml` 按 patch 节奏升 `0.1.0 → 0.1.1`；`tracelens --version` 与 `CARGO_PKG_VERSION` 由 `version_command_reports_pkg_version` 端到端测试钉死不漂移。
+- JSON `schema_version` 仍为 `"0.1"`（pre-1.0，只增字段、不破向后兼容，与 `docs/versioning.md` 的 pre-1.0 语义一致）；0.1.1 新增字段以 additive 方式加入 `servicesOutput` / `detectOutput`，并在对应 property 的 `description` 里标注样本量降级语义与所属版本。
+- 命名与发布沿用 `tools/build_release.sh` + `.github/workflows/release.yml`；新 tag `v0.1.1` 由 release workflow 自动产出四平台二进制 + checksum 发布到 GitHub Releases，流程与 `v0.1.0` 一致。
+
 ## 暂不进入里程碑的范围
 
 以下内容目前明确不做，除非后续先修改本文档：

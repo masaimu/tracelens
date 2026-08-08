@@ -1937,3 +1937,90 @@ fn version_command_reports_pkg_version() {
         "`--version` must mirror Cargo.toml's package version"
     );
 }
+
+#[test]
+fn services_json_includes_self_time_ratio() {
+    let fixture = fixture("otlp-basic.json");
+    let value = run_json(&[
+        "services",
+        fixture.as_str(),
+        "--trace-id",
+        "5B8EFFF798038103D269B633813FC60C",
+        "--output",
+        "json",
+    ]);
+
+    assert_eq!(value["schema_version"], "0.1");
+    let services = value["services"]
+        .as_array()
+        .expect("services should be array");
+    let cart = services
+        .iter()
+        .find(|service| service["service_name"] == "cart-service")
+        .expect("cart-service present");
+    let payment = services
+        .iter()
+        .find(|service| service["service_name"] == "payment-service")
+        .expect("payment-service present");
+    let checkout = services
+        .iter()
+        .find(|service| service["service_name"] == "checkout-service")
+        .expect("checkout-service present");
+    assert_eq!(cart["self_time_ratio"], 0.5);
+    assert_eq!(payment["self_time_ratio"], 0.4);
+    assert_eq!(checkout["self_time_ratio"], 0.1);
+    assert_matches_output_schema(&value);
+}
+
+#[test]
+fn detect_json_service_latency_distribution_has_p99_p999_fields() {
+    let fixture = fixture("otlp-n-plus-one.json");
+    let value = run_json(&["detect", fixture.as_str(), "--output", "json"]);
+
+    let distributions = value["service_latency_distribution"]
+        .as_array()
+        .expect("service_latency_distribution should be array");
+    assert!(!distributions.is_empty());
+    for distribution in distributions {
+        assert!(distribution.get("p99_duration_ns").is_some());
+        assert!(distribution.get("p999_duration_ns").is_some());
+        // The tiny fixture has well under 20 spans per service, so both tail percentiles must be null.
+        assert_eq!(distribution["p99_duration_ns"], Value::Null);
+        assert_eq!(distribution["p999_duration_ns"], Value::Null);
+    }
+    assert_matches_output_schema(&value);
+}
+
+#[test]
+fn detect_samples_dataset_populates_p99_and_p999_latency() {
+    let sample = sample_traces_json();
+    if !sample.exists() {
+        // The ~5k sample dataset is committed; if absent in a stripped export, this test is skipped silently.
+        return;
+    }
+    let sample_arg = sample.to_str().expect("sample path should be unicode");
+    let value = run_json(&["detect", sample_arg, "--limit", "8", "--output", "json"]);
+    let distributions = value["service_latency_distribution"]
+        .as_array()
+        .expect("service_latency_distribution should be array");
+    assert!(!distributions.is_empty());
+    assert!(
+        distributions
+            .iter()
+            .any(|distribution| distribution["p99_duration_ns"].is_number()),
+        "at least one service should report a non-null p99 on the samples dataset"
+    );
+    assert!(
+        distributions
+            .iter()
+            .any(|distribution| distribution["p999_duration_ns"].is_number()),
+        "at least one service should report a non-null p999 on the samples dataset"
+    );
+    assert_matches_output_schema(&value);
+}
+
+fn sample_traces_json() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("samples")
+        .join("traces.json")
+}

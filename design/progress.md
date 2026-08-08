@@ -14,16 +14,16 @@
 
 ## 当前快照
 
-- 更新时间：2026-08-08（第二十六期 B 层验收通过）
-- 当前基线提交：`61adb40`（第二十六期 `design/iteration-26-cross-platform-release-workflow.md` 的实现；首版 `v0.1.0` 已发布到 GitHub Releases）
-- 当前阶段：第二十六期 跨平台 release workflow 与 GitHub Releases 自动发布完成、首版 v0.1.0 已发布且 B 层验收通过后
-- 当前整体进度：`96%`
+- 更新时间：2026-08-08（第二十七期 0.1.1 实现层完成，待提交与可选 `v0.1.1` tag）
+- 当前基线提交：第二十七期 `design/iteration-27-v011-selftime-ratio-p999-quickstart.md` 实现（A 工程层完成；B 层 `v0.1.1` tag 验收可选，由你触发）
+- 当前阶段：第二十七期 v0.1.1 增强迭代（服务 self time 占比、慢请求 p99/p999、一键 quickstart 与样本数据集）实现层完成
+- 当前整体进度：`97%`
 
 ```text
-[####################] 96%
+[#####################] 97%
 ```
 
-这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、带字段级 description 的 JSON Schema、CLI 可发现的 `tracelens schema` 字段说明入口、退出码 `0/1/2` 规范、CI integration 文档、OpenTelemetry 兼容性说明、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark、本地验收 Pipeline 与提交前 hook、语义化彩色终端输出、`detect` 的慢 trace 候选、错误信号候选、错误传播链、service latency distribution 和 N+1 候选、5k/50k spans JSON/JSONL 规模验证、`timeline` 横向时间轴与纵向火焰图双布局（`--mode bar|flame`）以及超大单 trace `--max-rows` 折叠、跨服务调用边汇总（`tree`/`services` 文本与 JSON 输出）、单页离线 HTML 报告（`report --html`：Trace 概览/服务耗时/关键路径/跨服务边/错误传播链/N+1 候选/diagnostics 全区块，含慢服务热力、错误红色、关键路径强调、N+1 高 calls 强调、diagnostics severity 着色与报告内导航）；但 JSON Schema 1.0 稳定化、完整多 shape 性能基线、comparison 文档和发布分发，还没有完成。
+这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、带字段级 description 的 JSON Schema、CLI 可发现的 `tracelens schema` 字段说明入口、退出码 `0/1/2` 规范、CI integration 文档、OpenTelemetry 兼容性说明、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark、本地验收 Pipeline 与提交前 hook、语义化彩色终端输出、`detect` 的慢 trace 候选、错误信号候选、错误传播链、service latency distribution 和 N+1 候选、5k/50k spans JSON/JSONL 规模验证、`timeline` 横向时间轴与纵向火焰图双布局（`--mode bar|flame`）以及超大单 trace `--max-rows` 折叠、跨服务调用边汇总（`tree`/`services` 文本与 JSON 输出）、单页离线 HTML 报告（`report --html`：Trace 概览/服务耗时/关键路径/跨服务边/错误传播链/N+1 候选/diagnostics 全区块，含慢服务热力、错误红色、关键路径强调、N+1 高 calls 强调、diagnostics severity 着色与报告内导航）；服务维度 self time **占 wall-clock 占比**（第二十七期，`services` 文本列与 JSON `self_time_ratio`）；慢请求服务级 **p99/p999**（第二十七期，`detect` service latency distribution，样本不足时按阈值降级为 null）；一行命令 `tools/quickstart.sh`（第二十七期，按原始 brief 功能点逐条 tour + `--dry-run`）；但 JSON Schema 1.0 稳定化、完整多 shape 性能基线、comparison 文档和发布分发，还没有完成。
 
 ## 计算规则
 
@@ -48,11 +48,11 @@
 | 里程碑 | 权重 | 当前完成度 | 加权贡献 | 当前状态 |
 | --- | ---: | ---: | ---: | --- |
 | M0：范围与工程骨架 | 5% | 100% | 5.0% | Rust CLI 工程、设计文档、基础测试已具备 |
-| M1：OTLP 输入解析 | 15% | 98% | 14.7% | JSON/JSONL、canonical model、events/links、宽容/strict 基础能力已完成；已补齐 `schemaUrl`、`traceState`、`flags`、status message、dropped counts、scope attributes、nested AnyValue 和 all-zero ID diagnostics；已用 5k 和 50k spans JSON/JSONL synthetic 样本验证核心命令 |
+| M1：OTLP 输入解析 | 15% | 98% | 14.7% | JSON/JSONL、canonical model、events/links、宽容/strict 基础能力已完成；已补齐 `schemaUrl`、`traceState`、`flags`、status message、dropped counts、scope attributes、nested AnyValue 和 all-zero ID diagnostics；已用 5k 和 50k spans JSON/JSONL synthetic 样本验证核心命令；第二十七期已随仓库提供规模化样例数据集 `samples/traces.json`（约 5k spans / 8 services），即原始 brief 要求的 `traces.json` |
 | M2：Trace 索引与图构建 | 15% | 100% | 15.0% | trace 分组、parent-child、root/orphan/duplicate/missing parent/时间异常 diagnostics 已完成；跨服务调用边汇总已在 `tree`/`services` 文本与 JSON 输出中显式统计（第二十二期） |
 | M3：基础 CLI 分析命令 | 15% | 98% | 14.7% | `validate`、`summary`、`list-traces`、`tree`、`--output json` 已完成；已新增 `tracelens schema` 本地字段说明入口；当前 JSON 输出已有 schema 文件和测试覆盖，但 schema 仍处于 `0.1` 可调整阶段 |
-| M4：耗时分析与关键路径 | 18% | 90% | 16.2% | 已完成 M4-A/M4-B/M4-C：`services`、`critical-path`、串行/并发/nested/suspicious 分类，以及 client/server span pair、async work、linked span 标注；后续仍需与 timeline/report 进一步联动 |
-| M5：模式检测 | 12% | 92% | 11.0% | 已完成 M5-A/M5-B/M5-C：`detect` 包含慢 trace 候选、service candidates、错误信号候选、错误传播链、service latency distribution 和 N+1 候选；后续仅保留跨 trace 聚合、SQL AST 相似判断、p99/p999 等增强项 |
+| M4：耗时分析与关键路径 | 18% | 94% | 16.9% | 已完成 M4-A/M4-B/M4-C：`services`、`critical-path`、串行/并发/nested/suspicious 分类，以及 client/server span pair、async work、linked span 标注；第二十七期补齐服务维度 self time 占 wall-clock **占比**（`services` 文本列 + JSON `self_time_ratio`）；后续仅保留与 critical-path/timeline/report 的联动展示 |
+| M5：模式检测 | 12% | 96% | 11.5% | 已完成 M5-A/M5-B/M5-C：`detect` 包含慢 trace 候选、service candidates、错误信号候选、错误传播链、service latency distribution 和 N+1 候选；第二十七期补齐服务级 **p99/p999**（nearest-rank，样本 <20/-100 时降级为 null，呼应 introduction 对尾部延迟的样本量要求）；后续仅保留跨 trace 聚合、SQL AST 相似判断 |
 | M6：终端可视化 | 8% | 95% | 7.6% | 已完成 M6-A（彩色终端输出语义层、`--color` 控制、`timeline` 横向时间轴 MVP）和 M6-B-1/M6-B-2：`timeline --mode flame` 纵向火焰图与 `--max-rows` 超大 trace 折叠（第二十一期）；复用现有 `TimelineRow` 分析模型，`* ! ?` 标记语义与横向布局一致；仅保留 M6-B-3 更稳定快照测试基线作为可选打磨项 |
 | M7：性能、稳定性与自动化接口 | 7% | 97% | 6.8% | 已有测试、JSON 输出、本地 synthetic fixture 生成器、benchmark runner、本地验收 Pipeline 和提交前 hook；JSON Schema 已覆盖当前核心 JSON 输出并接入 CLI 测试，核心 properties 均有 `description` coverage；已新增 `tracelens schema --output text|json` 和 `--help` 发现入口；已固定退出码 `0/1/2` 规范并新增端到端测试和本地验收 smoke；runner 已覆盖 `critical-path` 和 `detect`，并可选支持 `timeline`；新增 CI、安全检查、自动/手动 benchmark workflows 和 Actions summary 报告，并支持脚本友好的 `--color never`；已完成 5k/50k JSON/JSONL smoke 验证和 50k detect 3 轮 benchmark；尚未完成多 shape 完整 P95 矩阵、JSON Schema 1.0 稳定化和远端 required checks 兜底 |
 | M8：HTML 报告 | 3% | 100% | 3.0% | `report --html` 单页离线 HTML 报告完整落地：Trace 概览/服务耗时/关键路径/跨服务边/错误传播链/N+1 候选/diagnostics 全区块，含热力配色与报告内导航（第二十三期骨架 + 第二十四期补全），复用 services/critical-path/tree/detect 分析，不重复计算；M8 收口 |
@@ -61,13 +61,13 @@
 当前合计：
 
 ```text
-5.0 + 14.7 + 15.0 + 14.7 + 16.2 + 11.0 + 7.6 + 6.8 + 3.0 + 2.0 = 96.0%
+5.0 + 14.7 + 15.0 + 14.7 + 16.9 + 11.5 + 7.6 + 6.8 + 3.0 + 2.0 = 97.2%
 ```
 
 四舍五入后记录为：
 
 ```text
-95%
+97%
 ```
 
 ## 原始需求满足度
@@ -84,9 +84,9 @@
 | 处理孤儿 span | 85% | orphan span 不丢失，并在 tree/diagnostics 中展示 |
 | 计算端到端 duration | 75% | `services` 已分开展示 wall-clock duration 与唯一 root span duration；`critical-path` 已展示被选中 root span duration |
 | 计算 critical path | 90% | `critical-path` 已基于 parent-child 拓扑和时间区间输出关键路径片段和 span 聚合；多 root、无 root、child 超出 root 区间均有明确语义；重复 span ID 不会在关键路径汇总中被错误合并；已补充 client/server、async work 和 linked span 语义标注 |
-| 计算服务维度 self time | 65% | `services` 已按 service 聚合 self time，child 覆盖时间使用区间并集；后续需与 critical path 和可视化打通 |
+| 计算服务维度 self time | 85% | `services` 已按 service 聚合 self time，child 覆盖时间使用区间并集；第二十七期补齐 self time 占 wall-clock **占比**（文本列 + JSON `self_time_ratio` + schema description + 测试，并发下占比之和可 >100%，无时间戳时为 null）；后续仅保留与 critical-path/timeline/report 的联动展示 |
 | 识别串行/并发 span | 85% | `critical-path` 输出 serial/concurrent/nested/suspicious 分类计数和明细；`timeline` 通过横向 bar 重叠展示并发关系 |
-| 检测慢请求 | 68% | `detect` 已按 trace wall-clock duration 输出慢 trace 候选、sample count、p95 reference、confidence、service candidates 和 service latency distribution；尚未有 p99/p999 或长期趋势 |
+| 检测慢请求 | 88% | `detect` 已按 trace wall-clock duration 输出慢 trace 候选、sample count、p95 reference、confidence、service candidates 和 service latency distribution；第二十七期补齐服务级 **p99/p999**（nearest-rank，样本 <20/-100 时按阈值降级为 null）；尚未做长期趋势 |
 | 检测错误传播链 | 72% | `detect` 已识别 status error、HTTP 5xx、gRPC/RPC 非 OK 和 exception event，并输出 earliest/top/error spans 证据、root/orphan 到 earliest error 的 parent-child path，以及 top error 下游错误证据；尚未做完整异步因果推断 |
 | 检测 N+1 调用模式 | 75% | `detect` 已按同 parent 直接 child span 聚合相似调用，重复 `>= 5` 输出 medium candidate，重复 `>= 10` 且多数串行输出 high confidence；尚未做跨 trace 聚合或 SQL AST 级相似判断 |
 | 终端 ASCII flame graph/timeline | 90% | 已完成彩色终端输出基础设施、稳定颜色语义、`timeline` 横向时间轴 MVP、`--mode flame` 纵向火焰图布局和 `--max-rows` 超大 trace 折叠；仅保留更稳定快照测试基线作为可选打磨项 |
@@ -94,7 +94,7 @@
 | 子命令式真实 CLI | 98% | `validate/summary/list-traces/tree/services/critical-path/detect/timeline/report/schema` 已完成，tree/critical-path/timeline 已补充语义或可视化说明；`schema` 提供本地输出契约说明；`report` 生成单页离线 HTML 报告（第二十三/二十四期） |
 | 核心单元测试 | 95% | 已有 52 个单元测试和 67 个 CLI 端到端测试；新增 OTLP 兼容性 fixture、all-zero ID 测试、JSON Schema 校验测试、schema help/schema 输出测试、description coverage 测试，以及退出码 `0/1/2` 契约测试；后续 report 和更完整性能基线还需要继续补 |
 | CI 检查与工程化质量门禁 | 86% | 已新增 GitHub Actions CI、安全检查、自动/手动性能 benchmark workflow、本地验收 Pipeline、提交前 hook、退出码规范和 CI integration 文档；Benchmark 默认覆盖 5k/50k spans 和 `detect`，会展示 Actions summary；本地 hook 需每个开发者执行 setup 后生效；尚未配置分支保护、远端 required checks 和 release workflow |
-| P95 样本处理耗时小于 2 秒 | 65% | 已有 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path` 和 `detect`；本地 50k spans `detect` 3 轮 P95 为 466.123ms；尚未跑完整多 shape 多轮 P95 矩阵 |
+| P95 样本处理耗时小于 2 秒 | 72% | 已有 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path` 和 `detect`；本地 50k spans `detect` 3 轮 P95 为 466.123ms；第二十七期随仓库提供 `samples/traces.json`（约 5k spans）并在 `tools/quickstart.sh` 内对 `detect` 单次计时实测 <2s（面向用户的演示）；完整多 shape 多轮 P95 矩阵仍留 0.1.2 |
 | 可脚本化 JSON 输出 | 96% | 基础命令、`services`、`tree`、`critical-path`、`detect` 和 `timeline` 已有 `--output json` 与 `schema_version: "0.1"`，并输出结构化 annotations / slow_traces / service_latency_distribution / error_traces / error_propagation_chains / n_plus_one_candidates / timeline rows；`--output json` 不受彩色输出影响；已新增带字段级 `description` 的 JSON Schema、CLI schema 校验测试、description coverage 测试，以及 `tracelens schema --output text|json` 本地发现入口；schema 尚未进入 1.0 稳定 |
 | 远程下载使用 | 100% | 第二十五期：版本号口径 + 测试、本机 release artifact + checksum、安装说明、comparison、CHANGELOG、versioning。第二十六期：跨平台 release workflow（mac arm64/x86_64、linux x86_64、windows x86_64 四平台 matrix、tag→GitHub Releases、per-artifact checksum、release note 源 CHANGELOG；mac x86_64 在 macos-14 交叉编译避开 Intel mac runner 排队）。首版 `v0.1.0` 已发布；Agent 独立走陌生用户全链路（API 拉资产 → 下载 → `shasum -c` → `--version`/`--help` → `summary`/`detect`）通过 |
 
@@ -177,11 +177,13 @@ tracelens schema [--command <name>] [--output text|json]
 - `list-traces --limit`。
 - `list-traces --sort duration|spans|errors`。
 - `services --output text|json`。
-- `detect --output text|json`。
+- `detect --output text|json`，service latency distribution 含 p50/p95/p99/p999/max（p99 需样本 >=20、p999 >=100，否则 null，第二十七期）。
 - `timeline --output text|json`。
 - `tree --output text|json` 输出 span 语义标注与跨服务调用边汇总。
 - `report --html` 生成单页离线 HTML 报告（概览/服务/关键路径/跨服务边/错误传播链/N+1 候选/diagnostics 全区块，含热力配色与导航锚点）。
 - `services --output text|json` 输出服务维度 self time 聚合与跨服务调用边汇总。
+- `tools/quickstart.sh`：一行命令下载最新 release + 校验 + 跑遍原始 brief 功能点 + 打开 HTML 报告；支持 `--dry-run`。
+- `samples/traces.json`：随仓库提供的约 5k spans / 8 services 样例数据集（原始 brief `traces.json`）。
 - `critical-path --output text|json` 输出 span 语义标注。
 
 当前耗时分析能力：
@@ -190,7 +192,7 @@ tracelens schema [--command <name>] [--output text|json]
 - 唯一 root span duration。
 - span self time。
 - child interval union，避免重叠 child span 重复扣减。
-- 服务维度 self time 聚合。
+- 服务维度 self time 聚合，以及 self time 占 wall-clock **占比**（第二十七期）。
 - 服务维度 span time、child covered time、span count、error span count。
 - `services` 文本输出包含中文字段说明。
 - 基于 parent-child 拓扑和时间区间的关键路径计算。
@@ -312,10 +314,10 @@ tracelens schema [--command <name>] [--output text|json]
 
 下一批最重要的缺口：
 
-- M5：后续增强项包括跨 trace N+1 聚合、SQL AST 相似判断、p99/p999、以及完整异步因果推断；这些不阻塞当前第一版候选检测主路径。
+- M5：p99/p999 已在第二十七期补齐（nearest-rank，样本不足时按阈值降级为 null）；后续仅留跨 trace N+1 聚合、SQL AST 相似判断与完整异步因果推断，不阻塞第一版候选检测主路径。
 - M2：跨服务调用边汇总已在第二十二期落地（`tree`/`services` 文本与 JSON），M2 进入已收口状态，无主要缺口。
 - M6：仅保留 M6-B-3 更稳定的快照测试基线作为可选打磨项；flame graph 与超大 trace 折叠已在第二十一期落地。
-- M7：完整多 shape 多轮 P95 性能基线、JSON Schema 1.0 稳定化、可选分支保护规则、远端 required checks 兜底。
+- M7：完整多 shape 多轮 P95 性能基线（落 `docs/performance.md`）、JSON Schema 1.0 稳定化、可选分支保护规则、远端 required checks 兜底。第二十七期已随仓库提供 `samples/traces.json` 与 `tools/quickstart.sh` 计时实测 <2s 的面向用户演示，但矩阵仍待 0.1.2。
 - M8：HTML 报告已在第二十三、第二十四期收口（骨架 + 补全 + 配色 + 导航），M8 进入已收口状态，无主要缺口。
 - M9：已收口到 100%。首版 `v0.1.0` 已发布到 GitHub Releases，跨平台 release workflow 跑通（mac arm64/x86_64、linux x86_64、windows x86_64 四平台 + checksum + CHANGELOG release note），Agent 独立下载验收通过。仅留包管理器分发（Homebrew/crates.io/npm）为后续增强项，不阻塞第一版分发。
 

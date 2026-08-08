@@ -755,6 +755,17 @@
           "$ref": "#/$defs/uint",
           "description": "Service self time in nanoseconds: direct service span duration minus direct child-covered intervals, with overlaps counted once."
         },
+        "self_time_ratio": {
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Service self_time divided by trace wall_clock_duration. Usually between 0.0 and 1.0, but the sum across services can exceed 1.0 when services run concurrently. Null when the trace has no wall-clock duration."
+        },
         "span_time_ns": {
           "$ref": "#/$defs/uint",
           "description": "Raw sum of span durations in nanoseconds for the service or candidate group; nested/concurrent spans may make this exceed wall-clock time."
@@ -2313,6 +2324,14 @@
               "p95_duration_ns": {
                 "$ref": "#/$defs/uint",
                 "description": "Nearest-rank p95 duration reference in nanoseconds for the current file or group. This is local-file evidence, not an SLO."
+              },
+              "p99_duration_ns": {
+                "$ref": "#/$defs/nullableUint",
+                "description": "Nearest-rank p99 span duration in nanoseconds for this service in the current file. Reported only when the service has at least 20 spans; otherwise null to avoid over-certain tail percentiles."
+              },
+              "p999_duration_ns": {
+                "$ref": "#/$defs/nullableUint",
+                "description": "Nearest-rank p999 span duration in nanoseconds for this service in the current file. Reported only when the service has at least 100 spans; otherwise null to avoid over-certain tail percentiles."
               },
               "max_span_duration_ns": {
                 "$ref": "#/$defs/uint",

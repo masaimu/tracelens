@@ -342,6 +342,12 @@ pub fn format_services(
     writeln!(
         output,
         "{}",
+        style.muted("- self_pct：该服务 self_time 占 trace wall-clock duration 的比例；并发 trace 下各服务占比之和可能大于 100%；trace 无时间戳时显示 —。")
+    )
+    .expect("write to string");
+    writeln!(
+        output,
+        "{}",
         style.muted("- span_time：该服务所有 span 的原始耗时总和；嵌套或并发 span 可能让它大于真实 wall-clock 时间。")
     )
     .expect("write to string");
@@ -456,7 +462,7 @@ pub fn format_detect(
     writeln!(
         output,
         "{}",
-        style.muted("说明：这里按 service 聚合 span duration 分布，p50/p95/max 用来判断哪个服务在当前文件里更容易拖慢 trace。")
+        style.muted("说明：这里按 service 聚合 span duration 分布，p50/p95/p99/p999/max 用来判断哪个服务在当前文件里更容易拖慢 trace；样本数不足时 p99/p999 显示 —（样本不足）。")
     )
     .expect("write to string");
     write_service_latency_distribution(&mut output, &analysis.service_latency_distribution, style);
@@ -508,7 +514,7 @@ pub fn format_detect(
     writeln!(
         output,
         "{}",
-        style.muted("- service latency distribution：按服务聚合的 span duration 分布；p95/max 高的服务通常更值得优先排查。")
+        style.muted("- service latency distribution：按服务聚合的 span duration 分布；p95/p99/p999/max 高的服务通常更值得优先排查；p99 需该服务至少 20 个 span、p999 需至少 100 个 span，否则为 null。")
     )
     .expect("write to string");
     writeln!(
@@ -972,7 +978,7 @@ fn write_service_latency_distribution(
         output,
         "{}",
         style.table_header(
-            "service              p50        p95        max        total      spans  traces  errors"
+            "service              p50        p95        p99        p999       max        total      spans  traces  errors"
         )
     )
     .expect("write to string");
@@ -980,10 +986,16 @@ fn write_service_latency_distribution(
     for distribution in distributions {
         writeln!(
             output,
-            "{:<20} {:>10} {:>10} {:>10} {:>10} {:>6} {:>7} {:>7}",
+            "{:<20} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>6} {:>7} {:>7}",
             style.service(&distribution.service_name),
             style.duration(format_duration(distribution.p50_duration_ns)),
             style.duration(format_duration(distribution.p95_duration_ns)),
+            style.duration(format_optional_duration_unstyled(
+                distribution.p99_duration_ns
+            )),
+            style.duration(format_optional_duration_unstyled(
+                distribution.p999_duration_ns
+            )),
             style.duration(format_duration(distribution.max_span_duration_ns)),
             style.duration(format_duration(distribution.total_span_time_ns)),
             distribution.span_count,
@@ -1672,8 +1684,14 @@ fn write_service_table(output: &mut String, services: &[ServiceDuration], style:
         output,
         "{}",
         style.table_header(format!(
-            "{:<service_width$}  {:>12}  {:>12}  {:>18}  {:>5}  {:>6}",
-            "service", "self_time", "span_time", "child_covered_time", "spans", "errors"
+            "{:<service_width$}  {:>12}  {:>9}  {:>12}  {:>18}  {:>5}  {:>6}",
+            "service",
+            "self_time",
+            "self_pct",
+            "span_time",
+            "child_covered_time",
+            "spans",
+            "errors"
         ))
     )
     .expect("write to string");
@@ -1681,14 +1699,16 @@ fn write_service_table(output: &mut String, services: &[ServiceDuration], style:
     for service in services {
         let service_name = format!("{:<service_width$}", service.service_name);
         let self_time = format!("{:>12}", format_duration(service.self_time_ns));
+        let self_pct = format!("{:>9}", format_optional_ratio(service.self_time_ratio));
         let span_time = format!("{:>12}", format_duration(service.span_time_ns));
         let child_covered_time = format!("{:>18}", format_duration(service.child_covered_time_ns));
         let errors = format!("{:>6}", service.error_span_count);
         writeln!(
             output,
-            "{}  {}  {}  {}  {:>5}  {}",
+            "{}  {}  {}  {}  {}  {:>5}  {}",
             style.service(service_name),
             style.duration(self_time),
+            self_pct,
             style.duration(span_time),
             style.duration(child_covered_time),
             service.span_count,
@@ -2009,6 +2029,19 @@ fn format_range_styled(style: TextStyle, start_ns: Option<u64>, end_ns: Option<u
         }
         _ => style.muted("unknown"),
     }
+}
+
+fn format_optional_ratio(ratio: Option<f64>) -> String {
+    match ratio {
+        Some(value) => format!("{:.1}%", value * 100.0),
+        None => String::from("—"),
+    }
+}
+
+fn format_optional_duration_unstyled(duration_ns: Option<u64>) -> String {
+    duration_ns
+        .map(format_duration)
+        .unwrap_or_else(|| String::from("—"))
 }
 
 fn format_optional_duration_styled(style: TextStyle, duration_ns: Option<u64>) -> String {

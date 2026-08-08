@@ -24,6 +24,31 @@
   </a>
 </p>
 
+## Quickstart (one line)
+
+The fastest way to feel every original capability of `tracelens`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/masaimu/tracelens/main/tools/quickstart.sh | bash
+```
+
+This downloads the latest release binary, verifies its checksum, pulls the sample dataset, and walks one command per original requirement point:
+
+1. **input + scale** — `summary samples/traces.json` parses a ~5k-span OTLP file end-to-end.
+2. **basic parse** — `validate` / `tree` show missing-parent, cross-service, orphan span handling.
+3. **key metrics** — `services` prints end-to-end duration and per-service self-time ratio; `critical-path` prints the critical path and serial/concurrent classification.
+4. **anomaly detection** — `detect` reports slow requests with service p99/p999, error propagation chains, and N+1 candidates.
+5. **visualization** — `report --html` writes a single-page offline HTML report.
+6. **engineering** — `--help` shows the subcommand layer, and a timed `detect` on the sample shows wall-clock well under 2s.
+
+Prefer to inspect without running anything? Use the dry run:
+
+```bash
+bash tools/quickstart.sh --dry-run
+```
+
+> macOS, Linux, and Windows (git-bash) are supported; `samples/traces.json` is the committed sample dataset that the original brief asked for. See [docs/quickstart.md](docs/quickstart.md).
+
 ## What Is tracelens?
 
 `tracelens` is a command-line tool for exploring OpenTelemetry trace exports on your local machine.

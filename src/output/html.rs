@@ -662,6 +662,7 @@ mod tests {
         let hot = ServiceDuration {
             service_name: "frontend-service".into(),
             self_time_ns: 80_000_000,
+            self_time_ratio: Some(0.8),
             span_time_ns: 100_000_000,
             child_covered_time_ns: 0,
             span_count: 1,
@@ -670,6 +671,7 @@ mod tests {
         let cold = ServiceDuration {
             service_name: "inventory-service".into(),
             self_time_ns: 10_000_000,
+            self_time_ratio: Some(0.1),
             span_time_ns: 10_000_000,
             child_covered_time_ns: 0,
             span_count: 1,

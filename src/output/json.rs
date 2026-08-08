@@ -438,6 +438,8 @@ fn service_latency_distribution_to_json(distribution: &ServiceLatencyDistributio
         "total_span_time_ns": distribution.total_span_time_ns,
         "p50_duration_ns": distribution.p50_duration_ns,
         "p95_duration_ns": distribution.p95_duration_ns,
+        "p99_duration_ns": distribution.p99_duration_ns,
+        "p999_duration_ns": distribution.p999_duration_ns,
         "max_span_duration_ns": distribution.max_span_duration_ns,
         "slow_span_samples": distribution
             .slow_span_samples
@@ -624,6 +626,7 @@ fn service_duration_to_json(service: &ServiceDuration) -> Value {
     json!({
         "service_name": service.service_name,
         "self_time_ns": service.self_time_ns,
+        "self_time_ratio": service.self_time_ratio,
         "span_time_ns": service.span_time_ns,
         "child_covered_time_ns": service.child_covered_time_ns,
         "span_count": service.span_count,

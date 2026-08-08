@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::graph::trace_graph::TraceGraph;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TraceDurationAnalysis {
     pub trace_id: String,
     pub wall_clock_duration_ns: Option<u64>,
@@ -22,10 +22,11 @@ pub struct RootSpanDuration {
     pub duration_ns: u64,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ServiceDuration {
     pub service_name: String,
     pub self_time_ns: u64,
+    pub self_time_ratio: Option<f64>,
     pub span_time_ns: u64,
     pub child_covered_time_ns: u64,
     pub span_count: usize,
@@ -53,6 +54,7 @@ struct ServiceDurationAccumulator {
 
 pub fn analyze_trace_duration(trace: &TraceGraph) -> TraceDurationAnalysis {
     let root_span = unique_root_span(trace);
+    let wall_clock_duration_ns = trace.duration_ns();
     let mut services: BTreeMap<String, ServiceDurationAccumulator> = BTreeMap::new();
     let mut spans = Vec::new();
 
@@ -85,6 +87,7 @@ pub fn analyze_trace_duration(trace: &TraceGraph) -> TraceDurationAnalysis {
         .map(|(service_name, service)| ServiceDuration {
             service_name,
             self_time_ns: service.self_time_ns,
+            self_time_ratio: self_time_ratio(service.self_time_ns, wall_clock_duration_ns),
             span_time_ns: service.span_time_ns,
             child_covered_time_ns: service.child_covered_time_ns,
             span_count: service.span_count,
@@ -100,7 +103,7 @@ pub fn analyze_trace_duration(trace: &TraceGraph) -> TraceDurationAnalysis {
 
     TraceDurationAnalysis {
         trace_id: trace.trace_id.clone(),
-        wall_clock_duration_ns: trace.duration_ns(),
+        wall_clock_duration_ns,
         root_span,
         root_count: trace.root_indices.len(),
         orphan_count: trace.orphan_indices.len(),
@@ -108,6 +111,14 @@ pub fn analyze_trace_duration(trace: &TraceGraph) -> TraceDurationAnalysis {
         services,
         spans,
     }
+}
+
+fn self_time_ratio(self_time_ns: u64, wall_clock_duration_ns: Option<u64>) -> Option<f64> {
+    let wall = wall_clock_duration_ns?;
+    if wall == 0 {
+        return None;
+    }
+    Some(self_time_ns as f64 / wall as f64)
 }
 
 fn unique_root_span(trace: &TraceGraph) -> Option<RootSpanDuration> {
@@ -239,6 +250,30 @@ mod tests {
         assert_eq!(cart.span_count, 2);
         assert_eq!(checkout.self_time_ns, 30);
         assert_eq!(checkout.child_covered_time_ns, 70);
+        // wall-clock duration is 100ns: cart self_time 90 -> 0.9, checkout self_time 30 -> 0.3.
+        assert!((cart.self_time_ratio.expect("cart ratio") - 0.9).abs() < 1e-9);
+        assert!((checkout.self_time_ratio.expect("checkout ratio") - 0.3).abs() < 1e-9);
+    }
+
+    #[test]
+    fn service_self_time_ratio_is_none_when_wall_clock_is_zero() {
+        let collection = collection_with(vec![span("root", None, "svc", 5, 5)]);
+        let trace = collection
+            .traces
+            .values()
+            .next()
+            .expect("trace should be present");
+        let analysis = analyze_trace_duration(trace);
+        let svc = analysis
+            .services
+            .iter()
+            .find(|service| service.service_name == "svc")
+            .expect("service should be present");
+        assert_eq!(svc.self_time_ns, 0);
+        assert!(
+            svc.self_time_ratio.is_none(),
+            "ratio must be null when the trace wall-clock duration is 0"
+        );
     }
 
     fn collection_with(spans: Vec<CanonicalSpan>) -> TraceCollection {

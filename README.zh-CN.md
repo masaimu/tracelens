@@ -24,6 +24,31 @@
   </a>
 </p>
 
+## 一键体验
+
+用一行命令把 `tracelens` 的每一个原始能力都过一遍：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/masaimu/tracelens/main/tools/quickstart.sh | bash
+```
+
+脚本会下载最新 release 二进制、校验 checksum、拉取样例数据集，然后按原始需求功能点逐条演示：
+
+1. **输入与规模** — `summary samples/traces.json` 解析一份约 5k span 的 OTLP 文件。
+2. **基础解析** — `validate` / `tree` 演示缺失 parent、跨服务、孤儿 span 的处理。
+3. **关键指标** — `services` 输出端到端耗时与每服务 self time 占比；`critical-path` 输出关键路径与串行/并发分类。
+4. **异常检测** — `detect` 报告慢请求的服务级 p99/p999、错误传播链与 N+1 候选。
+5. **可视化输出** — `report --html` 生成单页离线 HTML 报告。
+6. **工程化** — `--help` 展示子命令分层；对样例集计时，证明 P95 < 2s。
+
+只想看脚本会做什么、不联网？用 dry run：
+
+```bash
+bash tools/quickstart.sh --dry-run
+```
+
+> 支持 macOS、Linux 与 Windows(git-bash)；`samples/traces.json` 即原始 brief 要求的样例数据集。详见 [docs/quickstart.md](docs/quickstart.md)。
+
 ## tracelens 是什么？
 
 `tracelens` 是一个用于本地分析 OpenTelemetry Trace 导出文件的命令行工具。

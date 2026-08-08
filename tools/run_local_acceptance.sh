@@ -191,6 +191,11 @@ run_shell_step "timeline json smoke" '"$TRACELENS_BIN" --color always timeline t
 run_shell_step "schema json smoke" '"$TRACELENS_BIN" schema --output json >/dev/null'
 run_shell_step "report html smoke" 'report_dir="$(mktemp -d)"; report_path="$report_dir/report.html"; "$TRACELENS_BIN" --color never report tests/fixtures/otlp-semantic-annotations.json --trace-id DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD --html "$report_path" >/dev/null; grep -q "<!DOCTYPE html>" "$report_path"; grep -q "跨服务调用边" "$report_path"; grep -q "frontend-service" "$report_path"; rm -rf "$report_dir"'
 run_shell_step "report n plus one block smoke" 'report_dir="$(mktemp -d)"; report_path="$report_dir/r.html"; "$TRACELENS_BIN" --color never report tests/fixtures/otlp-n-plus-one.json --trace-id 77777777777777777777777777777777 --html "$report_path" >/dev/null; grep -q "N+1 候选" "$report_path"; grep -q "repeated=" "$report_path"; rm -rf "$report_dir"'
+run_shell_step "services self_time_ratio smoke" '"$TRACELENS_BIN" --color never services tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D269B633813FC60C --output json | grep -q self_time_ratio'
+run_shell_step "detect p99 p999 on samples smoke" 'o=$("$TRACELENS_BIN" --color never detect samples/traces.json --limit 8 --output json); echo "$o" | grep -q "p99_duration_ns\\\": [0-9]"; echo "$o" | grep -q "p999_duration_ns\\\": [0-9]"'
+run_shell_step "sample dataset present" 'test -f samples/traces.json && [ "$(wc -c < samples/traces.json | tr -d "[:space:]")" -gt 1000000 ]'
+run_shell_step "quickstart dry run" 'bash -n tools/quickstart.sh && out=$(bash tools/quickstart.sh --dry-run) && for h in "input + scale" "basic parse" "key metrics" "anomaly detection" "visualization" "engineering"; do echo "$out" | grep -q "$h" || { echo "missing header: $h"; exit 1; }; done'
+
 
 cat >>"$SUMMARY_FILE" <<'SUMMARY'
 

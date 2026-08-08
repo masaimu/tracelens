@@ -2,7 +2,9 @@
 
 This page contains copy-pasteable examples using the fixtures in this repository.
 
-All examples use local files under `tests/fixtures/`.
+All examples use local files in this repository — the small fixtures under `tests/fixtures/` and a ~5k-span sample dataset at `samples/traces.json`.
+
+For a one-command guided tour of every original requirement point (including p99/p999 on the sample dataset and the HTML report), see [quickstart.md](quickstart.md).
 
 ## Validate a File
 

@@ -15,15 +15,15 @@
 ## 当前快照
 
 - 更新时间：2026-08-08
-- 当前基线提交：当前工作区基于第二十二期 `design/iteration-22-cross-service-edges.md` 的实现
-- 当前阶段：第二十二期跨服务边汇总完成后
-- 当前整体进度：`92%`
+- 当前基线提交：当前工作区基于第二十三期 `design/iteration-23-html-report-skeleton.md` 的实现
+- 当前阶段：第二十三期 HTML 报告骨架与核心可视化区块完成后
+- 当前整体进度：`93%`
 
 ```text
-[###################-] 92%
+[####################] 93%
 ```
 
-这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、带字段级 description 的 JSON Schema、CLI 可发现的 `tracelens schema` 字段说明入口、退出码 `0/1/2` 规范、CI integration 文档、OpenTelemetry 兼容性说明、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark、本地验收 Pipeline 与提交前 hook、语义化彩色终端输出、`detect` 的慢 trace 候选、错误信号候选、错误传播链、service latency distribution 和 N+1 候选、5k/50k spans JSON/JSONL 规模验证、`timeline` 横向时间轴与纵向火焰图双布局（`--mode bar|flame`）以及超大单 trace `--max-rows` 折叠、跨服务调用边汇总（`tree`/`services` 文本与 JSON 输出）；但 JSON Schema 1.0 稳定化、完整多 shape 性能基线、comparison 文档和发布分发，还没有完成。
+这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、带字段级 description 的 JSON Schema、CLI 可发现的 `tracelens schema` 字段说明入口、退出码 `0/1/2` 规范、CI integration 文档、OpenTelemetry 兼容性说明、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark、本地验收 Pipeline 与提交前 hook、语义化彩色终端输出、`detect` 的慢 trace 候选、错误信号候选、错误传播链、service latency distribution 和 N+1 候选、5k/50k spans JSON/JSONL 规模验证、`timeline` 横向时间轴与纵向火焰图双布局（`--mode bar|flame`）以及超大单 trace `--max-rows` 折叠、跨服务调用边汇总（`tree`/`services` 文本与 JSON 输出）、单页离线 HTML 报告（`report --html`：Trace 概览/服务耗时/关键路径/跨服务边四区块）；但 JSON Schema 1.0 稳定化、完整多 shape 性能基线、comparison 文档和发布分发，还没有完成。
 
 ## 计算规则
 
@@ -55,19 +55,19 @@
 | M5：模式检测 | 12% | 92% | 11.0% | 已完成 M5-A/M5-B/M5-C：`detect` 包含慢 trace 候选、service candidates、错误信号候选、错误传播链、service latency distribution 和 N+1 候选；后续仅保留跨 trace 聚合、SQL AST 相似判断、p99/p999 等增强项 |
 | M6：终端可视化 | 8% | 95% | 7.6% | 已完成 M6-A（彩色终端输出语义层、`--color` 控制、`timeline` 横向时间轴 MVP）和 M6-B-1/M6-B-2：`timeline --mode flame` 纵向火焰图与 `--max-rows` 超大 trace 折叠（第二十一期）；复用现有 `TimelineRow` 分析模型，`* ! ?` 标记语义与横向布局一致；仅保留 M6-B-3 更稳定快照测试基线作为可选打磨项 |
 | M7：性能、稳定性与自动化接口 | 7% | 97% | 6.8% | 已有测试、JSON 输出、本地 synthetic fixture 生成器、benchmark runner、本地验收 Pipeline 和提交前 hook；JSON Schema 已覆盖当前核心 JSON 输出并接入 CLI 测试，核心 properties 均有 `description` coverage；已新增 `tracelens schema --output text|json` 和 `--help` 发现入口；已固定退出码 `0/1/2` 规范并新增端到端测试和本地验收 smoke；runner 已覆盖 `critical-path` 和 `detect`，并可选支持 `timeline`；新增 CI、安全检查、自动/手动 benchmark workflows 和 Actions summary 报告，并支持脚本友好的 `--color never`；已完成 5k/50k JSON/JSONL smoke 验证和 50k detect 3 轮 benchmark；尚未完成多 shape 完整 P95 矩阵、JSON Schema 1.0 稳定化和远端 required checks 兜底 |
-| M8：HTML 报告 | 3% | 0% | 0.0% | 未开始 |
+| M8：HTML 报告 | 3% | 50% | 1.5% | `report --html` 单页离线 HTML 报告骨架已落地（Trace 概览/服务耗时/关键路径/跨服务边四区块，第二十三期复用 services/critical-path/tree 分析）；错误传播链/N+1/diagnostics 区块占位，留第二十四期补齐 |
 | M9：发布与分发 | 2% | 34% | 0.7% | CLI 有版本号，已有英文/中文 README、基础安装使用说明、产品传播规约、why/use-cases/examples/output-guide/performance/local-acceptance/json-schema/opentelemetry-compatibility/ci-integration 文档；已能通过安装后的二进制查看 schema 和字段说明；尚未有 release artifact、checksum、发布流程，comparison 文档也未补齐 |
 
 当前合计：
 
 ```text
-5.0 + 14.7 + 15.0 + 14.7 + 16.2 + 11.0 + 7.6 + 6.8 + 0 + 0.7 = 91.7%
+5.0 + 14.7 + 15.0 + 14.7 + 16.2 + 11.0 + 7.6 + 6.8 + 1.5 + 0.7 = 93.2%
 ```
 
 四舍五入后记录为：
 
 ```text
-92%
+93%
 ```
 
 ## 原始需求满足度
@@ -90,7 +90,7 @@
 | 检测错误传播链 | 72% | `detect` 已识别 status error、HTTP 5xx、gRPC/RPC 非 OK 和 exception event，并输出 earliest/top/error spans 证据、root/orphan 到 earliest error 的 parent-child path，以及 top error 下游错误证据；尚未做完整异步因果推断 |
 | 检测 N+1 调用模式 | 75% | `detect` 已按同 parent 直接 child span 聚合相似调用，重复 `>= 5` 输出 medium candidate，重复 `>= 10` 且多数串行输出 high confidence；尚未做跨 trace 聚合或 SQL AST 级相似判断 |
 | 终端 ASCII flame graph/timeline | 90% | 已完成彩色终端输出基础设施、稳定颜色语义、`timeline` 横向时间轴 MVP、`--mode flame` 纵向火焰图布局和 `--max-rows` 超大 trace 折叠；仅保留更稳定快照测试基线作为可选打磨项 |
-| 单页 HTML report | 0% | 未开始 |
+| 单页 HTML report | 50% | `report --html` 生成单页离线 HTML，落地 Trace 概览/服务耗时/关键路径/跨服务边四区块；错误传播链/N+1/diagnostics 区占位，留第二十四期补齐 |
 | 子命令式真实 CLI | 95% | `validate/summary/list-traces/tree/services/critical-path/detect/timeline/schema` 已完成，tree/critical-path/timeline 已补充语义或可视化说明；`schema` 提供本地输出契约说明；后续还需要 `report` |
 | 核心单元测试 | 95% | 已有 45 个单元测试和 58 个 CLI 端到端测试；新增 OTLP 兼容性 fixture、all-zero ID 测试、JSON Schema 校验测试、schema help/schema 输出测试、description coverage 测试，以及退出码 `0/1/2` 契约测试；后续 report 和更完整性能基线还需要继续补 |
 | CI 检查与工程化质量门禁 | 86% | 已新增 GitHub Actions CI、安全检查、自动/手动性能 benchmark workflow、本地验收 Pipeline、提交前 hook、退出码规范和 CI integration 文档；Benchmark 默认覆盖 5k/50k spans 和 `detect`，会展示 Actions summary；本地 hook 需每个开发者执行 setup 后生效；尚未配置分支保护、远端 required checks 和 release workflow |
@@ -110,6 +110,7 @@ tracelens tree <file> --trace-id <id>
 tracelens services <file> --trace-id <id>
 tracelens critical-path <file> --trace-id <id>
 tracelens detect <file>
+tracelens report <file> --trace-id <id> --html out.html
 tracelens timeline <file> --trace-id <id>
 tracelens --color auto|always|never <command>
 tracelens schema [--command <name>] [--output text|json]
@@ -179,6 +180,7 @@ tracelens schema [--command <name>] [--output text|json]
 - `detect --output text|json`。
 - `timeline --output text|json`。
 - `tree --output text|json` 输出 span 语义标注与跨服务调用边汇总。
+- `report --html` 生成单页离线 HTML 报告（概览/服务/关键路径/跨服务边四区块）。
 - `services --output text|json` 输出服务维度 self time 聚合与跨服务调用边汇总。
 - `critical-path --output text|json` 输出 span 语义标注。
 
@@ -303,7 +305,7 @@ tracelens schema [--command <name>] [--output text|json]
 - M2：跨服务调用边汇总已在第二十二期落地（`tree`/`services` 文本与 JSON），M2 进入已收口状态，无主要缺口。
 - M6：仅保留 M6-B-3 更稳定的快照测试基线作为可选打磨项；flame graph 与超大 trace 折叠已在第二十一期落地。
 - M7：完整多 shape 多轮 P95 性能基线、JSON Schema 1.0 稳定化、可选分支保护规则、远端 required checks 兜底。
-- M8：HTML report。
+- M8：HTML report 骨架与核心四区块已落地（第二十三期）；错误传播链、N+1 候选与完整 diagnostics 渲染留第二十四期补齐。
 - M9：comparison 文档，GitHub Releases、跨平台 artifact、checksum、发布流程。
 
 ## 更新规则

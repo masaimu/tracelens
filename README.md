@@ -77,6 +77,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - Detect output for slow trace candidates, service latency distribution, error propagation chains, error-signal candidates, and N+1 candidates.
 - Client/server, async work, messaging, and linked span annotations in tree and critical-path output.
 - Cross-service edge summary in `tree` and `services` output: one aggregated edge per parent_service → child_service direction, with call count and client/server pair count.
+- Single-page offline HTML report for one trace via `report <file> --trace-id <id> --html out.html`; the report reuses the services / critical-path / tree analysis and renders trace overview, service timing, critical path, and cross-service edge blocks.
 - OpenTelemetry metadata preservation for schema URLs, trace state, flags, status messages, dropped counts, and nested attribute values.
 - Root span, orphan span, missing parent, duplicate span ID, multiple root, no root, and suspicious timing diagnostics.
 - Text output for humans.
@@ -97,6 +98,7 @@ tracelens services <file> --trace-id <id>
 tracelens critical-path <file> --trace-id <id>
 tracelens timeline <file> --trace-id <id>
 tracelens detect <file>
+tracelens report <file> --trace-id <id> --html out.html
 tracelens schema
 ```
 
@@ -193,6 +195,14 @@ tracelens schema --output json
 tracelens schema --command detect --output text
 ```
 
+Generate a single-page offline HTML report for a trace:
+
+```bash
+tracelens report tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC --html report.html
+```
+
+The report renders the trace overview, service timing, critical path, and cross-service edges in one offline HTML file you can open in a browser.
+
 Control terminal colors:
 
 ```bash
@@ -250,6 +260,7 @@ Implemented:
 - Critical path analysis based on parent-child topology and time intervals.
 - ASCII timeline output for trace time structure, in horizontal bar and vertical flame layouts, with large-trace folding.
 - Cross-service edge aggregation in `tree` and `services` output.
+- Single-page offline HTML report (trace overview, service timing, critical path, cross-service edges).
 - Serial, concurrent, nested, and suspicious span classification.
 - Detect output for slow trace candidates, service latency distribution, error propagation chains, error-signal candidates, and N+1 candidates.
 - Client/server span pair annotation.
@@ -262,7 +273,7 @@ Implemented:
 
 Not implemented yet:
 
-- HTML report.
+- Full error-propagation / N+1 / diagnostics rendering inside the HTML report (planned).
 - Release artifacts for remote download.
 
 See:

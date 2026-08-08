@@ -1800,3 +1800,84 @@ fn tree_cross_service_edge_counts_client_server_pair() {
 
     assert_matches_output_schema(&json);
 }
+
+fn run_report(fixture_name: &str, trace_id: &str) -> (String, String) {
+    let fixture = fixture(fixture_name);
+    let out_path = std::env::temp_dir().join(format!(
+        "tracelens-report-{}.html",
+        trace_id.chars().take(8).collect::<String>()
+    ));
+    let output = tracelens()
+        .args([
+            "report",
+            fixture.as_str(),
+            "--trace-id",
+            trace_id,
+            "--html",
+            out_path.to_str().expect("temp path should be utf8"),
+        ])
+        .output()
+        .expect("command should run");
+    assert_exit_code(&output, 0);
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    let html = std::fs::read_to_string(&out_path)
+        .unwrap_or_else(|_| panic!("report html should be written to {:?}", out_path));
+    let _ = std::fs::remove_file(&out_path);
+    (html, stdout)
+}
+
+#[test]
+fn report_generates_html_with_four_core_blocks() {
+    let (html, stdout) = run_report(
+        "otlp-semantic-annotations.json",
+        "dddddddddddddddddddddddddddddddd",
+    );
+    assert!(stdout.contains("wrote"));
+    assert!(stdout.contains("dddddddddddddddddddddddddddddddd"));
+    assert!(html.starts_with("<!DOCTYPE html>"));
+    assert!(html.contains("Trace 概览"));
+    assert!(html.contains("服务耗时分布"));
+    assert!(html.contains("关键路径"));
+    assert!(html.contains("跨服务调用边"));
+    // cross-service call edge with a client/server pair renders a row.
+    assert!(html.contains("frontend-service"));
+    assert!(html.contains("inventory-service"));
+    // placeholder blocks are visible but don't render evidence bodies.
+    assert!(html.contains("错误传播链"));
+    assert!(html.contains("N+1 候选"));
+    assert!(html.contains("Diagnostics"));
+    // no inline evidence rendered for placeholder blocks yet.
+    assert!(!html.contains("<script>"));
+}
+
+#[test]
+fn report_aggregates_n_plus_one_cross_service_edge() {
+    let (html, _stdout) = run_report("otlp-n-plus-one.json", "77777777777777777777777777777777");
+    assert!(html.starts_with("<!DOCTYPE html>"));
+    assert!(html.contains("跨服务调用边"));
+    assert!(html.contains("checkout-service"));
+    assert!(html.contains("postgres-service"));
+    // the 10 repeated calls collapse into one edge row.
+    let count_marker = "<td class=\"num\">10</td>";
+    assert!(html.contains(count_marker));
+}
+
+#[test]
+fn report_empty_cross_service_edges_for_single_service() {
+    let (html, _stdout) = run_report(
+        "otlp-missing-parent.json",
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    );
+    assert!(html.starts_with("<!DOCTYPE html>"));
+    assert!(html.contains("跨服务调用边"));
+    assert!(html.contains("(no cross-service edges)"));
+}
+
+#[test]
+fn report_concurrent_trace_renders_critical_path() {
+    let (html, _stdout) = run_report("otlp-concurrent.json", "cccccccccccccccccccccccccccccccc");
+    assert!(html.starts_with("<!DOCTYPE html>"));
+    assert!(html.contains("关键路径"));
+    assert!(html.contains("cart-service"));
+    assert!(html.contains("notify-service"));
+}

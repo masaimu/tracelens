@@ -187,6 +187,7 @@ run_step "detect" "$TRACELENS_BIN" --color never detect tests/fixtures/otlp-n-pl
 run_shell_step "detect json smoke" '"$TRACELENS_BIN" --color always detect tests/fixtures/otlp-n-plus-one.json --limit 5 --output json >/dev/null'
 run_shell_step "timeline json smoke" '"$TRACELENS_BIN" --color always timeline tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC --output json >/dev/null'
 run_shell_step "schema json smoke" '"$TRACELENS_BIN" schema --output json >/dev/null'
+run_shell_step "report html smoke" 'report_dir="$(mktemp -d)"; report_path="$report_dir/report.html"; "$TRACELENS_BIN" --color never report tests/fixtures/otlp-semantic-annotations.json --trace-id DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD --html "$report_path" >/dev/null; grep -q "<!DOCTYPE html>" "$report_path"; grep -q "跨服务调用边" "$report_path"; grep -q "frontend-service" "$report_path"; rm -rf "$report_dir"'
 
 cat >>"$SUMMARY_FILE" <<'SUMMARY'
 

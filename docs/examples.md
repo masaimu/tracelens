@@ -354,6 +354,24 @@ tracelens tree tests/fixtures/otlp-semantic-annotations.json \
 
 Single-service traces print `(no cross-service edges)` and emit an empty `cross_service_edges` array.
 
+## Generate an HTML Report
+
+Generate a single-page, offline HTML report for one trace:
+
+```bash
+tracelens report tests/fixtures/otlp-concurrent.json \
+  --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC --html report.html
+```
+
+Open `report.html` in a browser. The report reuses the existing services / critical-path / tree analysis and renders:
+
+- Trace overview (trace id, wall-clock duration, root span, span/root/orphan/diagnostic counts, critical-path status)
+- Service timing table (self time, span time, child-covered time, span count, errors)
+- Critical path segments and span totals
+- Cross-service call edges with call count and client/server pair count
+
+Error propagation chains, N+1 candidates, and the full diagnostics table are rendered as placeholders in this release and will be filled in a later iteration.
+
 ## Produce JSON for Scripts
 
 ```bash

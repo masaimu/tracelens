@@ -630,6 +630,24 @@ Useful top-level JSON areas:
 - `notes`
 - `diagnostics`
 
+## HTML Report
+
+`tracelens report <file> --trace-id <id> --html out.html` writes a single-page offline HTML file.
+
+```bash
+tracelens report traces.json --trace-id <trace-id> --html out.html
+```
+
+The report is a file, not stdout JSON, so `report` is intentionally not part of `tracelens schema` and does not accept `--output`. It reuses the services / critical-path / tree analysis and renders:
+
+- trace overview
+- service timing
+- critical path segments and span totals
+- cross-service edges
+- placeholder blocks for error propagation chains, N+1 candidates, and diagnostics (filled in a later iteration)
+
+`stdout` prints the output path, the trace id, and any warnings; the HTML body is written to the `--html` path. The file is self-contained (inline CSS, no external resources) and opens offline in any browser.
+
 ## Exit Codes
 
 `tracelens` uses this first-version exit-code contract:

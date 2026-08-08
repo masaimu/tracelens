@@ -440,14 +440,15 @@ crates/
 
 ### 交付物
 
-- `tracelens report <file> --trace-id <id> --html out.html`
-- 单页 HTML 报告。
-- Trace 概览。
-- 服务耗时分布。
-- 关键路径。
-- 错误传播链。
-- N+1 候选问题。
-- diagnostics 区域。
+- `tracelens report <file> --trace-id <id> --html out.html`（已落地，第二十三期 `design/iteration-23-html-report-skeleton.md`）。
+- 单页 HTML 报告（已落地，第二十三期同上：零外部依赖、离线可打开）。
+- Trace 概览（已落地，第二十三期）。
+- 服务耗时分布（已落地，第二十三期，复用 `analyze_trace_duration`）。
+- 关键路径（已落地，第二十三期，复用 `analyze_critical_path`）。
+- 错误传播链（占位，留第二十四期补齐渲染）。
+- N+1 候选问题（占位，留第二十四期补齐渲染）。
+- diagnostics 区域（占位，留第二十四期补齐渲染）。
+- 跨服务调用边（额外落地，第二十三期复用第二十二期 `cross_service_edges` 在报告内渲染为拓扑块）。
 
 ### 验收标准
 

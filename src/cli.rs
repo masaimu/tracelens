@@ -19,6 +19,7 @@ use crate::graph::trace_graph::TraceCollection;
 use crate::input::otlp_json::parse_otlp_file;
 use crate::model::diagnostic::Severity;
 use crate::model::span::{TRACE_ID_LEN, normalize_hex_id};
+use crate::output::html::render_html_report;
 use crate::output::json::{
     format_critical_path_json, format_detect_json, format_list_traces_json, format_services_json,
     format_summary_json, format_timeline_json, format_tree_json, format_validate_json,
@@ -196,6 +197,23 @@ enum Commands {
         /// Output format.
         #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
         output: OutputFormat,
+    },
+
+    /// Generate a single-page offline HTML report for a trace.
+    #[command(
+        after_help = "Report output is an HTML file (not stdout JSON); it reuses the services / critical-path / tree analysis and is not part of `tracelens schema`."
+    )]
+    Report {
+        /// Path to an OTLP JSON trace file.
+        file: PathBuf,
+
+        /// Trace ID to inspect.
+        #[arg(long = "trace-id")]
+        trace_id: String,
+
+        /// Output HTML file path. Existing files are overwritten.
+        #[arg(long = "html")]
+        html: PathBuf,
     },
 
     /// Print the JSON output schema and field descriptions.
@@ -517,6 +535,31 @@ pub fn run() -> Result<ExitCode> {
                 ),
                 OutputFormat::Json => print!("{}", format_services_json(&analysis, trace)),
             }
+            Ok(exit_code::success())
+        }
+        Commands::Report {
+            file,
+            trace_id,
+            html,
+        } => {
+            let normalized_trace_id = normalize_hex_id(&trace_id, TRACE_ID_LEN)
+                .map_err(|message| anyhow!("invalid --trace-id: {message}"))?;
+            let collection = load_collection(&file)?;
+            ensure_has_spans(&collection)?;
+            let trace = collection
+                .traces
+                .get(&normalized_trace_id)
+                .ok_or_else(|| anyhow!("trace_id not found: {normalized_trace_id}"))?;
+            let duration = analyze_trace_duration(trace);
+            let critical_path = analyze_critical_path(trace);
+            let report = render_html_report(trace, &duration, &critical_path);
+            std::fs::write(&html, report)
+                .with_context(|| format!("failed to write html to {}", html.display()))?;
+            println!(
+                "wrote {} (trace_id: {})",
+                html.display(),
+                normalized_trace_id
+            );
             Ok(exit_code::success())
         }
         Commands::Schema { command, output } => {

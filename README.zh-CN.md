@@ -79,6 +79,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - `detect` 输出：慢 trace 候选、服务耗时分布、错误传播链、错误信号候选和 N+1 候选。
 - 在 tree 和 critical-path 输出中标注 client/server、async work、messaging 和 linked span。
 - 在 `tree` 和 `services` 输出里汇总跨服务调用边：按 parent_service → child_service 方向各聚合成一条边，带调用次数和 client/server pair 数。
+- 通过 `report <file> --trace-id <id> --html out.html` 生成单页离线 HTML 报告；报告复用 services / critical-path / tree 分析，渲染 Trace 概览、服务耗时、关键路径和跨服务调用边区块。
 - 保留 OpenTelemetry 元数据：schema URL、trace state、flags、status message、dropped counts 和 nested attribute values。
 - 识别 root span、孤儿 span、缺失 parent、重复 span ID、多 root、无 root、可疑时间关系等问题。
 - 面向人的文本输出。
@@ -99,6 +100,7 @@ tracelens services <file> --trace-id <id>
 tracelens critical-path <file> --trace-id <id>
 tracelens timeline <file> --trace-id <id>
 tracelens detect <file>
+tracelens report <file> --trace-id <id> --html out.html
 tracelens schema
 ```
 
@@ -214,6 +216,15 @@ tracelens --color never validate traces.json --strict
 tracelens detect traces.json --limit 5 --output json > tracelens-detect.json
 ```
 
+
+生成单页离线 HTML 报告：
+
+```bash
+tracelens report tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC --html report.html
+```
+
+报告在单个离线 HTML 文件里渲染 Trace 概览、服务耗时、关键路径和跨服务调用边，可直接用浏览器打开。
+
 ## 支持的输入格式
 
 当前支持：
@@ -245,6 +256,7 @@ tracelens detect traces.json --limit 5 --output json > tracelens-detect.json
 - 基于 parent-child 拓扑和时间区间的关键路径分析。
 - 单条 trace 的 ASCII timeline 输出，含横向时间条与纵向火焰图两种布局，并支持超大 trace 折叠。
 - 在 `tree` 和 `services` 输出里聚合跨服务调用边。
+- 单页离线 HTML 报告（Trace 概览、服务耗时、关键路径、跨服务调用边）。
 - 串行、并发、nested、suspicious span 分类。
 - `detect` 输出：慢 trace 候选、服务耗时分布、错误传播链、错误信号候选和 N+1 候选。
 - client/server span pair 标注。
@@ -257,7 +269,7 @@ tracelens detect traces.json --limit 5 --output json > tracelens-detect.json
 
 尚未实现：
 
-- HTML 报告。
+- HTML 报告里的错误传播链、N+1 候选和完整 diagnostics 渲染（计划中）。
 - 可远程下载的 release artifact。
 
 参考：

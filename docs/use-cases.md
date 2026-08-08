@@ -269,6 +269,24 @@ Why it matters:
 
 Edge-level topology complements service-level self time. A service can look cheap per span while still issuing many repeated cross-service calls (a common N+1 shape); `calls` makes the relational cost visible even when no span by itself is slow. The `client/server pair` count also lets you compare graph-level hop detection against the explicit `span.kind`-declared client/server pairs under Semantic Annotations.
 
+## 11. Share a Trace as an Offline HTML Report
+
+Use this when you want to review or share one trace as a self-contained, browser-friendly report, with no terminal scrolling and no external dependencies.
+
+```bash
+tracelens report traces.json --trace-id <trace-id> --html out.html
+```
+
+What to look for:
+
+- trace overview, service timing, and critical-path tables
+- cross-service call edges with call counts and client/server pair counts
+- placeholder blocks for error propagation chains and N+1 candidates (filled in a later iteration)
+
+Why it matters:
+
+A single offline HTML file works in email, tickets, and review notes where a terminal session does not. The report reads from the same stable analysis model as `services`, `critical-path`, and `tree`, so it never disagrees with the CLI output.
+
 ## Picking the Right Command
 
 | Question | Command |
@@ -284,4 +302,5 @@ Edge-level topology complements service-level self time. A service can look chea
 | Do I need script-friendly output? | add `--output json` |
 | Do I need an explicit output contract for agents? | `tracelens schema --output text` or `tracelens schema --output json` |
 | Do I need CI-friendly failure behavior? | `validate --strict`, `--color never`, and [CI integration](ci-integration.md) |
+| Do I need a shareable HTML report? | `report --html` |
 | Do I need clean logs? | add `--color never` |

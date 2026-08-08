@@ -552,7 +552,9 @@ pub fn run() -> Result<ExitCode> {
                 .ok_or_else(|| anyhow!("trace_id not found: {normalized_trace_id}"))?;
             let duration = analyze_trace_duration(trace);
             let critical_path = analyze_critical_path(trace);
-            let report = render_html_report(trace, &duration, &critical_path);
+            let detect =
+                analyze_detect(&collection, crate::output::html::detect_limit_for_report());
+            let report = render_html_report(trace, &duration, &critical_path, &detect);
             std::fs::write(&html, report)
                 .with_context(|| format!("failed to write html to {}", html.display()))?;
             println!(

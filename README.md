@@ -77,7 +77,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - Detect output for slow trace candidates, service latency distribution, error propagation chains, error-signal candidates, and N+1 candidates.
 - Client/server, async work, messaging, and linked span annotations in tree and critical-path output.
 - Cross-service edge summary in `tree` and `services` output: one aggregated edge per parent_service → child_service direction, with call count and client/server pair count.
-- Single-page offline HTML report for one trace via `report <file> --trace-id <id> --html out.html`; the report reuses the services / critical-path / tree analysis and renders trace overview, service timing, critical path, and cross-service edge blocks.
+- Single-page offline HTML report for one trace via `report <file> --trace-id <id> --html out.html`; the report reuses the services / critical-path / tree / detect analysis and renders trace overview, service timing, critical path, cross-service edges, error propagation chains, N+1 candidates, and diagnostics, with color heat mapping for slow services, error spans, high-count N+1 edges, and diagnostic severity.
 - OpenTelemetry metadata preservation for schema URLs, trace state, flags, status messages, dropped counts, and nested attribute values.
 - Root span, orphan span, missing parent, duplicate span ID, multiple root, no root, and suspicious timing diagnostics.
 - Text output for humans.
@@ -273,7 +273,6 @@ Implemented:
 
 Not implemented yet:
 
-- Full error-propagation / N+1 / diagnostics rendering inside the HTML report (planned).
 - Release artifacts for remote download.
 
 See:

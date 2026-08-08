@@ -29,6 +29,7 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 - service self time
 - cross-service edges
 - single-page HTML report
+- color-coded / heatmap HTML report
 - slow/error candidates
 - service latency distribution
 - error propagation chains

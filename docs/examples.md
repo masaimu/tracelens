@@ -370,7 +370,8 @@ Open `report.html` in a browser. The report reuses the existing services / criti
 - Critical path segments and span totals
 - Cross-service call edges with call count and client/server pair count
 
-Error propagation chains, N+1 candidates, and the full diagnostics table are rendered as placeholders in this release and will be filled in a later iteration.
+Error propagation chains, N+1 candidates, and the diagnostics table are rendered with real evidence.
+Slow and noteworthy items are color-coded: service self_time uses a heat scale, error spans are red, high-count N+1 call edges are red, and diagnostics are colored warning (yellow) / error (red).
 
 ## Produce JSON for Scripts
 

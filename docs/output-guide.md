@@ -640,11 +640,14 @@ tracelens report traces.json --trace-id <trace-id> --html out.html
 
 The report is a file, not stdout JSON, so `report` is intentionally not part of `tracelens schema` and does not accept `--output`. It reuses the services / critical-path / tree analysis and renders:
 
-- trace overview
-- service timing
-- critical path segments and span totals
-- cross-service edges
-- placeholder blocks for error propagation chains, N+1 candidates, and diagnostics (filled in a later iteration)
+- trace overview (with a slow-trace badge when the trace is a slow candidate)
+- service timing, with self_time shown on a heat color scale (faint for fast, deep for the slowest service)
+- critical path segments and span totals, with critical-path rows highlighted and error spans marked red
+- cross-service call edges, with high call counts (>= 10) marked red
+- error propagation chains (path to earliest error, top error span, downstream errors)
+- N+1 candidates (parent, child group, repeated count, serial ratio, confidence)
+- diagnostics, colored by severity (warning yellow, error red)
+Color semantics mirror the terminal `--color` layer; no new analysis is computed for the report.
 
 `stdout` prints the output path, the trace id, and any warnings; the HTML body is written to the `--html` path. The file is self-contained (inline CSS, no external resources) and opens offline in any browser.
 

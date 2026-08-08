@@ -1,5 +1,8 @@
 use std::path::PathBuf;
 use std::process::{Command, Output};
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+static REPORT_TMP_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 use serde_json::Value;
 
@@ -1803,10 +1806,8 @@ fn tree_cross_service_edge_counts_client_server_pair() {
 
 fn run_report(fixture_name: &str, trace_id: &str) -> (String, String) {
     let fixture = fixture(fixture_name);
-    let out_path = std::env::temp_dir().join(format!(
-        "tracelens-report-{}.html",
-        trace_id.chars().take(8).collect::<String>()
-    ));
+    let n = REPORT_TMP_COUNTER.fetch_add(1, Ordering::SeqCst);
+    let out_path = std::env::temp_dir().join(format!("tracelens-report-{n}.html"));
     let output = tracelens()
         .args([
             "report",
@@ -1880,4 +1881,39 @@ fn report_concurrent_trace_renders_critical_path() {
     assert!(html.contains("关键路径"));
     assert!(html.contains("cart-service"));
     assert!(html.contains("notify-service"));
+}
+
+#[test]
+fn report_n_plus_one_block_renders_real_candidate() {
+    let (html, _stdout) = run_report("otlp-n-plus-one.json", "77777777777777777777777777777777");
+    assert!(!html.contains("(no n+1 candidates)"));
+    assert!(html.contains("repeated="));
+    assert!(html.contains("badge-red\">10</span>"));
+}
+
+#[test]
+fn report_diagnostics_block_warns_on_missing_parent() {
+    let (html, _stdout) = run_report(
+        "otlp-missing-parent.json",
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    );
+    assert!(html.contains("sev-warning"));
+    assert!(html.contains("Diagnostics"));
+}
+
+#[test]
+fn report_error_propagation_renders_on_error_trace() {
+    let (html, _stdout) = run_report("otlp-basic.json", "5B8EFFF798038103D269B633813FC60C");
+    // payment-service is an error span; the report marks errors in red.
+    assert!(html.contains("err-mark"));
+    assert!(html.contains("badge-red\">1</span>"));
+}
+
+#[test]
+fn report_renders_nav_heatmap_and_slow_badge() {
+    let (html, _stdout) = run_report("otlp-concurrent.json", "cccccccccccccccccccccccccccccccc");
+    assert!(html.contains("<nav class=\"nav\">"));
+    assert!(html.contains("critical-seg"));
+    assert!(html.contains("慢请求候选"));
+    assert!(html.contains("heat-4"));
 }

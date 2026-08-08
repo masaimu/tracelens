@@ -445,9 +445,10 @@ crates/
 - Trace 概览（已落地，第二十三期）。
 - 服务耗时分布（已落地，第二十三期，复用 `analyze_trace_duration`）。
 - 关键路径（已落地，第二十三期，复用 `analyze_critical_path`）。
-- 错误传播链（占位，留第二十四期补齐渲染）。
-- N+1 候选问题（占位，留第二十四期补齐渲染）。
-- diagnostics 区域（占位，留第二十四期补齐渲染）。
+- 错误传播链（已落地，第二十四期 `design/iteration-24-html-report-completion.md`：渲染路径 + earliest/top error span + 下游错误 + confidence）。
+- N+1 候选问题（已落地，第二十四期同上：parent + child group + repeated + serial_ratio + confidence + 示例 child span）。
+- diagnostics 区域（已落地，第二十四期同上：scope/severity/code/message/span_id/location 表，按 severity 着色）。
+- 报告内导航锚点与热力配色（第二十四期：慢服务热力、错误红色、关键路径强调、N+1 高 calls 强调、慢请求徽标、severity 着色、区块跳转）。
 - 跨服务调用边（额外落地，第二十三期复用第二十二期 `cross_service_edges` 在报告内渲染为拓扑块）。
 
 ### 验收标准

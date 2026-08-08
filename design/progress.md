@@ -14,9 +14,9 @@
 
 ## 当前快照
 
-- 更新时间：2026-08-08（第二十七期 0.1.1 实现层完成，待提交与可选 `v0.1.1` tag）
-- 当前基线提交：第二十七期 `design/iteration-27-v011-selftime-ratio-p999-quickstart.md` 实现（A 工程层完成；B 层 `v0.1.1` tag 验收可选，由你触发）
-- 当前阶段：第二十七期 v0.1.1 增强迭代（服务 self time 占比、慢请求 p99/p999、一键 quickstart 与样本数据集）实现层完成
+- 更新时间：2026-08-09（第二十七期 `v0.1.1` 已发布到 GitHub Releases 并端到端验证通过）
+- 当前基线提交：`v0.1.1` tag（main HEAD `cf4bf33`）；含发布工程修复 `0047325`（release workflow 幂等化，绕开 softprops `delete-a-release-asset 404`）与 `cf4bf33`（quickstart 走 `github.com/releases/latest` web redirect 取 tag + 剥 `v` 对齐文件名，脱离 `api.github.com` 60/h 未鉴权限流）
+- 当前阶段：第二十七期 v0.1.1 增强迭代收口——服务 self time 占比、慢请求 p99/p999、一键 quickstart 与样本数据集均已含于已发布的 `v0.1.1`；B 层端到端在正发布二进制上跑通
 - 当前整体进度：`97%`
 
 ```text
@@ -96,7 +96,7 @@
 | CI 检查与工程化质量门禁 | 86% | 已新增 GitHub Actions CI、安全检查、自动/手动性能 benchmark workflow、本地验收 Pipeline、提交前 hook、退出码规范和 CI integration 文档；Benchmark 默认覆盖 5k/50k spans 和 `detect`，会展示 Actions summary；本地 hook 需每个开发者执行 setup 后生效；尚未配置分支保护、远端 required checks 和 release workflow |
 | P95 样本处理耗时小于 2 秒 | 72% | 已有 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path` 和 `detect`；本地 50k spans `detect` 3 轮 P95 为 466.123ms；第二十七期随仓库提供 `samples/traces.json`（约 5k spans）并在 `tools/quickstart.sh` 内对 `detect` 单次计时实测 <2s（面向用户的演示）；完整多 shape 多轮 P95 矩阵仍留 0.1.2 |
 | 可脚本化 JSON 输出 | 96% | 基础命令、`services`、`tree`、`critical-path`、`detect` 和 `timeline` 已有 `--output json` 与 `schema_version: "0.1"`，并输出结构化 annotations / slow_traces / service_latency_distribution / error_traces / error_propagation_chains / n_plus_one_candidates / timeline rows；`--output json` 不受彩色输出影响；已新增带字段级 `description` 的 JSON Schema、CLI schema 校验测试、description coverage 测试，以及 `tracelens schema --output text|json` 本地发现入口；schema 尚未进入 1.0 稳定 |
-| 远程下载使用 | 100% | 第二十五期：版本号口径 + 测试、本机 release artifact + checksum、安装说明、comparison、CHANGELOG、versioning。第二十六期：跨平台 release workflow（mac arm64/x86_64、linux x86_64、windows x86_64 四平台 matrix、tag→GitHub Releases、per-artifact checksum、release note 源 CHANGELOG；mac x86_64 在 macos-14 交叉编译避开 Intel mac runner 排队）。首版 `v0.1.0` 已发布；Agent 独立走陌生用户全链路（API 拉资产 → 下载 → `shasum -c` → `--version`/`--help` → `summary`/`detect`）通过 |
+| 远程下载使用 | 100% | 第二十五期：版本号口径 + 测试、本机 release artifact + checksum、安装说明、comparison、CHANGELOG、versioning。第二十六期：跨平台 release workflow（mac arm64/x86_64、linux x86_64、windows x86_64 四平台 matrix、tag→GitHub Releases、per-artifact checksum、release note 源 CHANGELOG；mac x86_64 在 macos-14 交叉编译避开 Intel mac runner 排队）。首版 `v0.1.0` 已发布；Agent 独立走陌生用户全链路（API 拉资产 → 下载 → `shasum -c` → `--version`/`--help` → `summary`/`detect`）通过；`v0.1.1` 已发布并经 `tools/quickstart.sh` 一行命令在正发布二进制上端到端验证（web redirect 取 tag → 下载 → `shasum -c` → `summary`/`validate`/`tree`/`services`/`critical-path`/`detect`/`report --html`，`detect` 5k 样本 `real 0.03s`） |
 
 ## 当前已具备的能力
 
@@ -293,12 +293,12 @@ tracelens schema [--command <name>] [--output text|json]
 
 当前发布与分发能力：
 
-- `tracelens --version` 输出 `tracelens 0.1.0`，与 `Cargo.toml` 一致，且有端到端测试钉死。
+- `tracelens --version` 输出 `tracelens 0.1.1`，与 `Cargo.toml` 一致，且有端到端测试钉死。
 - 本机 release 构建脚本 `tools/build_release.sh`（跨平台化）：产出当前 host 的 stripped 二进制 + `.sha256`，兼容 `shasum`/`sha256sum`/Windows `Get-FileHash`，Windows 产物带 `.exe`；`cargo build --release --locked` + `[profile.release] strip` 统一 strip。本地验收 Pipeline 含 release smoke。
 - 跨平台 release workflow `.github/workflows/release.yml`：mac arm64/x64、linux x64、win x64 四平台 matrix 原生构建 + per-artifact checksum；`push: tags: [v*]` 触发发布到 GitHub Releases，`workflow_dispatch` 只构建不发布（预演）；release note body 源自 `CHANGELOG.md`；使用默认 `GITHUB_TOKEN` 无需额外 secret。
 - 安装三路径：GitHub Releases 下载（首个 tag 发布后）、本机构建 artifact、`cargo install --path .`。
 - `CHANGELOG.md`：M0–M8 能力归档，作 release note 来源；0.1.0 段为 release note 模板。
-- 已发布：首版 `v0.1.0` tag 已触发跨平台 release workflow 并发布到 GitHub Releases（mac arm64/x86_64、linux x86_64、windows x86_64 四平台二进制 + 各自 `.sha256`，release note 源自 `CHANGELOG.md`）。Agent 独立下载 mac arm64 产物经 `shasum -c`、`--version`/`--help`、`summary`/`detect` 实测通过。包管理器分发（Homebrew/crates.io/npm）为后续增强项，不阻塞第一版分发闭环。
+- 已发布：首版 `v0.1.0` tag 已触发跨平台 release workflow 并发布到 GitHub Releases（mac arm64/x86_64、linux x86_64、windows x86_64 四平台二进制 + 各自 `.sha256`，release note 源自 `CHANGELOG.md`）。Agent 独立下载 mac arm64 产物经 `shasum -c`、`--version`/`--help`、`summary`/`detect` 实测通过。`v0.1.1` 同样已发布：release workflow 已幂等化（用 runner 预装 `gh release create` 替换 softprops 的 asset reconcile-delete 路径，避免偶发 `delete-a-release-asset 404`；并收敛 `files:` 重复 glob）；`tools/quickstart.sh` 改走 `github.com/releases/latest` web redirect 取 tag 并直接构造下载 URL，脱离 `api.github.com` 60/h 未鉴权限流，B 层在正发布 `v0.1.1` 二进制上端到端跑通（六功能点 + `detect` 5k 样本 `real 0.03s`）。包管理器分发（Homebrew/crates.io/npm）为后续增强项，不阻塞第一版分发闭环。
 
 当前验证能力：
 
@@ -319,7 +319,7 @@ tracelens schema [--command <name>] [--output text|json]
 - M6：仅保留 M6-B-3 更稳定的快照测试基线作为可选打磨项；flame graph 与超大 trace 折叠已在第二十一期落地。
 - M7：完整多 shape 多轮 P95 性能基线（落 `docs/performance.md`）、JSON Schema 1.0 稳定化、可选分支保护规则、远端 required checks 兜底。第二十七期已随仓库提供 `samples/traces.json` 与 `tools/quickstart.sh` 计时实测 <2s 的面向用户演示，但矩阵仍待 0.1.2。
 - M8：HTML 报告已在第二十三、第二十四期收口（骨架 + 补全 + 配色 + 导航），M8 进入已收口状态，无主要缺口。
-- M9：已收口到 100%。首版 `v0.1.0` 已发布到 GitHub Releases，跨平台 release workflow 跑通（mac arm64/x86_64、linux x86_64、windows x86_64 四平台 + checksum + CHANGELOG release note），Agent 独立下载验收通过。仅留包管理器分发（Homebrew/crates.io/npm）为后续增强项，不阻塞第一版分发。
+- M9：已收口到 100%。首版 `v0.1.0` 已发布到 GitHub Releases，跨平台 release workflow 跑通（mac arm64/x86_64、linux x86_64、windows x86_64 四平台 + checksum + CHANGELOG release note），Agent 独立下载验收通过。`v0.1.1` 已补充发布：release workflow 幂等化（`gh release create` 替换 softprops、收敛 `files:` 重复 glob，修掉偶发 `delete-a-release-asset 404`）；`tools/quickstart.sh` 改走 web redirect 取 tag 并直接构造 URL（脱离 api 限流），B 层在正发布二进制上端到端跑通。仅留包管理器分发（Homebrew/crates.io/npm）为后续增强项，不阻塞第一版分发。
 
 ## 更新规则
 

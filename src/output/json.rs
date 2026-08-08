@@ -684,6 +684,8 @@ fn span_to_json(span: &CanonicalSpan) -> Value {
         "trace_id": span.trace_id,
         "span_id": span.span_id,
         "parent_span_id": span.parent_span_id,
+        "trace_state": span.trace_state,
+        "flags": span.flags,
         "service_name": span.service_name,
         "name": span.name,
         "kind": span.kind,
@@ -692,14 +694,21 @@ fn span_to_json(span: &CanonicalSpan) -> Value {
         "end_ns": span.end_ns,
         "duration_ns": span.duration_ns(),
         "status_code": span.status_code,
+        "status_message": span.status_message,
         "status_label": span.status_label(),
         "is_error": span.is_error(),
         "attributes": span.attributes,
+        "dropped_attributes_count": span.dropped_attributes_count,
         "resource_attributes": span.resource_attributes,
+        "resource_schema_url": span.resource_schema_url,
         "scope_name": span.scope_name,
         "scope_version": span.scope_version,
+        "scope_attributes": span.scope_attributes,
+        "scope_schema_url": span.scope_schema_url,
         "events": span.events.iter().map(event_to_json).collect::<Vec<_>>(),
+        "dropped_events_count": span.dropped_events_count,
         "links": span.links.iter().map(link_to_json).collect::<Vec<_>>(),
+        "dropped_links_count": span.dropped_links_count,
     })
 }
 
@@ -708,6 +717,7 @@ fn event_to_json(event: &SpanEvent) -> Value {
         "name": event.name,
         "time_unix_nano": event.time_unix_nano,
         "attributes": event.attributes,
+        "dropped_attributes_count": event.dropped_attributes_count,
     })
 }
 
@@ -715,7 +725,10 @@ fn link_to_json(link: &SpanLink) -> Value {
     json!({
         "trace_id": link.trace_id,
         "span_id": link.span_id,
+        "trace_state": link.trace_state,
+        "flags": link.flags,
         "attributes": link.attributes,
+        "dropped_attributes_count": link.dropped_attributes_count,
     })
 }
 

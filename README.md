@@ -56,6 +56,8 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - [Use cases](docs/use-cases.md)
 - [Examples](docs/examples.md)
 - [Output guide](docs/output-guide.md)
+- [JSON Schema](docs/json-schema.md)
+- [OpenTelemetry compatibility](docs/opentelemetry-compatibility.md)
 - [Performance](docs/performance.md)
 
 ## Current Capabilities
@@ -73,10 +75,12 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - ASCII timeline output for a single trace, including critical path, error, orphan, and overlap markers.
 - Detect output for slow trace candidates, service latency distribution, error propagation chains, error-signal candidates, and N+1 candidates.
 - Client/server, async work, messaging, and linked span annotations in tree and critical-path output.
+- OpenTelemetry metadata preservation for schema URLs, trace state, flags, status messages, dropped counts, and nested attribute values.
 - Root span, orphan span, missing parent, duplicate span ID, multiple root, no root, and suspicious timing diagnostics.
 - Text output for humans.
 - Semantic colored text output with `--color auto|always|never`.
-- JSON output for scripts with `--output json`.
+- JSON output for scripts and agents with `--output json`.
+- A published JSON Schema for current `--output json` structures.
 - Basic trace listing and sorting.
 
 Current commands:
@@ -170,6 +174,12 @@ Produce JSON output:
 tracelens detect tests/fixtures/otlp-n-plus-one.json --output json
 ```
 
+Read the output schema:
+
+```text
+schemas/tracelens-output.schema.json
+```
+
 Control terminal colors:
 
 ```bash
@@ -198,6 +208,8 @@ Currently supported:
 | OTLP JSON | Supported | `resourceSpans[].scopeSpans[].spans[]` |
 | OTLP JSONL | Supported | One OTLP object per line |
 
+See [OpenTelemetry compatibility](docs/opentelemetry-compatibility.md) for the exact supported, partially supported, and unsupported OTLP behaviors.
+
 Not supported yet:
 
 - `.json.gz` compressed input.
@@ -223,6 +235,8 @@ Implemented:
 - Async work, messaging, and linked span annotation.
 - Validation diagnostics.
 - Semantic colored text output and JSON output.
+- JSON Schema for agent and automation consumers.
+- OpenTelemetry compatibility documentation.
 
 Not implemented yet:
 

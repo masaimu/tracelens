@@ -16,6 +16,17 @@ pub struct ParsedTraceData {
     pub diagnostics: Vec<Diagnostic>,
 }
 
+#[derive(Clone, Debug)]
+struct SpanParseContext {
+    service_name: String,
+    resource_attributes: BTreeMap<String, String>,
+    resource_schema_url: Option<String>,
+    scope_name: Option<String>,
+    scope_version: Option<String>,
+    scope_attributes: BTreeMap<String, String>,
+    scope_schema_url: Option<String>,
+}
+
 impl ParsedTraceData {
     fn empty() -> Self {
         Self {
@@ -95,6 +106,10 @@ fn parse_otlp_value(value: &Value, line_number: Option<usize>) -> ParsedTraceDat
             .and_then(|resource| resource.get("attributes"))
             .map(parse_attributes)
             .unwrap_or_default();
+        let resource_schema_url = resource_span
+            .get("schemaUrl")
+            .and_then(Value::as_str)
+            .map(ToString::to_string);
         let service_name = resource_attributes
             .get("service.name")
             .cloned()
@@ -134,6 +149,15 @@ fn parse_otlp_value(value: &Value, line_number: Option<usize>) -> ParsedTraceDat
                 .and_then(|scope| scope.get("version"))
                 .and_then(Value::as_str)
                 .map(ToString::to_string);
+            let scope_attributes = scope_span
+                .get("scope")
+                .and_then(|scope| scope.get("attributes"))
+                .map(parse_attributes)
+                .unwrap_or_default();
+            let scope_schema_url = scope_span
+                .get("schemaUrl")
+                .and_then(Value::as_str)
+                .map(ToString::to_string);
 
             let Some(spans) = scope_span.get("spans").and_then(Value::as_array) else {
                 data.diagnostics.push(
@@ -143,16 +167,23 @@ fn parse_otlp_value(value: &Value, line_number: Option<usize>) -> ParsedTraceDat
                 continue;
             };
 
+            let span_context = SpanParseContext {
+                service_name: service_name.clone(),
+                resource_attributes: resource_attributes.clone(),
+                resource_schema_url: resource_schema_url.clone(),
+                scope_name,
+                scope_version,
+                scope_attributes,
+                scope_schema_url,
+            };
+
             for (span_index, span_value) in spans.iter().enumerate() {
                 let span_location = format!(
                     "{location_prefix}.resourceSpans[{resource_index}].scopeSpans[{scope_index}].spans[{span_index}]"
                 );
                 if let Some(span) = parse_span(
                     span_value,
-                    &service_name,
-                    &resource_attributes,
-                    scope_name.clone(),
-                    scope_version.clone(),
+                    &span_context,
                     &span_location,
                     &mut data.diagnostics,
                 ) {
@@ -167,10 +198,7 @@ fn parse_otlp_value(value: &Value, line_number: Option<usize>) -> ParsedTraceDat
 
 fn parse_span(
     value: &Value,
-    service_name: &str,
-    resource_attributes: &BTreeMap<String, String>,
-    scope_name: Option<String>,
-    scope_version: Option<String>,
+    context: &SpanParseContext,
     location: &str,
     diagnostics: &mut Vec<Diagnostic>,
 ) -> Option<CanonicalSpan> {
@@ -252,7 +280,12 @@ fn parse_span(
         trace_id,
         span_id,
         parent_span_id,
-        service_name: service_name.to_string(),
+        trace_state: value
+            .get("traceState")
+            .and_then(Value::as_str)
+            .map(ToString::to_string),
+        flags: value.get("flags").and_then(parse_u64),
+        service_name: context.service_name.clone(),
         name,
         kind: value.get("kind").and_then(parse_i64),
         start_ns,
@@ -261,15 +294,26 @@ fn parse_span(
             .get("status")
             .and_then(|status| status.get("code"))
             .and_then(parse_status_code),
+        status_message: value
+            .get("status")
+            .and_then(|status| status.get("message"))
+            .and_then(Value::as_str)
+            .map(ToString::to_string),
         attributes: value
             .get("attributes")
             .map(parse_attributes)
             .unwrap_or_default(),
-        resource_attributes: resource_attributes.clone(),
-        scope_name,
-        scope_version,
+        dropped_attributes_count: value.get("droppedAttributesCount").and_then(parse_u64),
+        resource_attributes: context.resource_attributes.clone(),
+        resource_schema_url: context.resource_schema_url.clone(),
+        scope_name: context.scope_name.clone(),
+        scope_version: context.scope_version.clone(),
+        scope_attributes: context.scope_attributes.clone(),
+        scope_schema_url: context.scope_schema_url.clone(),
         events: value.get("events").map(parse_events).unwrap_or_default(),
+        dropped_events_count: value.get("droppedEventsCount").and_then(parse_u64),
         links: value.get("links").map(parse_links).unwrap_or_default(),
+        dropped_links_count: value.get("droppedLinksCount").and_then(parse_u64),
     })
 }
 
@@ -350,6 +394,7 @@ fn parse_events(value: &Value) -> Vec<SpanEvent> {
                 .get("attributes")
                 .map(parse_attributes)
                 .unwrap_or_default(),
+            dropped_attributes_count: item.get("droppedAttributesCount").and_then(parse_u64),
         })
         .collect()
 }
@@ -370,10 +415,16 @@ fn parse_links(value: &Value) -> Vec<SpanLink> {
                 .get("spanId")
                 .and_then(Value::as_str)
                 .map(|value| value.trim().to_ascii_lowercase()),
+            trace_state: item
+                .get("traceState")
+                .and_then(Value::as_str)
+                .map(ToString::to_string),
+            flags: item.get("flags").and_then(parse_u64),
             attributes: item
                 .get("attributes")
                 .map(parse_attributes)
                 .unwrap_or_default(),
+            dropped_attributes_count: item.get("droppedAttributesCount").and_then(parse_u64),
         })
         .collect()
 }
@@ -393,6 +444,52 @@ fn any_value_to_string(value: &Value) -> Option<String> {
     }
     if let Some(value) = value.get("bytesValue").and_then(Value::as_str) {
         return Some(value.to_string());
+    }
+
+    any_value_to_json(value).map(|value| value.to_string())
+}
+
+fn any_value_to_json(value: &Value) -> Option<Value> {
+    if let Some(value) = value.get("stringValue").and_then(Value::as_str) {
+        return Some(Value::String(value.to_string()));
+    }
+    if let Some(value) = value.get("intValue").and_then(parse_i64) {
+        return Some(Value::Number(value.into()));
+    }
+    if let Some(value) = value.get("doubleValue").and_then(Value::as_f64) {
+        return serde_json::Number::from_f64(value).map(Value::Number);
+    }
+    if let Some(value) = value.get("boolValue").and_then(Value::as_bool) {
+        return Some(Value::Bool(value));
+    }
+    if let Some(value) = value.get("bytesValue").and_then(Value::as_str) {
+        return Some(Value::String(value.to_string()));
+    }
+    if let Some(items) = value
+        .get("arrayValue")
+        .and_then(|array| array.get("values"))
+        .and_then(Value::as_array)
+    {
+        return Some(Value::Array(
+            items.iter().filter_map(any_value_to_json).collect(),
+        ));
+    }
+    if let Some(items) = value
+        .get("kvlistValue")
+        .and_then(|kvlist| kvlist.get("values"))
+        .and_then(Value::as_array)
+    {
+        let mut object = serde_json::Map::new();
+        for item in items {
+            let Some(key) = item.get("key").and_then(Value::as_str) else {
+                continue;
+            };
+            let Some(value) = item.get("value").and_then(any_value_to_json) else {
+                continue;
+            };
+            object.insert(key.to_string(), value);
+        }
+        return Some(Value::Object(object));
     }
 
     None
@@ -431,6 +528,7 @@ fn parse_status_code(value: &Value) -> Option<i64> {
 #[cfg(test)]
 mod tests {
     use super::parse_otlp_file;
+    use serde_json::Value;
     use std::path::Path;
 
     #[test]
@@ -510,6 +608,93 @@ mod tests {
                 .iter()
                 .any(|diagnostic| diagnostic.code == "malformed_jsonl_line"
                     && diagnostic.location.as_deref() == Some("line 2"))
+        );
+    }
+
+    #[test]
+    fn parses_otlp_json_mapping_metadata_and_nested_any_values() {
+        let data = parse_otlp_file(Path::new("tests/fixtures/otlp-compatibility.json"))
+            .expect("fixture should parse");
+
+        assert_eq!(data.spans.len(), 2);
+        assert!(data.diagnostics.is_empty());
+
+        let root = data
+            .spans
+            .iter()
+            .find(|span| span.span_id == "abcdefabcdefabcd")
+            .expect("root span should exist");
+
+        assert_eq!(
+            root.trace_id, "abcdef0123456789abcdef0123456789",
+            "uppercase trace id should normalize"
+        );
+        assert_eq!(root.trace_state.as_deref(), Some("rojo=00f067aa0ba902b7"));
+        assert_eq!(root.flags, Some(1));
+        assert_eq!(root.status_code, Some(2));
+        assert_eq!(root.status_message.as_deref(), Some("checkout failed"));
+        assert_eq!(root.dropped_attributes_count, Some(3));
+        assert_eq!(root.dropped_events_count, Some(4));
+        assert_eq!(root.dropped_links_count, Some(5));
+        assert_eq!(
+            root.resource_schema_url.as_deref(),
+            Some("https://opentelemetry.io/schemas/1.28.0")
+        );
+        assert_eq!(
+            root.scope_schema_url.as_deref(),
+            Some("https://opentelemetry.io/schemas/1.28.0")
+        );
+        assert_eq!(root.scope_name.as_deref(), Some("compat.instrumentation"));
+        assert_eq!(root.scope_version.as_deref(), Some("1.2.3"));
+        assert_eq!(root.scope_attributes.get("scope.mode").unwrap(), "test");
+
+        let request_tags: Value =
+            serde_json::from_str(root.attributes.get("request.tags").unwrap())
+                .expect("array AnyValue should be serialized as JSON");
+        assert_eq!(request_tags, serde_json::json!(["vip", 42, false]));
+
+        let request_context: Value =
+            serde_json::from_str(root.attributes.get("request.context").unwrap())
+                .expect("kvlist AnyValue should be serialized as JSON");
+        assert_eq!(request_context["region"], "us-east-1");
+        assert_eq!(request_context["retry"], true);
+
+        let resource_owner: Value =
+            serde_json::from_str(root.resource_attributes.get("resource.owner").unwrap())
+                .expect("resource kvlist AnyValue should be serialized as JSON");
+        assert_eq!(resource_owner["team"], "observability");
+        assert_eq!(resource_owner["tier"], 1);
+
+        assert_eq!(root.events.len(), 1);
+        assert_eq!(root.events[0].dropped_attributes_count, Some(1));
+        assert_eq!(root.links.len(), 1);
+        assert_eq!(
+            root.links[0].trace_id.as_deref(),
+            Some(root.trace_id.as_str())
+        );
+        assert_eq!(root.links[0].span_id.as_deref(), Some("2222222222222222"));
+        assert_eq!(root.links[0].trace_state.as_deref(), Some("link=1"));
+        assert_eq!(root.links[0].flags, Some(1));
+        assert_eq!(root.links[0].dropped_attributes_count, Some(2));
+    }
+
+    #[test]
+    fn reports_all_zero_trace_or_span_ids() {
+        let data = parse_otlp_file(Path::new("tests/fixtures/otlp-all-zero-id.json"))
+            .expect("fixture should parse with diagnostics");
+
+        assert!(data.spans.is_empty());
+        assert!(
+            data.diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "invalid_trace_id"
+                    && diagnostic.message.contains("all-zero identifier"))
+        );
+        assert!(
+            data.diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "invalid_span_id"
+                    && diagnostic.message.contains("all-zero identifier"))
         );
     }
 }

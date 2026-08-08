@@ -39,7 +39,7 @@ It gives you a terminal-first view of the trace:
 - slow/error/N+1 candidates with confidence markers
 - serial, concurrent, nested, and suspicious span classification
 - client/server, async work, messaging, and linked span annotations
-- JSON output for scripts and CI
+- schema-backed JSON output for scripts, CI, and agents
 
 ## What Makes It Useful
 
@@ -76,12 +76,18 @@ Important semantic choices:
 
 ### Script-friendly
 
-Human-readable output is useful during debugging, but CI and automation need structured data.
+Human-readable output is useful during debugging, but CI, automation, and AI agents need structured data.
 
 Most commands support:
 
 ```bash
 --output json
+```
+
+The current JSON output is documented by:
+
+```text
+schemas/tracelens-output.schema.json
 ```
 
 Text commands also support:
@@ -90,7 +96,7 @@ Text commands also support:
 --color never
 ```
 
-That keeps logs and scripts clean.
+That keeps logs and scripts clean while giving downstream tools an explicit output contract.
 
 ## What tracelens Is Not
 

@@ -8,13 +8,17 @@ pub struct SpanEvent {
     pub name: String,
     pub time_unix_nano: Option<u64>,
     pub attributes: BTreeMap<String, String>,
+    pub dropped_attributes_count: Option<u64>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SpanLink {
     pub trace_id: Option<String>,
     pub span_id: Option<String>,
+    pub trace_state: Option<String>,
+    pub flags: Option<u64>,
     pub attributes: BTreeMap<String, String>,
+    pub dropped_attributes_count: Option<u64>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -22,18 +26,27 @@ pub struct CanonicalSpan {
     pub trace_id: String,
     pub span_id: String,
     pub parent_span_id: Option<String>,
+    pub trace_state: Option<String>,
+    pub flags: Option<u64>,
     pub service_name: String,
     pub name: String,
     pub kind: Option<i64>,
     pub start_ns: u64,
     pub end_ns: u64,
     pub status_code: Option<i64>,
+    pub status_message: Option<String>,
     pub attributes: BTreeMap<String, String>,
+    pub dropped_attributes_count: Option<u64>,
     pub resource_attributes: BTreeMap<String, String>,
+    pub resource_schema_url: Option<String>,
     pub scope_name: Option<String>,
     pub scope_version: Option<String>,
+    pub scope_attributes: BTreeMap<String, String>,
+    pub scope_schema_url: Option<String>,
     pub events: Vec<SpanEvent>,
+    pub dropped_events_count: Option<u64>,
     pub links: Vec<SpanLink>,
+    pub dropped_links_count: Option<u64>,
 }
 
 impl CanonicalSpan {
@@ -87,6 +100,10 @@ pub fn normalize_hex_id(value: &str, expected_len: usize) -> Result<String, Stri
         return Err("expected only hexadecimal characters".to_string());
     }
 
+    if trimmed.bytes().all(|byte| byte == b'0') {
+        return Err("all-zero identifier is invalid".to_string());
+    }
+
     Ok(trimmed.to_ascii_lowercase())
 }
 
@@ -110,5 +127,13 @@ mod tests {
         let error = normalize_hex_id("abc", TRACE_ID_LEN).expect_err("id should be invalid");
 
         assert!(error.contains("expected 32 hex characters"));
+    }
+
+    #[test]
+    fn rejects_all_zero_ids() {
+        let error = normalize_hex_id("00000000000000000000000000000000", TRACE_ID_LEN)
+            .expect_err("all-zero trace id should be invalid");
+
+        assert!(error.contains("all-zero identifier"));
     }
 }

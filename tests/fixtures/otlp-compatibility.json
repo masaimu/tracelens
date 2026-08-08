@@ -1,0 +1,201 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "compat-service"
+            }
+          },
+          {
+            "key": "deployment.environment",
+            "value": {
+              "stringValue": "test"
+            }
+          },
+          {
+            "key": "feature.flags",
+            "value": {
+              "arrayValue": {
+                "values": [
+                  {
+                    "stringValue": "checkout"
+                  },
+                  {
+                    "boolValue": true
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "key": "resource.owner",
+            "value": {
+              "kvlistValue": {
+                "values": [
+                  {
+                    "key": "team",
+                    "value": {
+                      "stringValue": "observability"
+                    }
+                  },
+                  {
+                    "key": "tier",
+                    "value": {
+                      "intValue": "1"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "schemaUrl": "https://opentelemetry.io/schemas/1.28.0",
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "compat.instrumentation",
+            "version": "1.2.3",
+            "attributes": [
+              {
+                "key": "scope.mode",
+                "value": {
+                  "stringValue": "test"
+                }
+              }
+            ]
+          },
+          "schemaUrl": "https://opentelemetry.io/schemas/1.28.0",
+          "spans": [
+            {
+              "traceId": "ABCDEF0123456789ABCDEF0123456789",
+              "spanId": "ABCDEFABCDEFABCD",
+              "traceState": "rojo=00f067aa0ba902b7",
+              "flags": 1,
+              "name": "GET /compat",
+              "kind": 2,
+              "startTimeUnixNano": "1000000000",
+              "endTimeUnixNano": "1100000000",
+              "status": {
+                "code": 2,
+                "message": "checkout failed"
+              },
+              "attributes": [
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "GET"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "500"
+                  }
+                },
+                {
+                  "key": "request.tags",
+                  "value": {
+                    "arrayValue": {
+                      "values": [
+                        {
+                          "stringValue": "vip"
+                        },
+                        {
+                          "intValue": "42"
+                        },
+                        {
+                          "boolValue": false
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "key": "request.context",
+                  "value": {
+                    "kvlistValue": {
+                      "values": [
+                        {
+                          "key": "region",
+                          "value": {
+                            "stringValue": "us-east-1"
+                          }
+                        },
+                        {
+                          "key": "retry",
+                          "value": {
+                            "boolValue": true
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "droppedAttributesCount": 3,
+              "events": [
+                {
+                  "name": "exception",
+                  "timeUnixNano": "1050000000",
+                  "attributes": [
+                    {
+                      "key": "exception.type",
+                      "value": {
+                        "stringValue": "RuntimeError"
+                      }
+                    }
+                  ],
+                  "droppedAttributesCount": 1
+                }
+              ],
+              "droppedEventsCount": 4,
+              "links": [
+                {
+                  "traceId": "ABCDEF0123456789ABCDEF0123456789",
+                  "spanId": "2222222222222222",
+                  "traceState": "link=1",
+                  "flags": 1,
+                  "attributes": [
+                    {
+                      "key": "link.type",
+                      "value": {
+                        "stringValue": "async"
+                      }
+                    }
+                  ],
+                  "droppedAttributesCount": 2
+                }
+              ],
+              "droppedLinksCount": 5,
+              "unknownFieldIgnoredByOtlpJsonReceivers": true
+            },
+            {
+              "traceId": "ABCDEF0123456789ABCDEF0123456789",
+              "spanId": "2222222222222222",
+              "parentSpanId": "ABCDEFABCDEFABCD",
+              "name": "SELECT compat",
+              "kind": 3,
+              "startTimeUnixNano": "1020000000",
+              "endTimeUnixNano": "1060000000",
+              "status": {
+                "code": 1
+              },
+              "attributes": [
+                {
+                  "key": "db.system",
+                  "value": {
+                    "stringValue": "postgresql"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

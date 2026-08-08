@@ -20,6 +20,46 @@ fn contains_ansi(value: &str) -> bool {
     value.contains("\x1b[")
 }
 
+fn output_schema() -> Value {
+    serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/schemas/tracelens-output.schema.json"
+    )))
+    .expect("schema should be valid JSON")
+}
+
+fn assert_matches_output_schema(value: &Value) {
+    let schema = output_schema();
+    assert!(
+        jsonschema::meta::is_valid(&schema),
+        "tracelens output schema should be a valid JSON Schema"
+    );
+
+    let validator = jsonschema::validator_for(&schema).expect("schema should compile");
+    let errors = validator
+        .iter_errors(value)
+        .map(|error| format!("{} at {}", error, error.instance_path()))
+        .collect::<Vec<_>>();
+    assert!(
+        errors.is_empty(),
+        "output did not match schema:\n{}\nvalue:\n{}",
+        errors.join("\n"),
+        serde_json::to_string_pretty(value).expect("value should pretty print")
+    );
+}
+
+fn run_json(args: &[&str]) -> Value {
+    let output = tracelens().args(args).output().expect("command should run");
+
+    assert!(
+        output.status.success(),
+        "command should succeed: {:?}\nstderr:\n{}",
+        args,
+        String::from_utf8_lossy(&output.stderr)
+    );
+    serde_json::from_slice(&output.stdout).expect("stdout should be json")
+}
+
 #[test]
 fn validate_basic_fixture() {
     let fixture = fixture("otlp-basic.json");
@@ -996,4 +1036,129 @@ fn no_color_disables_auto_color() {
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
     assert!(!contains_ansi(&stdout));
+}
+
+#[test]
+fn json_outputs_match_the_published_schema() {
+    let basic = fixture("otlp-basic.json");
+    let concurrent = fixture("otlp-concurrent.json");
+    let detect = fixture("otlp-detect.json");
+    let n_plus_one = fixture("otlp-n-plus-one.json");
+    let trace_id = "5b8efff798038103d269b633813fc60c";
+    let concurrent_trace_id = "cccccccccccccccccccccccccccccccc";
+
+    let commands = [
+        vec!["validate", basic.as_str(), "--output", "json"],
+        vec!["summary", basic.as_str(), "--output", "json"],
+        vec![
+            "list-traces",
+            basic.as_str(),
+            "--limit",
+            "2",
+            "--output",
+            "json",
+        ],
+        vec![
+            "tree",
+            basic.as_str(),
+            "--trace-id",
+            trace_id,
+            "--output",
+            "json",
+        ],
+        vec![
+            "services",
+            basic.as_str(),
+            "--trace-id",
+            trace_id,
+            "--output",
+            "json",
+        ],
+        vec![
+            "critical-path",
+            concurrent.as_str(),
+            "--trace-id",
+            concurrent_trace_id,
+            "--output",
+            "json",
+        ],
+        vec![
+            "timeline",
+            concurrent.as_str(),
+            "--trace-id",
+            concurrent_trace_id,
+            "--width",
+            "48",
+            "--output",
+            "json",
+        ],
+        vec!["detect", detect.as_str(), "--output", "json"],
+        vec![
+            "detect",
+            n_plus_one.as_str(),
+            "--limit",
+            "5",
+            "--output",
+            "json",
+        ],
+    ];
+
+    for command in commands {
+        let value = run_json(&command);
+        assert_matches_output_schema(&value);
+    }
+}
+
+#[test]
+fn tree_json_preserves_otlp_compatibility_metadata() {
+    let fixture = fixture("otlp-compatibility.json");
+    let json = run_json(&[
+        "tree",
+        fixture.as_str(),
+        "--trace-id",
+        "ABCDEF0123456789ABCDEF0123456789",
+        "--output",
+        "json",
+    ]);
+
+    assert_matches_output_schema(&json);
+
+    let root = json["nodes"]
+        .as_array()
+        .expect("nodes should be array")
+        .iter()
+        .find(|node| node["span"]["span_id"] == "abcdefabcdefabcd")
+        .expect("root span node should exist");
+    let span = &root["span"];
+
+    assert_eq!(span["trace_id"], "abcdef0123456789abcdef0123456789");
+    assert_eq!(span["trace_state"], "rojo=00f067aa0ba902b7");
+    assert_eq!(span["flags"], 1);
+    assert_eq!(span["status_message"], "checkout failed");
+    assert_eq!(span["dropped_attributes_count"], 3);
+    assert_eq!(
+        span["resource_schema_url"],
+        "https://opentelemetry.io/schemas/1.28.0"
+    );
+    assert_eq!(span["scope_name"], "compat.instrumentation");
+    assert_eq!(span["scope_version"], "1.2.3");
+    assert_eq!(span["scope_attributes"]["scope.mode"], "test");
+    assert_eq!(
+        span["scope_schema_url"],
+        "https://opentelemetry.io/schemas/1.28.0"
+    );
+    assert_eq!(span["events"][0]["dropped_attributes_count"], 1);
+    assert_eq!(span["links"][0]["trace_state"], "link=1");
+    assert_eq!(span["links"][0]["flags"], 1);
+    assert_eq!(span["links"][0]["dropped_attributes_count"], 2);
+    assert_eq!(span["dropped_events_count"], 4);
+    assert_eq!(span["dropped_links_count"], 5);
+
+    let request_tags: Value = serde_json::from_str(
+        span["attributes"]["request.tags"]
+            .as_str()
+            .expect("request.tags should be a JSON string"),
+    )
+    .expect("request.tags should parse as JSON");
+    assert_eq!(request_tags, serde_json::json!(["vip", 42, false]));
 }

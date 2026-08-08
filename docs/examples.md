@@ -298,3 +298,37 @@ For CI logs, combine text output with:
 ```bash
 tracelens --color never validate tests/fixtures/otlp-basic.json
 ```
+
+The JSON output schema lives at:
+
+```text
+schemas/tracelens-output.schema.json
+```
+
+## Inspect Preserved OpenTelemetry Metadata
+
+```bash
+tracelens tree tests/fixtures/otlp-compatibility.json \
+  --trace-id ABCDEF0123456789ABCDEF0123456789 \
+  --output json
+```
+
+Useful JSON fields on the root span:
+
+```json
+{
+  "trace_id": "abcdef0123456789abcdef0123456789",
+  "span_id": "abcdefabcdefabcd",
+  "trace_state": "rojo=00f067aa0ba902b7",
+  "flags": 1,
+  "status_message": "checkout failed",
+  "resource_schema_url": "https://opentelemetry.io/schemas/1.28.0",
+  "scope_name": "compat.instrumentation",
+  "scope_version": "1.2.3",
+  "dropped_attributes_count": 3,
+  "dropped_events_count": 4,
+  "dropped_links_count": 5
+}
+```
+
+Nested OTLP `arrayValue` and `kvlistValue` attributes are preserved as JSON strings inside `attributes` and `resource_attributes`.

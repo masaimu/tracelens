@@ -190,7 +190,27 @@ Why it matters:
 
 `--color never` avoids ANSI escapes in logs. `--output json` gives scripts stable structured data.
 
-## 9. Review Async and Linked Work Safely
+## 9. Give an AI Agent a Schema-backed Result
+
+Use this when an agent or automation workflow needs to inspect trace results without guessing field meanings.
+
+```bash
+tracelens detect traces.json --output json
+```
+
+What to look for:
+
+- `schema_version`
+- `command`
+- `diagnostics`
+- command-specific sections such as `slow_traces`, `critical_path`, `timeline`, or `annotations`
+- the published schema at `schemas/tracelens-output.schema.json`
+
+Why it matters:
+
+Agents work best when the output contract is explicit. The schema lets an agent validate the JSON shape, branch by command, and handle forward-compatible fields more safely.
+
+## 10. Review Async and Linked Work Safely
 
 Use this when a trace includes producer/consumer spans, messaging attributes, or span links.
 
@@ -223,4 +243,5 @@ Async traces can be easy to over-interpret. `tracelens` annotates related work w
 | What blocked the root span? | `critical-path` |
 | Where do spans sit on the time axis? | `timeline` |
 | Do I need script-friendly output? | add `--output json` |
+| Do I need an explicit output contract for agents? | read `schemas/tracelens-output.schema.json` |
 | Do I need clean logs? | add `--color never` |

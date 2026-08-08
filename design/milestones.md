@@ -165,13 +165,19 @@ crates/
 - 提取 resource attributes 中的 `service.name`。
 - 提取 span 基础字段：`traceId`、`spanId`、`parentSpanId`、`name`、`kind`、`startTimeUnixNano`、`endTimeUnixNano`、`status`。
 - 保留 attributes、events、links、resource metadata、scope metadata。
+- 保留 OTLP JSON mapping 中常见的兼容性字段：`schemaUrl`、`traceState`、`flags`、`status.message`、scope attributes 和 dropped counts。
+- nested AnyValue 的 `arrayValue` / `kvlistValue` 不丢失，先以 JSON 字符串保留在 canonical attributes map 中。
 - 支持默认宽容模式和 `--strict` 严格模式。
+- 提供 OpenTelemetry 兼容性说明文档，明确支持、部分支持和不支持的 OTLP 范围。
 
 ### 验收标准
 
 - 能解析包含 5k 到 50k spans 的样本文件。
 - 大小写不同的 hex ID 在默认模式下可以归一化。
+- all-zero trace/span ID 必须被识别为非法 ID。
 - timestamp 字符串和数字形式都可以处理。
+- `schemaUrl`、`traceState`、`flags`、status message、dropped counts 和 scope attributes 能进入 JSON 输出。
+- nested `arrayValue` / `kvlistValue` 不应被静默丢弃。
 - malformed span 不应导致默认模式下整份文件完全失败。
 - 严格模式遇到非法 ID 或非法 timestamp 时返回非零退出码。
 
@@ -226,6 +232,7 @@ crates/
 - `tracelens tree <file> --trace-id <id>`
 - 基础终端格式化输出。
 - `--output json` 的初始支持。
+- 面向 Agent 和脚本的 JSON 输出 schema 说明入口。
 
 ### 验收标准
 
@@ -234,6 +241,7 @@ crates/
 - `list-traces` 能按耗时排序展示 trace。
 - `tree` 能展示指定 trace 的 parent-child 结构。
 - JSON 输出包含 `schema_version: "0.1"`。
+- 当前 JSON 输出结构必须可以被 `schemas/tracelens-output.schema.json` 描述。
 
 ### 不做
 
@@ -377,6 +385,11 @@ crates/
 - 本地验收 Pipeline，提交前安装并执行核心 CLI 功能集。
 - 本地 `pre-commit` hook 和一次性 setup 脚本。
 - 稳定的 JSON 输出结构。
+- `schemas/tracelens-output.schema.json` 覆盖当前所有 JSON 输出命令。
+- JSON Schema 文档说明命令分支、字段含义、版本策略和 Agent 消费建议。
+- JSON Schema 的核心字段必须包含机器可读 `description`，让 Agent 不只知道类型，也能理解字段语义。
+- CLI 必须提供本地可发现的 schema/字段说明入口，例如 `tracelens schema --output text|json`。
+- `tracelens --help` 必须能引导用户和 Agent 找到完整 JSON Schema 与字段 description。
 - 错误码和退出码规范。
 - 核心模块单元测试。
 - 端到端 CLI 测试。
@@ -394,12 +407,18 @@ crates/
 - 对 5k 到 50k spans 的样本，解析、建图和核心分析 P95 小于 2 秒。
 - `validate`、`summary`、`tree`、`critical-path`、`detect`、`timeline` 有端到端测试。
 - JSON 输出包含 `schema_version`。
+- 核心命令的 `--output json` 结果能在端到端测试中通过 JSON Schema 校验。
+- `tracelens --help` 能展示 schema/字段说明的发现路径。
+- `tracelens schema --output json` 能输出包含字段 `description` 的完整 JSON Schema。
+- `tracelens schema --output text` 能输出按命令组织的字段说明。
+- 核心 JSON 字段缺少 `description` 时应有测试失败，避免 schema 退化为只有类型没有语义。
 - 非法输入和空文件有明确错误信息。
 
 ### 不做
 
 - 不把 HTML report 纳入核心性能目标。
 - 不承诺 JSON schema 进入 1.0 前完全稳定。
+- 不把完整字段说明直接塞进默认 `--help` 输出。
 - 不实现长期存储。
 - 不在 M7 中发布 release artifact。
 
@@ -467,6 +486,8 @@ crates/
   - `docs/use-cases.md`
   - `docs/examples.md`
   - `docs/output-guide.md`
+  - `docs/json-schema.md`
+  - `docs/opentelemetry-compatibility.md`
 - 提供安装说明。
 - 提供基本使用示例。
 - 发布前运行完整测试和基础 benchmark。

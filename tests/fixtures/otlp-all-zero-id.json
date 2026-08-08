@@ -1,0 +1,38 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "bad-service"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "spans": [
+            {
+              "traceId": "00000000000000000000000000000000",
+              "spanId": "1111111111111111",
+              "name": "bad trace id",
+              "kind": 1,
+              "startTimeUnixNano": "1",
+              "endTimeUnixNano": "2"
+            },
+            {
+              "traceId": "11111111111111111111111111111111",
+              "spanId": "0000000000000000",
+              "name": "bad span id",
+              "kind": 1,
+              "startTimeUnixNano": "1",
+              "endTimeUnixNano": "2"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

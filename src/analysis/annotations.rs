@@ -431,18 +431,27 @@ mod tests {
             trace_id: "trace".to_string(),
             span_id: span_id.to_string(),
             parent_span_id: parent_span_id.map(str::to_string),
+            trace_state: None,
+            flags: None,
             service_name: service_name.to_string(),
             name: name.to_string(),
             kind,
             start_ns,
             end_ns,
             status_code: None,
+            status_message: None,
             attributes: BTreeMap::new(),
+            dropped_attributes_count: None,
             resource_attributes: BTreeMap::new(),
+            resource_schema_url: None,
             scope_name: None,
             scope_version: None,
+            scope_attributes: BTreeMap::new(),
+            scope_schema_url: None,
             events: Vec::new(),
+            dropped_events_count: None,
             links: Vec::new(),
+            dropped_links_count: None,
         }
     }
 
@@ -478,7 +487,10 @@ mod tests {
         span.links.push(SpanLink {
             trace_id: Some("trace".to_string()),
             span_id: Some(linked_span_id.to_string()),
+            trace_state: None,
+            flags: None,
             attributes: BTreeMap::new(),
+            dropped_attributes_count: None,
         });
         span
     }

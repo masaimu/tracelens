@@ -58,6 +58,8 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - [典型使用场景](docs/use-cases.md)
 - [可复制示例](docs/examples.md)
 - [输出字段说明](docs/output-guide.md)
+- [JSON Schema](docs/json-schema.md)
+- [OpenTelemetry 兼容性说明](docs/opentelemetry-compatibility.md)
 - [性能说明](docs/performance.md)
 
 ## 当前能力
@@ -75,10 +77,12 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - 单条 trace 的 ASCII timeline 输出，标记关键路径、错误、orphan 和时间重叠。
 - `detect` 输出：慢 trace 候选、服务耗时分布、错误传播链、错误信号候选和 N+1 候选。
 - 在 tree 和 critical-path 输出中标注 client/server、async work、messaging 和 linked span。
+- 保留 OpenTelemetry 元数据：schema URL、trace state、flags、status message、dropped counts 和 nested attribute values。
 - 识别 root span、孤儿 span、缺失 parent、重复 span ID、多 root、无 root、可疑时间关系等问题。
 - 面向人的文本输出。
 - 语义化彩色文本输出：`--color auto|always|never`。
-- 面向脚本的 JSON 输出：`--output json`。
+- 面向脚本和 Agent 的 JSON 输出：`--output json`。
+- 当前 JSON 输出结构的 JSON Schema。
 - 基础 trace 列表和排序。
 
 当前命令：
@@ -172,6 +176,12 @@ tracelens detect tests/fixtures/otlp-n-plus-one.json --limit 3
 tracelens detect tests/fixtures/otlp-n-plus-one.json --output json
 ```
 
+查看输出 schema：
+
+```text
+schemas/tracelens-output.schema.json
+```
+
 控制终端颜色：
 
 ```bash
@@ -200,6 +210,8 @@ tracelens validate tests/fixtures/otlp-basic.json --strict
 | OTLP JSON | 已支持 | `resourceSpans[].scopeSpans[].spans[]` |
 | OTLP JSONL | 已支持 | 每行一个 OTLP object |
 
+具体支持、部分支持和暂不支持的 OTLP 行为见 [OpenTelemetry 兼容性说明](docs/opentelemetry-compatibility.md)。
+
 暂不支持：
 
 - `.json.gz` 压缩输入。
@@ -225,6 +237,8 @@ tracelens validate tests/fixtures/otlp-basic.json --strict
 - async work、messaging 和 linked span 标注。
 - validation diagnostics。
 - 语义化彩色文本输出和 JSON 输出。
+- 面向 Agent 和自动化消费的 JSON Schema。
+- OpenTelemetry 兼容性说明文档。
 
 尚未实现：
 

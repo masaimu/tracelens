@@ -1,0 +1,1918 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.tracelens.dev/tracelens-output.schema.json",
+  "title": "tracelens CLI JSON output",
+  "description": "JSON Schema for tracelens CLI outputs with schema_version 0.1.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/validateOutput"
+    },
+    {
+      "$ref": "#/$defs/summaryOutput"
+    },
+    {
+      "$ref": "#/$defs/listTracesOutput"
+    },
+    {
+      "$ref": "#/$defs/treeOutput"
+    },
+    {
+      "$ref": "#/$defs/servicesOutput"
+    },
+    {
+      "$ref": "#/$defs/criticalPathOutput"
+    },
+    {
+      "$ref": "#/$defs/timelineOutput"
+    },
+    {
+      "$ref": "#/$defs/detectOutput"
+    }
+  ],
+  "$defs": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "uint": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "nullableUint": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "nullableString": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "traceId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "spanId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$"
+    },
+    "nullableTraceId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "nullableSpanId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{16}$"
+    },
+    "stringMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "scope",
+        "severity",
+        "code",
+        "message",
+        "trace_id",
+        "span_id",
+        "location"
+      ],
+      "properties": {
+        "scope": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "warning",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "trace_id": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "span_id": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "location": {
+          "$ref": "#/$defs/nullableString"
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/diagnostic"
+      }
+    },
+    "traceSummary": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "trace_id",
+        "span_count",
+        "service_count",
+        "error_span_count",
+        "root_count",
+        "orphan_count",
+        "diagnostics_count",
+        "start_ns",
+        "end_ns",
+        "duration_ns"
+      ],
+      "properties": {
+        "trace_id": {
+          "$ref": "#/$defs/traceId"
+        },
+        "span_count": {
+          "$ref": "#/$defs/uint"
+        },
+        "service_count": {
+          "$ref": "#/$defs/uint"
+        },
+        "error_span_count": {
+          "$ref": "#/$defs/uint"
+        },
+        "root_count": {
+          "$ref": "#/$defs/uint"
+        },
+        "orphan_count": {
+          "$ref": "#/$defs/uint"
+        },
+        "diagnostics_count": {
+          "$ref": "#/$defs/uint"
+        },
+        "start_ns": {
+          "$ref": "#/$defs/nullableUint"
+        },
+        "end_ns": {
+          "$ref": "#/$defs/nullableUint"
+        },
+        "duration_ns": {
+          "$ref": "#/$defs/nullableUint"
+        }
+      }
+    },
+    "rootSpan": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "span_id",
+        "service_name",
+        "name",
+        "duration_ns"
+      ],
+      "properties": {
+        "span_id": {
+          "$ref": "#/$defs/spanId"
+        },
+        "service_name": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "duration_ns": {
+          "$ref": "#/$defs/uint"
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "name",
+        "time_unix_nano",
+        "attributes",
+        "dropped_attributes_count"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "time_unix_nano": {
+          "$ref": "#/$defs/nullableUint"
+        },
+        "attributes": {
+          "$ref": "#/$defs/stringMap"
+        },
+        "dropped_attributes_count": {
+          "$ref": "#/$defs/nullableUint"
+        }
+      }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "trace_id",
+        "span_id",
+        "trace_state",
+        "flags",
+        "attributes",
+        "dropped_attributes_count"
+      ],
+      "properties": {
+        "trace_id": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "span_id": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "trace_state": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "flags": {
+          "$ref": "#/$defs/nullableUint"
+        },
+        "attributes": {
+          "$ref": "#/$defs/stringMap"
+        },
+        "dropped_attributes_count": {
+          "$ref": "#/$defs/nullableUint"
+        }
+      }
+    },
+    "span": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "trace_id",
+        "span_id",
+        "parent_span_id",
+        "trace_state",
+        "flags",
+        "service_name",
+        "name",
+        "kind",
+        "kind_label",
+        "start_ns",
+        "end_ns",
+        "duration_ns",
+        "status_code",
+        "status_message",
+        "status_label",
+        "is_error",
+        "attributes",
+        "dropped_attributes_count",
+        "resource_attributes",
+        "resource_schema_url",
+        "scope_name",
+        "scope_version",
+        "scope_attributes",
+        "scope_schema_url",
+        "events",
+        "dropped_events_count",
+        "links",
+        "dropped_links_count"
+      ],
+      "properties": {
+        "trace_id": {
+          "$ref": "#/$defs/traceId"
+        },
+        "span_id": {
+          "$ref": "#/$defs/spanId"
+        },
+        "parent_span_id": {
+          "$ref": "#/$defs/nullableSpanId"
+        },
+        "trace_state": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "flags": {
+          "$ref": "#/$defs/nullableUint"
+        },
+        "service_name": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "kind_label": {
+          "type": "string"
+        },
+        "start_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "end_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "duration_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "status_code": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "status_message": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "status_label": {
+          "type": "string"
+        },
+        "is_error": {
+          "type": "boolean"
+        },
+        "attributes": {
+          "$ref": "#/$defs/stringMap"
+        },
+        "dropped_attributes_count": {
+          "$ref": "#/$defs/nullableUint"
+        },
+        "resource_attributes": {
+          "$ref": "#/$defs/stringMap"
+        },
+        "resource_schema_url": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "scope_name": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "scope_version": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "scope_attributes": {
+          "$ref": "#/$defs/stringMap"
+        },
+        "scope_schema_url": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event"
+          }
+        },
+        "dropped_events_count": {
+          "$ref": "#/$defs/nullableUint"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        },
+        "dropped_links_count": {
+          "$ref": "#/$defs/nullableUint"
+        }
+      }
+    },
+    "treeNode": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "depth",
+        "span",
+        "annotations"
+      ],
+      "properties": {
+        "depth": {
+          "$ref": "#/$defs/uint"
+        },
+        "span": {
+          "$ref": "#/$defs/span"
+        },
+        "annotations": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/spanAnnotation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "spanAnnotation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "span_id",
+        "service_name",
+        "name",
+        "role",
+        "client_server_peers",
+        "async_work",
+        "messaging",
+        "linked_span_count",
+        "linked_spans",
+        "notes"
+      ],
+      "properties": {
+        "span_id": {
+          "$ref": "#/$defs/spanId"
+        },
+        "service_name": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "client_server_peers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/clientServerPeer"
+          }
+        },
+        "async_work": {
+          "type": "boolean"
+        },
+        "messaging": {
+          "type": "boolean"
+        },
+        "linked_span_count": {
+          "$ref": "#/$defs/uint"
+        },
+        "linked_spans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/linkedSpanRef"
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "clientServerPeer": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "span_id",
+        "service_name",
+        "name",
+        "relationship"
+      ],
+      "properties": {
+        "span_id": {
+          "$ref": "#/$defs/spanId"
+        },
+        "service_name": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "relationship": {
+          "type": "string"
+        }
+      }
+    },
+    "clientServerPair": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "client",
+        "server"
+      ],
+      "properties": {
+        "client": {
+          "$ref": "#/$defs/clientServerEndpoint"
+        },
+        "server": {
+          "$ref": "#/$defs/clientServerEndpoint"
+        }
+      }
+    },
+    "clientServerEndpoint": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "span_id",
+        "service_name",
+        "name"
+      ],
+      "properties": {
+        "span_id": {
+          "$ref": "#/$defs/spanId"
+        },
+        "service_name": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "linkedSpanRef": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "trace_id",
+        "span_id",
+        "same_trace",
+        "target_in_trace"
+      ],
+      "properties": {
+        "trace_id": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "span_id": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "same_trace": {
+          "type": "boolean"
+        },
+        "target_in_trace": {
+          "type": "boolean"
+        }
+      }
+    },
+    "traceAnnotations": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "counts",
+        "client_server_pairs",
+        "async_spans",
+        "linked_spans",
+        "spans"
+      ],
+      "properties": {
+        "counts": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "client_server_pairs",
+            "client_server_span_count",
+            "async_span_count",
+            "linked_span_count",
+            "messaging_span_count"
+          ],
+          "properties": {
+            "client_server_pairs": {
+              "$ref": "#/$defs/uint"
+            },
+            "client_server_span_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "async_span_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "linked_span_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "messaging_span_count": {
+              "$ref": "#/$defs/uint"
+            }
+          }
+        },
+        "client_server_pairs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/clientServerPair"
+          }
+        },
+        "async_spans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/spanAnnotation"
+          }
+        },
+        "linked_spans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/spanAnnotation"
+          }
+        },
+        "spans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/spanAnnotation"
+          }
+        }
+      }
+    },
+    "serviceDuration": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "service_name",
+        "self_time_ns",
+        "span_time_ns",
+        "child_covered_time_ns",
+        "span_count",
+        "error_span_count"
+      ],
+      "properties": {
+        "service_name": {
+          "type": "string"
+        },
+        "self_time_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "span_time_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "child_covered_time_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "span_count": {
+          "$ref": "#/$defs/uint"
+        },
+        "error_span_count": {
+          "$ref": "#/$defs/uint"
+        }
+      }
+    },
+    "criticalPathSegment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "span_id",
+        "service_name",
+        "name",
+        "offset_ns",
+        "duration_ns"
+      ],
+      "properties": {
+        "span_id": {
+          "$ref": "#/$defs/spanId"
+        },
+        "service_name": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "offset_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "duration_ns": {
+          "$ref": "#/$defs/uint"
+        }
+      }
+    },
+    "criticalPathSpanTotal": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "span_id",
+        "service_name",
+        "name",
+        "total_ns"
+      ],
+      "properties": {
+        "span_id": {
+          "$ref": "#/$defs/spanId"
+        },
+        "service_name": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "total_ns": {
+          "$ref": "#/$defs/uint"
+        }
+      }
+    },
+    "criticalPath": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "status",
+        "unavailable_reason",
+        "root_span_id",
+        "root_span",
+        "total_duration_ns",
+        "segments",
+        "span_totals",
+        "notes"
+      ],
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "unavailable_reason": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "root_span_id": {
+          "$ref": "#/$defs/nullableSpanId"
+        },
+        "root_span": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/rootSpan"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "total_duration_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/criticalPathSegment"
+          }
+        },
+        "span_totals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/criticalPathSpanTotal"
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "counts",
+        "spans"
+      ],
+      "properties": {
+        "counts": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "serial",
+            "concurrent",
+            "nested",
+            "suspicious"
+          ],
+          "properties": {
+            "serial": {
+              "$ref": "#/$defs/uint"
+            },
+            "concurrent": {
+              "$ref": "#/$defs/uint"
+            },
+            "nested": {
+              "$ref": "#/$defs/uint"
+            },
+            "suspicious": {
+              "$ref": "#/$defs/uint"
+            }
+          }
+        },
+        "spans": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "span_id",
+              "service_name",
+              "name",
+              "sibling_relation",
+              "parent_relation"
+            ],
+            "properties": {
+              "span_id": {
+                "$ref": "#/$defs/spanId"
+              },
+              "service_name": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "sibling_relation": {
+                "type": "string"
+              },
+              "parent_relation": {
+                "$ref": "#/$defs/nullableString"
+              }
+            }
+          }
+        }
+      }
+    },
+    "timelineRow": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "depth",
+        "span_id",
+        "parent_span_id",
+        "service_name",
+        "name",
+        "start_offset_ns",
+        "end_offset_ns",
+        "duration_ns",
+        "bar_start",
+        "bar_width",
+        "is_error",
+        "is_critical_path",
+        "is_orphan",
+        "is_unattached"
+      ],
+      "properties": {
+        "depth": {
+          "$ref": "#/$defs/uint"
+        },
+        "span_id": {
+          "$ref": "#/$defs/spanId"
+        },
+        "parent_span_id": {
+          "$ref": "#/$defs/nullableSpanId"
+        },
+        "service_name": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "start_offset_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "end_offset_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "duration_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "bar_start": {
+          "$ref": "#/$defs/uint"
+        },
+        "bar_width": {
+          "$ref": "#/$defs/uint"
+        },
+        "is_error": {
+          "type": "boolean"
+        },
+        "is_critical_path": {
+          "type": "boolean"
+        },
+        "is_orphan": {
+          "type": "boolean"
+        },
+        "is_unattached": {
+          "type": "boolean"
+        }
+      }
+    },
+    "spanRef": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "span_id",
+        "parent_span_id",
+        "service_name",
+        "name",
+        "depth",
+        "start_ns",
+        "duration_ns"
+      ],
+      "properties": {
+        "span_id": {
+          "$ref": "#/$defs/spanId"
+        },
+        "parent_span_id": {
+          "$ref": "#/$defs/nullableSpanId"
+        },
+        "service_name": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "depth": {
+          "$ref": "#/$defs/uint"
+        },
+        "start_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "duration_ns": {
+          "$ref": "#/$defs/uint"
+        }
+      }
+    },
+    "errorSpanCandidate": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "span_id",
+        "parent_span_id",
+        "service_name",
+        "name",
+        "depth",
+        "start_ns",
+        "duration_ns",
+        "signals"
+      ],
+      "properties": {
+        "span_id": {
+          "$ref": "#/$defs/spanId"
+        },
+        "parent_span_id": {
+          "$ref": "#/$defs/nullableSpanId"
+        },
+        "service_name": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "depth": {
+          "$ref": "#/$defs/uint"
+        },
+        "start_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "duration_ns": {
+          "$ref": "#/$defs/uint"
+        },
+        "signals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "errorPropagationStep": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/errorSpanCandidate"
+        },
+        {
+          "type": "object",
+          "required": [
+            "is_error"
+          ],
+          "properties": {
+            "is_error": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "validateOutput": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "command",
+        "mode",
+        "status",
+        "error_diagnostic_count",
+        "exit_would_fail",
+        "trace_count",
+        "span_count",
+        "diagnostics"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "command": {
+          "const": "validate"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "default",
+            "strict"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "failed"
+          ]
+        },
+        "error_diagnostic_count": {
+          "$ref": "#/$defs/uint"
+        },
+        "exit_would_fail": {
+          "type": "boolean"
+        },
+        "trace_count": {
+          "$ref": "#/$defs/uint"
+        },
+        "span_count": {
+          "$ref": "#/$defs/uint"
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/diagnostics"
+        }
+      }
+    },
+    "summaryOutput": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "command",
+        "summary",
+        "slowest_traces",
+        "diagnostics"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "command": {
+          "const": "summary"
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "trace_count",
+            "span_count",
+            "service_count",
+            "error_span_count",
+            "start_ns",
+            "end_ns",
+            "duration_ns"
+          ],
+          "properties": {
+            "trace_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "span_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "service_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "error_span_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "start_ns": {
+              "$ref": "#/$defs/nullableUint"
+            },
+            "end_ns": {
+              "$ref": "#/$defs/nullableUint"
+            },
+            "duration_ns": {
+              "$ref": "#/$defs/nullableUint"
+            }
+          }
+        },
+        "slowest_traces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/traceSummary"
+          }
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/diagnostics"
+        }
+      }
+    },
+    "listTracesOutput": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "command",
+        "limit",
+        "traces"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "command": {
+          "const": "list-traces"
+        },
+        "limit": {
+          "$ref": "#/$defs/uint"
+        },
+        "traces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/traceSummary"
+          }
+        }
+      }
+    },
+    "treeOutput": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "command",
+        "trace",
+        "nodes",
+        "annotations",
+        "diagnostics"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "command": {
+          "const": "tree"
+        },
+        "trace": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "trace_id",
+            "duration_ns",
+            "span_count",
+            "root_count",
+            "orphan_count",
+            "duplicate_span_id_count",
+            "diagnostics_count"
+          ],
+          "properties": {
+            "trace_id": {
+              "$ref": "#/$defs/traceId"
+            },
+            "duration_ns": {
+              "$ref": "#/$defs/nullableUint"
+            },
+            "span_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "root_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "orphan_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "duplicate_span_id_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "diagnostics_count": {
+              "$ref": "#/$defs/uint"
+            }
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/treeNode"
+          }
+        },
+        "annotations": {
+          "$ref": "#/$defs/traceAnnotations"
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/diagnostics"
+        }
+      }
+    },
+    "servicesOutput": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "command",
+        "trace",
+        "services",
+        "diagnostics"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "command": {
+          "const": "services"
+        },
+        "trace": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "trace_id",
+            "wall_clock_duration_ns",
+            "root_span",
+            "root_count",
+            "orphan_count",
+            "diagnostics_count"
+          ],
+          "properties": {
+            "trace_id": {
+              "$ref": "#/$defs/traceId"
+            },
+            "wall_clock_duration_ns": {
+              "$ref": "#/$defs/uint"
+            },
+            "root_span": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/rootSpan"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "root_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "orphan_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "diagnostics_count": {
+              "$ref": "#/$defs/uint"
+            }
+          }
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/serviceDuration"
+          }
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/diagnostics"
+        }
+      }
+    },
+    "criticalPathOutput": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "command",
+        "trace",
+        "critical_path",
+        "classification",
+        "annotations",
+        "diagnostics"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "command": {
+          "const": "critical-path"
+        },
+        "trace": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "trace_id",
+            "wall_clock_duration_ns",
+            "root_span",
+            "root_count",
+            "orphan_count",
+            "diagnostics_count"
+          ],
+          "properties": {
+            "trace_id": {
+              "$ref": "#/$defs/traceId"
+            },
+            "wall_clock_duration_ns": {
+              "$ref": "#/$defs/uint"
+            },
+            "root_span": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/rootSpan"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "root_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "orphan_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "diagnostics_count": {
+              "$ref": "#/$defs/uint"
+            }
+          }
+        },
+        "critical_path": {
+          "$ref": "#/$defs/criticalPath"
+        },
+        "classification": {
+          "$ref": "#/$defs/classification"
+        },
+        "annotations": {
+          "$ref": "#/$defs/traceAnnotations"
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/diagnostics"
+        }
+      }
+    },
+    "timelineOutput": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "command",
+        "trace",
+        "timeline",
+        "critical_path",
+        "diagnostics"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "command": {
+          "const": "timeline"
+        },
+        "trace": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "trace_id",
+            "start_ns",
+            "end_ns",
+            "wall_clock_duration_ns",
+            "span_count",
+            "root_count",
+            "orphan_count",
+            "diagnostics_count"
+          ],
+          "properties": {
+            "trace_id": {
+              "$ref": "#/$defs/traceId"
+            },
+            "start_ns": {
+              "$ref": "#/$defs/uint"
+            },
+            "end_ns": {
+              "$ref": "#/$defs/uint"
+            },
+            "wall_clock_duration_ns": {
+              "$ref": "#/$defs/uint"
+            },
+            "span_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "root_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "orphan_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "diagnostics_count": {
+              "$ref": "#/$defs/uint"
+            }
+          }
+        },
+        "timeline": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "width",
+            "rows",
+            "notes"
+          ],
+          "properties": {
+            "width": {
+              "$ref": "#/$defs/uint"
+            },
+            "rows": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/timelineRow"
+              }
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "critical_path": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "status",
+            "unavailable_reason",
+            "root_span_id",
+            "total_duration_ns",
+            "notes"
+          ],
+          "properties": {
+            "status": {
+              "type": "string"
+            },
+            "unavailable_reason": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "root_span_id": {
+              "$ref": "#/$defs/nullableSpanId"
+            },
+            "total_duration_ns": {
+              "$ref": "#/$defs/uint"
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/diagnostics"
+        }
+      }
+    },
+    "detectOutput": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "command",
+        "limit",
+        "summary",
+        "slow_traces",
+        "error_traces",
+        "error_propagation_chains",
+        "n_plus_one_candidates",
+        "service_latency_distribution",
+        "notes",
+        "diagnostics"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "command": {
+          "const": "detect"
+        },
+        "limit": {
+          "$ref": "#/$defs/uint"
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "trace_count",
+            "span_count",
+            "diagnostics_count",
+            "sample_count",
+            "sample_quality",
+            "p95_duration_ns",
+            "slow_trace_candidate_count",
+            "error_trace_candidate_count",
+            "error_propagation_chain_count",
+            "n_plus_one_candidate_count",
+            "service_latency_distribution_count",
+            "error_span_count"
+          ],
+          "properties": {
+            "trace_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "span_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "diagnostics_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "sample_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "sample_quality": {
+              "type": "string"
+            },
+            "p95_duration_ns": {
+              "$ref": "#/$defs/uint"
+            },
+            "slow_trace_candidate_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "error_trace_candidate_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "error_propagation_chain_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "n_plus_one_candidate_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "service_latency_distribution_count": {
+              "$ref": "#/$defs/uint"
+            },
+            "error_span_count": {
+              "$ref": "#/$defs/uint"
+            }
+          }
+        },
+        "slow_traces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "trace_id",
+              "rank",
+              "duration_ns",
+              "p95_duration_ns",
+              "sample_count",
+              "confidence",
+              "reason",
+              "span_count",
+              "service_count",
+              "error_span_count",
+              "diagnostics_count",
+              "service_candidates"
+            ],
+            "properties": {
+              "trace_id": {
+                "$ref": "#/$defs/traceId"
+              },
+              "rank": {
+                "$ref": "#/$defs/uint"
+              },
+              "duration_ns": {
+                "$ref": "#/$defs/uint"
+              },
+              "p95_duration_ns": {
+                "$ref": "#/$defs/uint"
+              },
+              "sample_count": {
+                "$ref": "#/$defs/uint"
+              },
+              "confidence": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "span_count": {
+                "$ref": "#/$defs/uint"
+              },
+              "service_count": {
+                "$ref": "#/$defs/uint"
+              },
+              "error_span_count": {
+                "$ref": "#/$defs/uint"
+              },
+              "diagnostics_count": {
+                "$ref": "#/$defs/uint"
+              },
+              "service_candidates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "required": [
+                    "service_name",
+                    "span_time_ns",
+                    "max_span_duration_ns",
+                    "span_count",
+                    "error_span_count"
+                  ],
+                  "properties": {
+                    "service_name": {
+                      "type": "string"
+                    },
+                    "span_time_ns": {
+                      "$ref": "#/$defs/uint"
+                    },
+                    "max_span_duration_ns": {
+                      "$ref": "#/$defs/uint"
+                    },
+                    "span_count": {
+                      "$ref": "#/$defs/uint"
+                    },
+                    "error_span_count": {
+                      "$ref": "#/$defs/uint"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "error_traces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "trace_id",
+              "error_span_count",
+              "confidence",
+              "earliest_error_span",
+              "top_error_span",
+              "error_spans",
+              "explanation"
+            ],
+            "properties": {
+              "trace_id": {
+                "$ref": "#/$defs/traceId"
+              },
+              "error_span_count": {
+                "$ref": "#/$defs/uint"
+              },
+              "confidence": {
+                "type": "string"
+              },
+              "earliest_error_span": {
+                "$ref": "#/$defs/errorSpanCandidate"
+              },
+              "top_error_span": {
+                "$ref": "#/$defs/errorSpanCandidate"
+              },
+              "error_spans": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/errorSpanCandidate"
+                }
+              },
+              "explanation": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "error_propagation_chains": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "trace_id",
+              "confidence",
+              "earliest_error_span",
+              "top_error_span",
+              "path_to_earliest_error",
+              "downstream_error_spans",
+              "downstream_error_span_count",
+              "affected_span_count",
+              "affected_services",
+              "explanation"
+            ],
+            "properties": {
+              "trace_id": {
+                "$ref": "#/$defs/traceId"
+              },
+              "confidence": {
+                "type": "string"
+              },
+              "earliest_error_span": {
+                "$ref": "#/$defs/errorSpanCandidate"
+              },
+              "top_error_span": {
+                "$ref": "#/$defs/errorSpanCandidate"
+              },
+              "path_to_earliest_error": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/errorPropagationStep"
+                }
+              },
+              "downstream_error_spans": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/errorPropagationStep"
+                }
+              },
+              "downstream_error_span_count": {
+                "$ref": "#/$defs/uint"
+              },
+              "affected_span_count": {
+                "$ref": "#/$defs/uint"
+              },
+              "affected_services": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "explanation": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "n_plus_one_candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "trace_id",
+              "parent_span",
+              "child_group",
+              "repeated_count",
+              "serial_ratio",
+              "serial_ratio_per_mille",
+              "confidence",
+              "reason",
+              "example_child_spans"
+            ],
+            "properties": {
+              "trace_id": {
+                "$ref": "#/$defs/traceId"
+              },
+              "parent_span": {
+                "$ref": "#/$defs/spanRef"
+              },
+              "child_group": {
+                "type": "object",
+                "additionalProperties": true,
+                "required": [
+                  "service_name",
+                  "normalized_name",
+                  "db_system",
+                  "db_operation",
+                  "rpc_system",
+                  "http_method",
+                  "http_route",
+                  "signature"
+                ],
+                "properties": {
+                  "service_name": {
+                    "type": "string"
+                  },
+                  "normalized_name": {
+                    "type": "string"
+                  },
+                  "db_system": {
+                    "$ref": "#/$defs/nullableString"
+                  },
+                  "db_operation": {
+                    "$ref": "#/$defs/nullableString"
+                  },
+                  "rpc_system": {
+                    "$ref": "#/$defs/nullableString"
+                  },
+                  "http_method": {
+                    "$ref": "#/$defs/nullableString"
+                  },
+                  "http_route": {
+                    "$ref": "#/$defs/nullableString"
+                  },
+                  "signature": {
+                    "type": "string"
+                  }
+                }
+              },
+              "repeated_count": {
+                "$ref": "#/$defs/uint"
+              },
+              "serial_ratio": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "serial_ratio_per_mille": {
+                "$ref": "#/$defs/uint"
+              },
+              "confidence": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "example_child_spans": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/spanRef"
+                }
+              }
+            }
+          }
+        },
+        "service_latency_distribution": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "service_name",
+              "trace_count",
+              "span_count",
+              "error_span_count",
+              "total_span_time_ns",
+              "p50_duration_ns",
+              "p95_duration_ns",
+              "max_span_duration_ns",
+              "slow_span_samples"
+            ],
+            "properties": {
+              "service_name": {
+                "type": "string"
+              },
+              "trace_count": {
+                "$ref": "#/$defs/uint"
+              },
+              "span_count": {
+                "$ref": "#/$defs/uint"
+              },
+              "error_span_count": {
+                "$ref": "#/$defs/uint"
+              },
+              "total_span_time_ns": {
+                "$ref": "#/$defs/uint"
+              },
+              "p50_duration_ns": {
+                "$ref": "#/$defs/uint"
+              },
+              "p95_duration_ns": {
+                "$ref": "#/$defs/uint"
+              },
+              "max_span_duration_ns": {
+                "$ref": "#/$defs/uint"
+              },
+              "slow_span_samples": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "required": [
+                    "trace_id",
+                    "span_id",
+                    "parent_span_id",
+                    "name",
+                    "start_ns",
+                    "duration_ns",
+                    "is_error",
+                    "signals"
+                  ],
+                  "properties": {
+                    "trace_id": {
+                      "$ref": "#/$defs/traceId"
+                    },
+                    "span_id": {
+                      "$ref": "#/$defs/spanId"
+                    },
+                    "parent_span_id": {
+                      "$ref": "#/$defs/nullableSpanId"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "start_ns": {
+                      "$ref": "#/$defs/uint"
+                    },
+                    "duration_ns": {
+                      "$ref": "#/$defs/uint"
+                    },
+                    "is_error": {
+                      "type": "boolean"
+                    },
+                    "signals": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/diagnostics"
+        }
+      }
+    }
+  }
+}

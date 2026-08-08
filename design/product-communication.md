@@ -34,6 +34,9 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 - confidence markers
 - diagnostics
 - script-friendly JSON
+- JSON Schema
+- help-discoverable output contract
+- OpenTelemetry compatibility
 - CI-friendly
 - explainable trace analysis
 
@@ -60,6 +63,8 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 | `docs/use-cases.md` | 典型用户场景 | 必须把用户问题映射到 CLI 命令 |
 | `docs/examples.md` | 可复制示例 | 必须使用真实 fixture、真实命令和真实输出片段 |
 | `docs/output-guide.md` | 输出字段说明 | 必须解释核心指标、语义标注、diagnostics 和 JSON 输出 |
+| `docs/json-schema.md` | JSON Schema 说明 | 必须解释 schema 位置、版本策略、命令分支和 Agent 消费建议 |
+| `docs/opentelemetry-compatibility.md` | OpenTelemetry 兼容性说明 | 必须解释当前支持、部分支持和暂不支持的 OTLP 行为 |
 | `docs/performance.md` | 性能说明 | 必须说明性能目标、benchmark 方法、当前规模验证和本地结果解释 |
 | `docs/local-acceptance-pipeline.md` | 本地验收流程 | 必须说明提交前本地 Pipeline、hook setup 和验收结果位置 |
 
@@ -96,6 +101,9 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 | 新 CLI 命令 | README Quick Start、README 当前能力、use cases、examples |
 | 新分析能力 | README 当前能力、output guide、examples、use cases |
 | 新 JSON 字段 | README JSON 说明、output guide、CI integration |
+| 新 JSON Schema 或 schema 约束 | README、json-schema、output guide、use cases |
+| 新 CLI help / schema 发现入口 | README Quick Start、json-schema、examples、use cases |
+| 新 OpenTelemetry 兼容性字段 | README、OpenTelemetry compatibility、output guide、examples |
 | 新诊断或错误语义 | output guide、examples |
 | 新性能能力 | README 当前能力、performance |
 | 新 CI / 自动化能力 | README badge/Development、CI integration、performance |

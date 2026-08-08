@@ -53,6 +53,8 @@ Then it executes the installed binary:
 
 It also runs JSON smoke checks for `detect` and `timeline`.
 
+`cargo test` includes JSON Schema validation for every supported `--output json` command, so schema drift is covered by the same local pipeline.
+
 ## Output
 
 Each run writes:

@@ -34,6 +34,28 @@ service.name
 
 If the attribute is missing, `tracelens` uses a fallback service name and emits a diagnostic.
 
+## OpenTelemetry Metadata in JSON
+
+`tree --output json` includes a canonical span object for each node.
+
+Common OpenTelemetry metadata fields include:
+
+- `trace_state`: OTLP `traceState`, if present.
+- `flags`: OTLP span flags, if present.
+- `status_message`: OTLP status message.
+- `resource_schema_url`: `ResourceSpans.schemaUrl`.
+- `scope_name`: instrumentation scope name.
+- `scope_version`: instrumentation scope version.
+- `scope_attributes`: instrumentation scope attributes.
+- `scope_schema_url`: `ScopeSpans.schemaUrl`.
+- `dropped_attributes_count`: span dropped attributes count.
+- `dropped_events_count`: span dropped events count.
+- `dropped_links_count`: span dropped links count.
+
+Events and links also preserve their own dropped attribute counts. Links additionally preserve `trace_state` and `flags`.
+
+Nested OTLP `arrayValue` and `kvlistValue` attributes are preserved as JSON strings inside the current string-based attribute maps. This keeps the data available to scripts and agents while the public attribute model remains simple.
+
 ## Duration Fields
 
 ### `wall-clock duration`
@@ -504,6 +526,14 @@ JSON output includes:
 ```
 
 The schema is still version `0.1`, so it can change before the project reaches a stable `1.0`.
+
+The published JSON Schema is:
+
+```text
+schemas/tracelens-output.schema.json
+```
+
+See [JSON Schema](json-schema.md) for Agent and automation consumption guidance.
 
 Useful top-level JSON areas:
 

@@ -107,14 +107,30 @@ jobs:
             ls dist/tracelens-*"$target"* >/dev/null
           done
 
-      - name: Create or update GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          body_path: CHANGELOG.md
-          files: |
-            dist/tracelens-*
-            dist/*.sha256
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          fail_on_unmatched_files: true
+      - name: Publish GitHub Release (idempotent)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          echo "Publishing release for tag: $tag"
+          # If a previous (partial/failed) release already exists for this tag,
+          # delete it so we republish from a clean asset set. The git tag itself
+          # is unaffected. This avoids the softprops reconcile-delete 404 path
+          # that fires when stale asset ids can no longer be resolved.
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Existing release for $tag found; deleting to republish cleanly."
+            gh release delete "$tag" --yes
+          fi
+          args=(--title "$tag" --notes-file CHANGELOG.md)
+          # Pre-release iff the tag name contains a hyphen (e.g. v0.1.0-rc1).
+          if [[ "$tag" == *-* ]]; then
+            args+=(--prerelease)
+          fi
+          # Single glob: dist/tracelens-* matches both binaries and .sha256
+          # sidecars. The previous redundant dist/*.sha256 glob caused each
+          # sidecar to be enumerated twice, which triggered softprops asset
+          # reconcile-delete 404s on some runs.
+          gh release create "$tag" "${args[@]}" dist/tracelens-*
+          echo "Published assets:"
+          gh release view "$tag" --json assets --jq '.assets[].name'

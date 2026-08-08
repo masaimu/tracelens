@@ -34,3 +34,9 @@ acceptance-results/
 
 # Local release artifact output (tools/build_release.sh)
 dist/
+
+# Quickstart demo HTML: `tools/quickstart.sh -> tracelens report --html` writes
+# tracelens-demo.html into $PWD. It is a generated demo artifact, not source;
+# ignore it anywhere in the tree so running the quickstart from a subdirectory
+# of the repo does not leave a stray file to commit.
+tracelens-demo.html

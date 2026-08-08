@@ -305,6 +305,22 @@ The JSON output schema lives at:
 schemas/tracelens-output.schema.json
 ```
 
+You can also read the schema and field descriptions from the installed CLI:
+
+```bash
+tracelens schema --output text
+tracelens schema --output json
+tracelens schema --command detect --output text
+```
+
+Useful field-reference output:
+
+```text
+[detect]
+- slow_traces: Slow trace candidates ranked by wall-clock duration. These are triage hints, not final root-cause proof.
+- n_plus_one_candidates: N+1-like candidates based on repeated similar direct child spans under the same parent.
+```
+
 ## Inspect Preserved OpenTelemetry Metadata
 
 ```bash

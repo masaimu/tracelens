@@ -195,6 +195,9 @@ Why it matters:
 Use this when an agent or automation workflow needs to inspect trace results without guessing field meanings.
 
 ```bash
+tracelens --help
+tracelens schema --output text
+tracelens schema --output json
 tracelens detect traces.json --output json
 ```
 
@@ -204,11 +207,12 @@ What to look for:
 - `command`
 - `diagnostics`
 - command-specific sections such as `slow_traces`, `critical_path`, `timeline`, or `annotations`
-- the published schema at `schemas/tracelens-output.schema.json`
+- the installed schema command: `tracelens schema --output json`
+- the text field reference: `tracelens schema --command <name> --output text`
 
 Why it matters:
 
-Agents work best when the output contract is explicit. The schema lets an agent validate the JSON shape, branch by command, and handle forward-compatible fields more safely.
+Agents work best when the output contract is explicit and discoverable. The schema lets an agent validate the JSON shape, branch by command, read field descriptions, and handle forward-compatible fields more safely without guessing what each field means.
 
 ## 10. Review Async and Linked Work Safely
 
@@ -243,5 +247,5 @@ Async traces can be easy to over-interpret. `tracelens` annotates related work w
 | What blocked the root span? | `critical-path` |
 | Where do spans sit on the time axis? | `timeline` |
 | Do I need script-friendly output? | add `--output json` |
-| Do I need an explicit output contract for agents? | read `schemas/tracelens-output.schema.json` |
+| Do I need an explicit output contract for agents? | `tracelens schema --output text` or `tracelens schema --output json` |
 | Do I need clean logs? | add `--color never` |

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.tracelens.dev/tracelens-output.schema.json",
   "title": "tracelens CLI JSON output",
-  "description": "JSON Schema for tracelens CLI outputs with schema_version 0.1.",
+  "description": "JSON Schema for tracelens CLI outputs with schema_version 0.1. Descriptions are intended for AI agents, scripts, CI jobs, and humans that need to understand field meaning as well as field shape.",
   "oneOf": [
     {
       "$ref": "#/$defs/validateOutput"
@@ -31,52 +31,61 @@
   ],
   "$defs": {
     "schemaVersion": {
-      "const": "0.1"
+      "const": "0.1",
+      "description": "Output contract version. Current value is \"0.1\"; the contract can change before a stable 1.0 release."
     },
     "uint": {
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "description": "Non-negative integer value used for counts, offsets, widths, or durations depending on the field."
     },
     "nullableUint": {
       "type": [
         "integer",
         "null"
       ],
-      "minimum": 0
+      "minimum": 0,
+      "description": "Non-negative integer value, or null when the input did not contain enough valid data to compute the value."
     },
     "nullableString": {
       "type": [
         "string",
         "null"
-      ]
+      ],
+      "description": "String value, or null when the original OTLP field was absent or the relationship could not be resolved."
     },
     "traceId": {
       "type": "string",
-      "pattern": "^[0-9a-f]{32}$"
+      "pattern": "^[0-9a-f]{32}$",
+      "description": "Canonical lowercase OpenTelemetry trace ID encoded as 32 hexadecimal characters."
     },
     "spanId": {
       "type": "string",
-      "pattern": "^[0-9a-f]{16}$"
+      "pattern": "^[0-9a-f]{16}$",
+      "description": "Canonical lowercase OpenTelemetry span ID encoded as 16 hexadecimal characters."
     },
     "nullableTraceId": {
       "type": [
         "string",
         "null"
       ],
-      "pattern": "^[0-9a-f]{32}$"
+      "pattern": "^[0-9a-f]{32}$",
+      "description": "Canonical lowercase OpenTelemetry trace ID, or null when the original ID was missing or invalid."
     },
     "nullableSpanId": {
       "type": [
         "string",
         "null"
       ],
-      "pattern": "^[0-9a-f]{16}$"
+      "pattern": "^[0-9a-f]{16}$",
+      "description": "Canonical lowercase OpenTelemetry span ID, or null when the original ID was missing or invalid."
     },
     "stringMap": {
       "type": "object",
       "additionalProperties": {
         "type": "string"
-      }
+      },
+      "description": "String map of attributes. Nested OTLP AnyValue structures are preserved as JSON strings in the current 0.1 output model."
     },
     "diagnostic": {
       "type": "object",
@@ -92,37 +101,46 @@
       ],
       "properties": {
         "scope": {
-          "type": "string"
+          "type": "string",
+          "description": "Area that emitted the diagnostic, such as input parsing or trace graph analysis."
         },
         "severity": {
           "type": "string",
           "enum": [
             "warning",
             "error"
-          ]
+          ],
+          "description": "Diagnostic severity. `warning` means analysis can continue; `error` means the input or trace contains a serious issue."
         },
         "code": {
-          "type": "string"
+          "type": "string",
+          "description": "Stable diagnostic code that scripts and agents can branch on."
         },
         "message": {
-          "type": "string"
+          "type": "string",
+          "description": "Human-readable diagnostic message explaining the problem."
         },
         "trace_id": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "Canonical lowercase OpenTelemetry trace ID."
         },
         "span_id": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "Canonical lowercase OpenTelemetry span ID."
         },
         "location": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "Input or trace location related to the diagnostic, or null when no precise location is available."
         }
-      }
+      },
+      "description": "A warning or error produced while parsing input or analyzing trace structure. Diagnostics describe data quality caveats that consumers should consider."
     },
     "diagnostics": {
       "type": "array",
       "items": {
         "$ref": "#/$defs/diagnostic"
-      }
+      },
+      "description": "List of diagnostics emitted for the file or selected trace."
     },
     "traceSummary": {
       "type": "object",
@@ -141,36 +159,47 @@
       ],
       "properties": {
         "trace_id": {
-          "$ref": "#/$defs/traceId"
+          "$ref": "#/$defs/traceId",
+          "description": "Canonical lowercase OpenTelemetry trace ID."
         },
         "span_count": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Number of spans represented in this result."
         },
         "service_count": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Number of distinct service names represented in this result."
         },
         "error_span_count": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Number of spans that carry observable error signals."
         },
         "root_count": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Number of root spans detected in the trace graph."
         },
         "orphan_count": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Number of spans whose parent is missing from the selected trace graph."
         },
         "diagnostics_count": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Number of diagnostics attached to the file or selected trace."
         },
         "start_ns": {
-          "$ref": "#/$defs/nullableUint"
+          "$ref": "#/$defs/nullableUint",
+          "description": "Start timestamp or offset in nanoseconds, depending on the enclosing object."
         },
         "end_ns": {
-          "$ref": "#/$defs/nullableUint"
+          "$ref": "#/$defs/nullableUint",
+          "description": "End timestamp or offset in nanoseconds, depending on the enclosing object."
         },
         "duration_ns": {
-          "$ref": "#/$defs/nullableUint"
+          "$ref": "#/$defs/nullableUint",
+          "description": "Duration in nanoseconds."
         }
-      }
+      },
+      "description": "Summary row for one trace in file-level views."
     },
     "rootSpan": {
       "type": "object",
@@ -183,18 +212,23 @@
       ],
       "properties": {
         "span_id": {
-          "$ref": "#/$defs/spanId"
+          "$ref": "#/$defs/spanId",
+          "description": "Canonical lowercase OpenTelemetry span ID."
         },
         "service_name": {
-          "type": "string"
+          "type": "string",
+          "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "description": "OpenTelemetry span, event, or operation name from the input."
         },
         "duration_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Duration in nanoseconds."
         }
-      }
+      },
+      "description": "Root span summary used by duration and critical-path analysis."
     },
     "event": {
       "type": "object",
@@ -207,18 +241,23 @@
       ],
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "description": "OpenTelemetry span, event, or operation name from the input."
         },
         "time_unix_nano": {
-          "$ref": "#/$defs/nullableUint"
+          "$ref": "#/$defs/nullableUint",
+          "description": "OpenTelemetry event timestamp in Unix nanoseconds, or null if absent/invalid."
         },
         "attributes": {
-          "$ref": "#/$defs/stringMap"
+          "$ref": "#/$defs/stringMap",
+          "description": "OpenTelemetry attributes normalized to a string map."
         },
         "dropped_attributes_count": {
-          "$ref": "#/$defs/nullableUint"
+          "$ref": "#/$defs/nullableUint",
+          "description": "OpenTelemetry dropped attributes count, or null when absent."
         }
-      }
+      },
+      "description": "Canonical OpenTelemetry span event preserved from OTLP input."
     },
     "link": {
       "type": "object",
@@ -233,24 +272,31 @@
       ],
       "properties": {
         "trace_id": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "Canonical lowercase OpenTelemetry trace ID."
         },
         "span_id": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "Canonical lowercase OpenTelemetry span ID."
         },
         "trace_state": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "OpenTelemetry `traceState` value from the OTLP input, or null when absent."
         },
         "flags": {
-          "$ref": "#/$defs/nullableUint"
+          "$ref": "#/$defs/nullableUint",
+          "description": "OpenTelemetry trace/span flags from the OTLP input, or null when absent."
         },
         "attributes": {
-          "$ref": "#/$defs/stringMap"
+          "$ref": "#/$defs/stringMap",
+          "description": "OpenTelemetry attributes normalized to a string map."
         },
         "dropped_attributes_count": {
-          "$ref": "#/$defs/nullableUint"
+          "$ref": "#/$defs/nullableUint",
+          "description": "OpenTelemetry dropped attributes count, or null when absent."
         }
-      }
+      },
+      "description": "Canonical OpenTelemetry span link preserved from OTLP input. Links are not converted into parent-child edges."
     },
     "span": {
       "type": "object",
@@ -287,102 +333,131 @@
       ],
       "properties": {
         "trace_id": {
-          "$ref": "#/$defs/traceId"
+          "$ref": "#/$defs/traceId",
+          "description": "Canonical lowercase OpenTelemetry trace ID."
         },
         "span_id": {
-          "$ref": "#/$defs/spanId"
+          "$ref": "#/$defs/spanId",
+          "description": "Canonical lowercase OpenTelemetry span ID."
         },
         "parent_span_id": {
-          "$ref": "#/$defs/nullableSpanId"
+          "$ref": "#/$defs/nullableSpanId",
+          "description": "Parent span ID, or null when the span is a root or the parent ID is absent/invalid."
         },
         "trace_state": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "OpenTelemetry `traceState` value from the OTLP input, or null when absent."
         },
         "flags": {
-          "$ref": "#/$defs/nullableUint"
+          "$ref": "#/$defs/nullableUint",
+          "description": "OpenTelemetry trace/span flags from the OTLP input, or null when absent."
         },
         "service_name": {
-          "type": "string"
+          "type": "string",
+          "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "description": "OpenTelemetry span, event, or operation name from the input."
         },
         "kind": {
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "description": "Raw OpenTelemetry span kind numeric value, or null when absent."
         },
         "kind_label": {
-          "type": "string"
+          "type": "string",
+          "description": "Human-readable OpenTelemetry span kind label derived by tracelens."
         },
         "start_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Start timestamp or offset in nanoseconds, depending on the enclosing object."
         },
         "end_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "End timestamp or offset in nanoseconds, depending on the enclosing object."
         },
         "duration_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Duration in nanoseconds."
         },
         "status_code": {
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "description": "Raw OpenTelemetry status code value, or null when absent."
         },
         "status_message": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "OpenTelemetry status message, or null when absent."
         },
         "status_label": {
-          "type": "string"
+          "type": "string",
+          "description": "Human-readable OpenTelemetry status label derived by tracelens."
         },
         "is_error": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether this span or step has observable error evidence."
         },
         "attributes": {
-          "$ref": "#/$defs/stringMap"
+          "$ref": "#/$defs/stringMap",
+          "description": "OpenTelemetry attributes normalized to a string map."
         },
         "dropped_attributes_count": {
-          "$ref": "#/$defs/nullableUint"
+          "$ref": "#/$defs/nullableUint",
+          "description": "OpenTelemetry dropped attributes count, or null when absent."
         },
         "resource_attributes": {
-          "$ref": "#/$defs/stringMap"
+          "$ref": "#/$defs/stringMap",
+          "description": "OpenTelemetry resource attributes normalized to a string map."
         },
         "resource_schema_url": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "OpenTelemetry `ResourceSpans.schemaUrl`, or null when absent."
         },
         "scope_name": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "OpenTelemetry instrumentation scope name, or null when absent."
         },
         "scope_version": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "OpenTelemetry instrumentation scope version, or null when absent."
         },
         "scope_attributes": {
-          "$ref": "#/$defs/stringMap"
+          "$ref": "#/$defs/stringMap",
+          "description": "OpenTelemetry instrumentation scope attributes normalized to a string map."
         },
         "scope_schema_url": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "OpenTelemetry `ScopeSpans.schemaUrl`, or null when absent."
         },
         "events": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/event"
-          }
+          },
+          "description": "OpenTelemetry span events preserved on this span."
         },
         "dropped_events_count": {
-          "$ref": "#/$defs/nullableUint"
+          "$ref": "#/$defs/nullableUint",
+          "description": "OpenTelemetry dropped events count, or null when absent."
         },
         "links": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/link"
-          }
+          },
+          "description": "OpenTelemetry span links preserved on this span. Links are not converted into parent-child edges."
         },
         "dropped_links_count": {
-          "$ref": "#/$defs/nullableUint"
+          "$ref": "#/$defs/nullableUint",
+          "description": "OpenTelemetry dropped links count, or null when absent."
         }
-      }
+      },
+      "description": "Canonical span object normalized from OTLP input while preserving common OTLP metadata."
     },
     "treeNode": {
       "type": "object",
@@ -394,10 +469,12 @@
       ],
       "properties": {
         "depth": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Depth in the visible trace tree, with root spans at depth 0."
         },
         "span": {
-          "$ref": "#/$defs/span"
+          "$ref": "#/$defs/span",
+          "description": "Canonical span object for this tree row."
         },
         "annotations": {
           "oneOf": [
@@ -407,9 +484,11 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "Semantic annotations derived for the trace or span."
         }
-      }
+      },
+      "description": "One row in a parent-child span tree."
     },
     "spanAnnotation": {
       "type": "object",
@@ -428,45 +507,56 @@
       ],
       "properties": {
         "span_id": {
-          "$ref": "#/$defs/spanId"
+          "$ref": "#/$defs/spanId",
+          "description": "Canonical lowercase OpenTelemetry span ID."
         },
         "service_name": {
-          "type": "string"
+          "type": "string",
+          "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "description": "OpenTelemetry span, event, or operation name from the input."
         },
         "role": {
-          "type": "string"
+          "type": "string",
+          "description": "Detected semantic role for the span, such as client, server, producer, consumer, or internal."
         },
         "client_server_peers": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/clientServerPeer"
-          }
+          },
+          "description": "Detected direct client/server peer relationships for this span."
         },
         "async_work": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether the span appears related to async work based on kind, messaging attributes, or links."
         },
         "messaging": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether the span carries messaging-related attributes or kind semantics."
         },
         "linked_span_count": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Number of spans that carry OpenTelemetry links."
         },
         "linked_spans": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/linkedSpanRef"
-          }
+          },
+          "description": "Spans that carry OpenTelemetry links."
         },
         "notes": {
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "description": "Explanatory analysis notes and caveats. Notes are hints, not final root-cause proof."
         }
-      }
+      },
+      "description": "Semantic annotation for one span, such as client/server, async work, messaging, or linked span evidence."
     },
     "clientServerPeer": {
       "type": "object",
@@ -479,18 +569,23 @@
       ],
       "properties": {
         "span_id": {
-          "$ref": "#/$defs/spanId"
+          "$ref": "#/$defs/spanId",
+          "description": "Canonical lowercase OpenTelemetry span ID."
         },
         "service_name": {
-          "type": "string"
+          "type": "string",
+          "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "description": "OpenTelemetry span, event, or operation name from the input."
         },
         "relationship": {
-          "type": "string"
+          "type": "string",
+          "description": "Relationship label between the endpoint span and its peer."
         }
-      }
+      },
+      "description": "Endpoint description for a detected direct client/server parent-child relationship."
     },
     "clientServerPair": {
       "type": "object",
@@ -501,12 +596,15 @@
       ],
       "properties": {
         "client": {
-          "$ref": "#/$defs/clientServerEndpoint"
+          "$ref": "#/$defs/clientServerEndpoint",
+          "description": "Client endpoint in a detected direct client/server span pair."
         },
         "server": {
-          "$ref": "#/$defs/clientServerEndpoint"
+          "$ref": "#/$defs/clientServerEndpoint",
+          "description": "Server endpoint in a detected direct client/server span pair."
         }
-      }
+      },
+      "description": "Detected direct client/server parent-child pair. This is annotation evidence and does not merge spans."
     },
     "clientServerEndpoint": {
       "type": "object",
@@ -518,15 +616,19 @@
       ],
       "properties": {
         "span_id": {
-          "$ref": "#/$defs/spanId"
+          "$ref": "#/$defs/spanId",
+          "description": "Canonical lowercase OpenTelemetry span ID."
         },
         "service_name": {
-          "type": "string"
+          "type": "string",
+          "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "description": "OpenTelemetry span, event, or operation name from the input."
         }
-      }
+      },
+      "description": "Span endpoint participating in a detected client/server pair."
     },
     "linkedSpanRef": {
       "type": "object",
@@ -539,18 +641,23 @@
       ],
       "properties": {
         "trace_id": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "Canonical lowercase OpenTelemetry trace ID."
         },
         "span_id": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "Canonical lowercase OpenTelemetry span ID."
         },
         "same_trace": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether the linked span target points to the same trace as the source span."
         },
         "target_in_trace": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether the linked span target exists in the currently loaded trace graph."
         }
-      }
+      },
+      "description": "Reference to a linked trace/span target from an OpenTelemetry span link."
     },
     "traceAnnotations": {
       "type": "object",
@@ -575,47 +682,58 @@
           ],
           "properties": {
             "client_server_pairs": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Detected direct client/server parent-child pairs."
             },
             "client_server_span_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans participating in detected client/server relationships."
             },
             "async_span_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans marked as async-related."
             },
             "linked_span_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans that carry OpenTelemetry links."
             },
             "messaging_span_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans marked as messaging-related."
             }
-          }
+          },
+          "description": "Aggregated counts for the enclosing analysis section."
         },
         "client_server_pairs": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/clientServerPair"
-          }
+          },
+          "description": "Detected direct client/server parent-child pairs."
         },
         "async_spans": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/spanAnnotation"
-          }
+          },
+          "description": "Spans marked as async-related by tracelens."
         },
         "linked_spans": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/spanAnnotation"
-          }
+          },
+          "description": "Spans that carry OpenTelemetry links."
         },
         "spans": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/spanAnnotation"
-          }
+          },
+          "description": "Span rows or span summaries for the enclosing analysis section."
         }
-      }
+      },
+      "description": "Trace-level semantic annotations derived from span kinds, messaging attributes, and span links."
     },
     "serviceDuration": {
       "type": "object",
@@ -630,24 +748,31 @@
       ],
       "properties": {
         "service_name": {
-          "type": "string"
+          "type": "string",
+          "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
         },
         "self_time_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Service self time in nanoseconds: direct service span duration minus direct child-covered intervals, with overlaps counted once."
         },
         "span_time_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Raw sum of span durations in nanoseconds for the service or candidate group; nested/concurrent spans may make this exceed wall-clock time."
         },
         "child_covered_time_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Nanoseconds in this service spans that are covered by direct child spans, using interval union."
         },
         "span_count": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Number of spans represented in this result."
         },
         "error_span_count": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Number of spans that carry observable error signals."
         }
-      }
+      },
+      "description": "Service-level duration contribution calculated for one trace."
     },
     "criticalPathSegment": {
       "type": "object",
@@ -661,21 +786,27 @@
       ],
       "properties": {
         "span_id": {
-          "$ref": "#/$defs/spanId"
+          "$ref": "#/$defs/spanId",
+          "description": "Canonical lowercase OpenTelemetry span ID."
         },
         "service_name": {
-          "type": "string"
+          "type": "string",
+          "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "description": "OpenTelemetry span, event, or operation name from the input."
         },
         "offset_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Offset in nanoseconds from the selected trace or root span start."
         },
         "duration_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Duration in nanoseconds."
         }
-      }
+      },
+      "description": "One attributed time window on the selected root span critical path."
     },
     "criticalPathSpanTotal": {
       "type": "object",
@@ -688,18 +819,23 @@
       ],
       "properties": {
         "span_id": {
-          "$ref": "#/$defs/spanId"
+          "$ref": "#/$defs/spanId",
+          "description": "Canonical lowercase OpenTelemetry span ID."
         },
         "service_name": {
-          "type": "string"
+          "type": "string",
+          "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "description": "OpenTelemetry span, event, or operation name from the input."
         },
         "total_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Total critical-path contribution in nanoseconds for the span."
         }
-      }
+      },
+      "description": "Critical-path contribution aggregated by span."
     },
     "criticalPath": {
       "type": "object",
@@ -716,13 +852,16 @@
       ],
       "properties": {
         "status": {
-          "type": "string"
+          "type": "string",
+          "description": "Whether critical-path analysis is available for the selected root span."
         },
         "unavailable_reason": {
-          "$ref": "#/$defs/nullableString"
+          "$ref": "#/$defs/nullableString",
+          "description": "Why the analysis is unavailable, or null when the analysis is available."
         },
         "root_span_id": {
-          "$ref": "#/$defs/nullableSpanId"
+          "$ref": "#/$defs/nullableSpanId",
+          "description": "Span ID of the selected root span, or null when no suitable root span is available."
         },
         "root_span": {
           "oneOf": [
@@ -732,30 +871,36 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "Root span selected for this analysis, or null when no suitable root span is available."
         },
         "total_duration_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Total duration in nanoseconds for the enclosing analysis object."
         },
         "segments": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/criticalPathSegment"
-          }
+          },
+          "description": "Critical-path segments: time windows that together explain the selected root span interval without double-counting overlap."
         },
         "span_totals": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/criticalPathSpanTotal"
-          }
+          },
+          "description": "Critical-path contribution totals grouped by span."
         },
         "notes": {
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "description": "Explanatory analysis notes and caveats. Notes are hints, not final root-cause proof."
         }
-      }
+      },
+      "description": "Critical-path analysis for the selected trace/root span. It is topology and time evidence, not a final root-cause proof."
     },
     "classification": {
       "type": "object",
@@ -776,18 +921,23 @@
           ],
           "properties": {
             "serial": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans classified as serial within sibling timing relationships."
             },
             "concurrent": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans classified as overlapping at least one sibling."
             },
             "nested": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans fully contained by their parent span time range."
             },
             "suspicious": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans with suspicious timing, such as starting before or ending after the parent."
             }
-          }
+          },
+          "description": "Aggregated counts for the enclosing analysis section."
         },
         "spans": {
           "type": "array",
@@ -803,24 +953,31 @@
             ],
             "properties": {
               "span_id": {
-                "$ref": "#/$defs/spanId"
+                "$ref": "#/$defs/spanId",
+                "description": "Canonical lowercase OpenTelemetry span ID."
               },
               "service_name": {
-                "type": "string"
+                "type": "string",
+                "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
               },
               "name": {
-                "type": "string"
+                "type": "string",
+                "description": "OpenTelemetry span, event, or operation name from the input."
               },
               "sibling_relation": {
-                "type": "string"
+                "type": "string",
+                "description": "Timing relationship between this span and its siblings."
               },
               "parent_relation": {
-                "$ref": "#/$defs/nullableString"
+                "$ref": "#/$defs/nullableString",
+                "description": "Timing relationship between this span and its parent, or null when there is no parent relationship."
               }
             }
-          }
+          },
+          "description": "Span rows or span summaries for the enclosing analysis section."
         }
-      }
+      },
+      "description": "Execution relationship classification for spans, including serial, concurrent, nested, and suspicious timing categories."
     },
     "timelineRow": {
       "type": "object",
@@ -843,48 +1000,63 @@
       ],
       "properties": {
         "depth": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Depth in the visible trace tree, with root spans at depth 0."
         },
         "span_id": {
-          "$ref": "#/$defs/spanId"
+          "$ref": "#/$defs/spanId",
+          "description": "Canonical lowercase OpenTelemetry span ID."
         },
         "parent_span_id": {
-          "$ref": "#/$defs/nullableSpanId"
+          "$ref": "#/$defs/nullableSpanId",
+          "description": "Parent span ID, or null when the span is a root or the parent ID is absent/invalid."
         },
         "service_name": {
-          "type": "string"
+          "type": "string",
+          "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "description": "OpenTelemetry span, event, or operation name from the input."
         },
         "start_offset_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Span start offset from the trace timeline start, in nanoseconds."
         },
         "end_offset_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Span end offset from the trace timeline start, in nanoseconds."
         },
         "duration_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Duration in nanoseconds."
         },
         "bar_start": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Scaled start column inside the ASCII timeline bar."
         },
         "bar_width": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Scaled bar width inside the ASCII timeline bar."
         },
         "is_error": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether this span or step has observable error evidence."
         },
         "is_critical_path": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether this row is on the computed critical path."
         },
         "is_orphan": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether this row represents a span whose parent is missing from the trace."
         },
         "is_unattached": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether this row could not be attached under a selected root in the visible tree."
         }
-      }
+      },
+      "description": "One row in the ASCII timeline representation of a trace."
     },
     "spanRef": {
       "type": "object",
@@ -900,27 +1072,35 @@
       ],
       "properties": {
         "span_id": {
-          "$ref": "#/$defs/spanId"
+          "$ref": "#/$defs/spanId",
+          "description": "Canonical lowercase OpenTelemetry span ID."
         },
         "parent_span_id": {
-          "$ref": "#/$defs/nullableSpanId"
+          "$ref": "#/$defs/nullableSpanId",
+          "description": "Parent span ID, or null when the span is a root or the parent ID is absent/invalid."
         },
         "service_name": {
-          "type": "string"
+          "type": "string",
+          "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "description": "OpenTelemetry span, event, or operation name from the input."
         },
         "depth": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Depth in the visible trace tree, with root spans at depth 0."
         },
         "start_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Start timestamp or offset in nanoseconds, depending on the enclosing object."
         },
         "duration_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Duration in nanoseconds."
         }
-      }
+      },
+      "description": "Compact span reference used inside candidate lists."
     },
     "errorSpanCandidate": {
       "type": "object",
@@ -937,33 +1117,42 @@
       ],
       "properties": {
         "span_id": {
-          "$ref": "#/$defs/spanId"
+          "$ref": "#/$defs/spanId",
+          "description": "Canonical lowercase OpenTelemetry span ID."
         },
         "parent_span_id": {
-          "$ref": "#/$defs/nullableSpanId"
+          "$ref": "#/$defs/nullableSpanId",
+          "description": "Parent span ID, or null when the span is a root or the parent ID is absent/invalid."
         },
         "service_name": {
-          "type": "string"
+          "type": "string",
+          "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "description": "OpenTelemetry span, event, or operation name from the input."
         },
         "depth": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Depth in the visible trace tree, with root spans at depth 0."
         },
         "start_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Start timestamp or offset in nanoseconds, depending on the enclosing object."
         },
         "duration_ns": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Duration in nanoseconds."
         },
         "signals": {
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "description": "Observable error signals found on this span, such as status_code_error, http_5xx, grpc_non_zero, or exception_event."
         }
-      }
+      },
+      "description": "Span with observable error signals such as OTLP ERROR, HTTP 5xx, RPC non-OK, or exception events."
     },
     "errorPropagationStep": {
       "allOf": [
@@ -977,11 +1166,13 @@
           ],
           "properties": {
             "is_error": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "Whether this span or step has observable error evidence."
             }
           }
         }
-      ]
+      ],
+      "description": "Step in an observable parent-child error propagation path."
     },
     "validateOutput": {
       "type": "object",
@@ -999,41 +1190,51 @@
       ],
       "properties": {
         "schema_version": {
-          "$ref": "#/$defs/schemaVersion"
+          "$ref": "#/$defs/schemaVersion",
+          "description": "Output contract version. Current value is \"0.1\"."
         },
         "command": {
-          "const": "validate"
+          "const": "validate",
+          "description": "CLI command that produced this JSON object. Use it to select the matching schema branch."
         },
         "mode": {
           "type": "string",
           "enum": [
             "default",
             "strict"
-          ]
+          ],
+          "description": "Validation mode used by the command."
         },
         "status": {
           "type": "string",
           "enum": [
             "ok",
             "failed"
-          ]
+          ],
+          "description": "Validation status under the selected mode. In default mode malformed input can be reported in diagnostics while the command still exits successfully."
         },
         "error_diagnostic_count": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Number of diagnostics with severity `error`."
         },
         "exit_would_fail": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether strict validation would return a nonzero exit status for this input."
         },
         "trace_count": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Number of traces represented in this result."
         },
         "span_count": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Number of spans represented in this result."
         },
         "diagnostics": {
-          "$ref": "#/$defs/diagnostics"
+          "$ref": "#/$defs/diagnostics",
+          "description": "Diagnostics found while validating the input file."
         }
-      }
+      },
+      "description": "JSON output produced by `tracelens validate`."
     },
     "summaryOutput": {
       "type": "object",
@@ -1047,10 +1248,12 @@
       ],
       "properties": {
         "schema_version": {
-          "$ref": "#/$defs/schemaVersion"
+          "$ref": "#/$defs/schemaVersion",
+          "description": "Output contract version. Current value is \"0.1\"."
         },
         "command": {
-          "const": "summary"
+          "const": "summary",
+          "description": "CLI command that produced this JSON object. Use it to select the matching schema branch."
         },
         "summary": {
           "type": "object",
@@ -1066,38 +1269,49 @@
           ],
           "properties": {
             "trace_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of traces represented in this result."
             },
             "span_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans represented in this result."
             },
             "service_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of distinct service names represented in this result."
             },
             "error_span_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans that carry observable error signals."
             },
             "start_ns": {
-              "$ref": "#/$defs/nullableUint"
+              "$ref": "#/$defs/nullableUint",
+              "description": "Start timestamp or offset in nanoseconds, depending on the enclosing object."
             },
             "end_ns": {
-              "$ref": "#/$defs/nullableUint"
+              "$ref": "#/$defs/nullableUint",
+              "description": "End timestamp or offset in nanoseconds, depending on the enclosing object."
             },
             "duration_ns": {
-              "$ref": "#/$defs/nullableUint"
+              "$ref": "#/$defs/nullableUint",
+              "description": "Duration in nanoseconds."
             }
-          }
+          },
+          "description": "Command-specific summary object."
         },
         "slowest_traces": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/traceSummary"
-          }
+          },
+          "description": "Trace summaries sorted by duration for file-level inspection."
         },
         "diagnostics": {
-          "$ref": "#/$defs/diagnostics"
+          "$ref": "#/$defs/diagnostics",
+          "description": "File-level diagnostics that may affect the summary."
         }
-      }
+      },
+      "description": "JSON output produced by `tracelens summary`."
     },
     "listTracesOutput": {
       "type": "object",
@@ -1110,21 +1324,26 @@
       ],
       "properties": {
         "schema_version": {
-          "$ref": "#/$defs/schemaVersion"
+          "$ref": "#/$defs/schemaVersion",
+          "description": "Output contract version. Current value is \"0.1\"."
         },
         "command": {
-          "const": "list-traces"
+          "const": "list-traces",
+          "description": "CLI command that produced this JSON object. Use it to select the matching schema branch."
         },
         "limit": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Maximum number of candidates requested for the command output."
         },
         "traces": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/traceSummary"
-          }
+          },
+          "description": "Trace summaries included in this result."
         }
-      }
+      },
+      "description": "JSON output produced by `tracelens list-traces`."
     },
     "treeOutput": {
       "type": "object",
@@ -1139,10 +1358,12 @@
       ],
       "properties": {
         "schema_version": {
-          "$ref": "#/$defs/schemaVersion"
+          "$ref": "#/$defs/schemaVersion",
+          "description": "Output contract version. Current value is \"0.1\"."
         },
         "command": {
-          "const": "tree"
+          "const": "tree",
+          "description": "CLI command that produced this JSON object. Use it to select the matching schema branch."
         },
         "trace": {
           "type": "object",
@@ -1158,41 +1379,53 @@
           ],
           "properties": {
             "trace_id": {
-              "$ref": "#/$defs/traceId"
+              "$ref": "#/$defs/traceId",
+              "description": "Canonical lowercase OpenTelemetry trace ID."
             },
             "duration_ns": {
-              "$ref": "#/$defs/nullableUint"
+              "$ref": "#/$defs/nullableUint",
+              "description": "Duration in nanoseconds."
             },
             "span_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans represented in this result."
             },
             "root_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of root spans detected in the trace graph."
             },
             "orphan_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans whose parent is missing from the selected trace graph."
             },
             "duplicate_span_id_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of duplicate span IDs detected in the selected trace."
             },
             "diagnostics_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of diagnostics attached to the file or selected trace."
             }
-          }
+          },
+          "description": "Selected trace summary for single-trace commands."
         },
         "nodes": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/treeNode"
-          }
+          },
+          "description": "Parent-child tree rows for the selected trace."
         },
         "annotations": {
-          "$ref": "#/$defs/traceAnnotations"
+          "$ref": "#/$defs/traceAnnotations",
+          "description": "Semantic annotations derived for the trace or span."
         },
         "diagnostics": {
-          "$ref": "#/$defs/diagnostics"
+          "$ref": "#/$defs/diagnostics",
+          "description": "Diagnostics attached to the selected trace tree."
         }
-      }
+      },
+      "description": "JSON output produced by `tracelens tree` for one trace."
     },
     "servicesOutput": {
       "type": "object",
@@ -1206,10 +1439,12 @@
       ],
       "properties": {
         "schema_version": {
-          "$ref": "#/$defs/schemaVersion"
+          "$ref": "#/$defs/schemaVersion",
+          "description": "Output contract version. Current value is \"0.1\"."
         },
         "command": {
-          "const": "services"
+          "const": "services",
+          "description": "CLI command that produced this JSON object. Use it to select the matching schema branch."
         },
         "trace": {
           "type": "object",
@@ -1224,10 +1459,12 @@
           ],
           "properties": {
             "trace_id": {
-              "$ref": "#/$defs/traceId"
+              "$ref": "#/$defs/traceId",
+              "description": "Canonical lowercase OpenTelemetry trace ID."
             },
             "wall_clock_duration_ns": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Trace wall-clock duration in nanoseconds, from earliest valid span start to latest valid span end."
             },
             "root_span": {
               "oneOf": [
@@ -1237,29 +1474,37 @@
                 {
                   "type": "null"
                 }
-              ]
+              ],
+              "description": "Root span selected for this analysis, or null when no suitable root span is available."
             },
             "root_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of root spans detected in the trace graph."
             },
             "orphan_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans whose parent is missing from the selected trace graph."
             },
             "diagnostics_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of diagnostics attached to the file or selected trace."
             }
-          }
+          },
+          "description": "Selected trace summary for single-trace commands."
         },
         "services": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/serviceDuration"
-          }
+          },
+          "description": "Service-level duration contribution rows for the selected trace."
         },
         "diagnostics": {
-          "$ref": "#/$defs/diagnostics"
+          "$ref": "#/$defs/diagnostics",
+          "description": "Diagnostics attached to the selected trace service-duration analysis."
         }
-      }
+      },
+      "description": "JSON output produced by `tracelens services` for one trace."
     },
     "criticalPathOutput": {
       "type": "object",
@@ -1275,10 +1520,12 @@
       ],
       "properties": {
         "schema_version": {
-          "$ref": "#/$defs/schemaVersion"
+          "$ref": "#/$defs/schemaVersion",
+          "description": "Output contract version. Current value is \"0.1\"."
         },
         "command": {
-          "const": "critical-path"
+          "const": "critical-path",
+          "description": "CLI command that produced this JSON object. Use it to select the matching schema branch."
         },
         "trace": {
           "type": "object",
@@ -1293,10 +1540,12 @@
           ],
           "properties": {
             "trace_id": {
-              "$ref": "#/$defs/traceId"
+              "$ref": "#/$defs/traceId",
+              "description": "Canonical lowercase OpenTelemetry trace ID."
             },
             "wall_clock_duration_ns": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Trace wall-clock duration in nanoseconds, from earliest valid span start to latest valid span end."
             },
             "root_span": {
               "oneOf": [
@@ -1306,32 +1555,42 @@
                 {
                   "type": "null"
                 }
-              ]
+              ],
+              "description": "Root span selected for this analysis, or null when no suitable root span is available."
             },
             "root_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of root spans detected in the trace graph."
             },
             "orphan_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans whose parent is missing from the selected trace graph."
             },
             "diagnostics_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of diagnostics attached to the file or selected trace."
             }
-          }
+          },
+          "description": "Selected trace summary for single-trace commands."
         },
         "critical_path": {
-          "$ref": "#/$defs/criticalPath"
+          "$ref": "#/$defs/criticalPath",
+          "description": "Critical-path analysis for the selected trace/root span."
         },
         "classification": {
-          "$ref": "#/$defs/classification"
+          "$ref": "#/$defs/classification",
+          "description": "Span execution relationship classification."
         },
         "annotations": {
-          "$ref": "#/$defs/traceAnnotations"
+          "$ref": "#/$defs/traceAnnotations",
+          "description": "Semantic annotations derived for the trace or span."
         },
         "diagnostics": {
-          "$ref": "#/$defs/diagnostics"
+          "$ref": "#/$defs/diagnostics",
+          "description": "Diagnostics attached to the selected trace critical-path analysis."
         }
-      }
+      },
+      "description": "JSON output produced by `tracelens critical-path` for one trace."
     },
     "timelineOutput": {
       "type": "object",
@@ -1346,10 +1605,12 @@
       ],
       "properties": {
         "schema_version": {
-          "$ref": "#/$defs/schemaVersion"
+          "$ref": "#/$defs/schemaVersion",
+          "description": "Output contract version. Current value is \"0.1\"."
         },
         "command": {
-          "const": "timeline"
+          "const": "timeline",
+          "description": "CLI command that produced this JSON object. Use it to select the matching schema branch."
         },
         "trace": {
           "type": "object",
@@ -1366,30 +1627,39 @@
           ],
           "properties": {
             "trace_id": {
-              "$ref": "#/$defs/traceId"
+              "$ref": "#/$defs/traceId",
+              "description": "Canonical lowercase OpenTelemetry trace ID."
             },
             "start_ns": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Start timestamp or offset in nanoseconds, depending on the enclosing object."
             },
             "end_ns": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "End timestamp or offset in nanoseconds, depending on the enclosing object."
             },
             "wall_clock_duration_ns": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Trace wall-clock duration in nanoseconds, from earliest valid span start to latest valid span end."
             },
             "span_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans represented in this result."
             },
             "root_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of root spans detected in the trace graph."
             },
             "orphan_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans whose parent is missing from the selected trace graph."
             },
             "diagnostics_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of diagnostics attached to the file or selected trace."
             }
-          }
+          },
+          "description": "Selected trace summary for single-trace commands."
         },
         "timeline": {
           "type": "object",
@@ -1401,21 +1671,25 @@
           ],
           "properties": {
             "width": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Configured ASCII timeline bar width, not the full terminal line width."
             },
             "rows": {
               "type": "array",
               "items": {
                 "$ref": "#/$defs/timelineRow"
-              }
+              },
+              "description": "Timeline rows with scaled ASCII bar positions for each visible span."
             },
             "notes": {
               "type": "array",
               "items": {
                 "type": "string"
-              }
+              },
+              "description": "Explanatory analysis notes and caveats. Notes are hints, not final root-cause proof."
             }
-          }
+          },
+          "description": "Timeline analysis object for the selected trace."
         },
         "critical_path": {
           "type": "object",
@@ -1429,29 +1703,37 @@
           ],
           "properties": {
             "status": {
-              "type": "string"
+              "type": "string",
+              "description": "Whether the supporting critical-path calculation was available for timeline marking."
             },
             "unavailable_reason": {
-              "$ref": "#/$defs/nullableString"
+              "$ref": "#/$defs/nullableString",
+              "description": "Why the analysis is unavailable, or null when the analysis is available."
             },
             "root_span_id": {
-              "$ref": "#/$defs/nullableSpanId"
+              "$ref": "#/$defs/nullableSpanId",
+              "description": "Span ID of the selected root span, or null when no suitable root span is available."
             },
             "total_duration_ns": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Total duration in nanoseconds for the enclosing analysis object."
             },
             "notes": {
               "type": "array",
               "items": {
                 "type": "string"
-              }
+              },
+              "description": "Explanatory analysis notes and caveats. Notes are hints, not final root-cause proof."
             }
-          }
+          },
+          "description": "Critical-path analysis for the selected trace/root span."
         },
         "diagnostics": {
-          "$ref": "#/$defs/diagnostics"
+          "$ref": "#/$defs/diagnostics",
+          "description": "Diagnostics attached to the selected trace timeline analysis."
         }
-      }
+      },
+      "description": "JSON output produced by `tracelens timeline` for one trace."
     },
     "detectOutput": {
       "type": "object",
@@ -1471,13 +1753,16 @@
       ],
       "properties": {
         "schema_version": {
-          "$ref": "#/$defs/schemaVersion"
+          "$ref": "#/$defs/schemaVersion",
+          "description": "Output contract version. Current value is \"0.1\"."
         },
         "command": {
-          "const": "detect"
+          "const": "detect",
+          "description": "CLI command that produced this JSON object. Use it to select the matching schema branch."
         },
         "limit": {
-          "$ref": "#/$defs/uint"
+          "$ref": "#/$defs/uint",
+          "description": "Maximum number of candidates requested for the command output."
         },
         "summary": {
           "type": "object",
@@ -1498,42 +1783,55 @@
           ],
           "properties": {
             "trace_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of traces represented in this result."
             },
             "span_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans represented in this result."
             },
             "diagnostics_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of diagnostics attached to the file or selected trace."
             },
             "sample_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of timed traces used to compute the local p95 reference and slow trace candidates."
             },
             "sample_quality": {
-              "type": "string"
+              "type": "string",
+              "description": "Sample-size quality label: insufficient, limited, or broad."
             },
             "p95_duration_ns": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Nearest-rank p95 trace duration in nanoseconds for the current input file."
             },
             "slow_trace_candidate_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of slow trace candidates detected in the current file."
             },
             "error_trace_candidate_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of traces with observable error candidates."
             },
             "error_propagation_chain_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of observable parent-child error propagation chain candidates."
             },
             "n_plus_one_candidate_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of N+1-like repeated child span group candidates."
             },
             "service_latency_distribution_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of service latency distribution rows included in detect output."
             },
             "error_span_count": {
-              "$ref": "#/$defs/uint"
+              "$ref": "#/$defs/uint",
+              "description": "Number of spans that carry observable error signals."
             }
-          }
+          },
+          "description": "Command-specific summary object."
         },
         "slow_traces": {
           "type": "array",
@@ -1556,37 +1854,48 @@
             ],
             "properties": {
               "trace_id": {
-                "$ref": "#/$defs/traceId"
+                "$ref": "#/$defs/traceId",
+                "description": "Canonical lowercase OpenTelemetry trace ID."
               },
               "rank": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Candidate rank within its list, with 1 as the highest-priority row."
               },
               "duration_ns": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Duration in nanoseconds."
               },
               "p95_duration_ns": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Nearest-rank p95 duration reference in nanoseconds for the current file or group. This is local-file evidence, not an SLO."
               },
               "sample_count": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Number of timed traces used for duration-based detection."
               },
               "confidence": {
-                "type": "string"
+                "type": "string",
+                "description": "Confidence for the slow trace candidate based on local sample quality and duration evidence."
               },
               "reason": {
-                "type": "string"
+                "type": "string",
+                "description": "Human-readable reason explaining why tracelens emitted this candidate."
               },
               "span_count": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Number of spans represented in this result."
               },
               "service_count": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Number of distinct service names represented in this result."
               },
               "error_span_count": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Number of spans that carry observable error signals."
               },
               "diagnostics_count": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Number of diagnostics attached to the file or selected trace."
               },
               "service_candidates": {
                 "type": "array",
@@ -1602,25 +1911,32 @@
                   ],
                   "properties": {
                     "service_name": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
                     },
                     "span_time_ns": {
-                      "$ref": "#/$defs/uint"
+                      "$ref": "#/$defs/uint",
+                      "description": "Raw sum of span durations in nanoseconds for the service or candidate group; nested/concurrent spans may make this exceed wall-clock time."
                     },
                     "max_span_duration_ns": {
-                      "$ref": "#/$defs/uint"
+                      "$ref": "#/$defs/uint",
+                      "description": "Maximum span duration in nanoseconds for the service or candidate group."
                     },
                     "span_count": {
-                      "$ref": "#/$defs/uint"
+                      "$ref": "#/$defs/uint",
+                      "description": "Number of spans represented in this result."
                     },
                     "error_span_count": {
-                      "$ref": "#/$defs/uint"
+                      "$ref": "#/$defs/uint",
+                      "description": "Number of spans that carry observable error signals."
                     }
                   }
-                }
+                },
+                "description": "Services inside a slow trace ranked by span_time_ns to guide the next inspection step."
               }
             }
-          }
+          },
+          "description": "Slow trace candidates ranked by wall-clock duration. These are triage hints, not final root-cause proof."
         },
         "error_traces": {
           "type": "array",
@@ -1638,31 +1954,39 @@
             ],
             "properties": {
               "trace_id": {
-                "$ref": "#/$defs/traceId"
+                "$ref": "#/$defs/traceId",
+                "description": "Canonical lowercase OpenTelemetry trace ID."
               },
               "error_span_count": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Number of spans that carry observable error signals."
               },
               "confidence": {
-                "type": "string"
+                "type": "string",
+                "description": "Candidate confidence label. It is a prioritization hint, not a final root-cause verdict."
               },
               "earliest_error_span": {
-                "$ref": "#/$defs/errorSpanCandidate"
+                "$ref": "#/$defs/errorSpanCandidate",
+                "description": "Earliest error span by start time within the selected trace evidence."
               },
               "top_error_span": {
-                "$ref": "#/$defs/errorSpanCandidate"
+                "$ref": "#/$defs/errorSpanCandidate",
+                "description": "Highest-level error span by trace topology within the selected trace evidence."
               },
               "error_spans": {
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/errorSpanCandidate"
-                }
+                },
+                "description": "All error span evidence kept for this candidate."
               },
               "explanation": {
-                "type": "string"
+                "type": "string",
+                "description": "Human-readable explanation of why this candidate or chain was emitted."
               }
             }
-          }
+          },
+          "description": "Traces with observable error signals. These are candidate explanations, not proof of causality."
         },
         "error_propagation_chains": {
           "type": "array",
@@ -1683,46 +2007,57 @@
             ],
             "properties": {
               "trace_id": {
-                "$ref": "#/$defs/traceId"
+                "$ref": "#/$defs/traceId",
+                "description": "Canonical lowercase OpenTelemetry trace ID."
               },
               "confidence": {
-                "type": "string"
+                "type": "string",
+                "description": "Candidate confidence label. It is a prioritization hint, not a final root-cause verdict."
               },
               "earliest_error_span": {
-                "$ref": "#/$defs/errorSpanCandidate"
+                "$ref": "#/$defs/errorSpanCandidate",
+                "description": "Earliest error span by start time within the selected trace evidence."
               },
               "top_error_span": {
-                "$ref": "#/$defs/errorSpanCandidate"
+                "$ref": "#/$defs/errorSpanCandidate",
+                "description": "Highest-level error span by trace topology within the selected trace evidence."
               },
               "path_to_earliest_error": {
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/errorPropagationStep"
-                }
+                },
+                "description": "Visible parent-child path from a root or orphan entry point to the earliest error span."
               },
               "downstream_error_spans": {
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/errorPropagationStep"
-                }
+                },
+                "description": "Error spans below the top error span in the visible trace topology."
               },
               "downstream_error_span_count": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Number of downstream error spans below the top error span."
               },
               "affected_span_count": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Number of spans affected by the candidate chain."
               },
               "affected_services": {
                 "type": "array",
                 "items": {
                   "type": "string"
-                }
+                },
+                "description": "Service names touched by the candidate chain."
               },
               "explanation": {
-                "type": "string"
+                "type": "string",
+                "description": "Human-readable explanation of why this candidate or chain was emitted."
               }
             }
-          }
+          },
+          "description": "Observable parent-child paths that connect error evidence. They do not infer async causality beyond visible topology."
         },
         "n_plus_one_candidates": {
           "type": "array",
@@ -1742,10 +2077,12 @@
             ],
             "properties": {
               "trace_id": {
-                "$ref": "#/$defs/traceId"
+                "$ref": "#/$defs/traceId",
+                "description": "Canonical lowercase OpenTelemetry trace ID."
               },
               "parent_span": {
-                "$ref": "#/$defs/spanRef"
+                "$ref": "#/$defs/spanRef",
+                "description": "Parent span under which repeated child spans were observed."
               },
               "child_group": {
                 "type": "object",
@@ -1762,56 +2099,72 @@
                 ],
                 "properties": {
                   "service_name": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
                   },
                   "normalized_name": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Span name normalized for grouping, including numeric placeholder replacement."
                   },
                   "db_system": {
-                    "$ref": "#/$defs/nullableString"
+                    "$ref": "#/$defs/nullableString",
+                    "description": "Database system attribute used for grouping, or null when absent."
                   },
                   "db_operation": {
-                    "$ref": "#/$defs/nullableString"
+                    "$ref": "#/$defs/nullableString",
+                    "description": "Database operation attribute used for grouping, or null when absent."
                   },
                   "rpc_system": {
-                    "$ref": "#/$defs/nullableString"
+                    "$ref": "#/$defs/nullableString",
+                    "description": "RPC system attribute used for grouping, or null when absent."
                   },
                   "http_method": {
-                    "$ref": "#/$defs/nullableString"
+                    "$ref": "#/$defs/nullableString",
+                    "description": "HTTP method attribute used for grouping, or null when absent."
                   },
                   "http_route": {
-                    "$ref": "#/$defs/nullableString"
+                    "$ref": "#/$defs/nullableString",
+                    "description": "HTTP route attribute used for grouping, or null when absent."
                   },
                   "signature": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Stable grouping signature built from service, normalized name, and selected semantic attributes."
                   }
-                }
+                },
+                "description": "Normalized signature for repeated child spans in an N+1 candidate."
               },
               "repeated_count": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Number of repeated similar direct child spans under the same parent."
               },
               "serial_ratio": {
                 "type": "number",
                 "minimum": 0,
-                "maximum": 1
+                "maximum": 1,
+                "description": "Ratio from 0.0 to 1.0 showing how often adjacent repeated child spans execute serially."
               },
               "serial_ratio_per_mille": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Integer per-mille representation of serial_ratio, useful for scripts and agents."
               },
               "confidence": {
-                "type": "string"
+                "type": "string",
+                "description": "Confidence for the N+1-like candidate. High requires enough repeated children and mostly serial execution."
               },
               "reason": {
-                "type": "string"
+                "type": "string",
+                "description": "Human-readable reason explaining why tracelens emitted this candidate."
               },
               "example_child_spans": {
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/spanRef"
-                }
+                },
+                "description": "Representative child span examples for the N+1-like group."
               }
             }
-          }
+          },
+          "description": "N+1-like candidates based on repeated similar direct child spans under the same parent."
         },
         "service_latency_distribution": {
           "type": "array",
@@ -1831,28 +2184,36 @@
             ],
             "properties": {
               "service_name": {
-                "type": "string"
+                "type": "string",
+                "description": "Service name, usually from OTLP resource attribute `service.name`; tracelens may emit a diagnostic when it falls back."
               },
               "trace_count": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Number of traces represented in this result."
               },
               "span_count": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Number of spans represented in this result."
               },
               "error_span_count": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Number of spans that carry observable error signals."
               },
               "total_span_time_ns": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Total raw span duration in nanoseconds for this service across the current file."
               },
               "p50_duration_ns": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Nearest-rank p50 span duration in nanoseconds for this service in the current file."
               },
               "p95_duration_ns": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Nearest-rank p95 duration reference in nanoseconds for the current file or group. This is local-file evidence, not an SLO."
               },
               "max_span_duration_ns": {
-                "$ref": "#/$defs/uint"
+                "$ref": "#/$defs/uint",
+                "description": "Maximum span duration in nanoseconds for the service or candidate group."
               },
               "slow_span_samples": {
                 "type": "array",
@@ -1871,48 +2232,61 @@
                   ],
                   "properties": {
                     "trace_id": {
-                      "$ref": "#/$defs/traceId"
+                      "$ref": "#/$defs/traceId",
+                      "description": "Canonical lowercase OpenTelemetry trace ID."
                     },
                     "span_id": {
-                      "$ref": "#/$defs/spanId"
+                      "$ref": "#/$defs/spanId",
+                      "description": "Canonical lowercase OpenTelemetry span ID."
                     },
                     "parent_span_id": {
-                      "$ref": "#/$defs/nullableSpanId"
+                      "$ref": "#/$defs/nullableSpanId",
+                      "description": "Parent span ID, or null when the span is a root or the parent ID is absent/invalid."
                     },
                     "name": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "OpenTelemetry span, event, or operation name from the input."
                     },
                     "start_ns": {
-                      "$ref": "#/$defs/uint"
+                      "$ref": "#/$defs/uint",
+                      "description": "Start timestamp or offset in nanoseconds, depending on the enclosing object."
                     },
                     "duration_ns": {
-                      "$ref": "#/$defs/uint"
+                      "$ref": "#/$defs/uint",
+                      "description": "Duration in nanoseconds."
                     },
                     "is_error": {
-                      "type": "boolean"
+                      "type": "boolean",
+                      "description": "Whether this span or step has observable error evidence."
                     },
                     "signals": {
                       "type": "array",
                       "items": {
                         "type": "string"
-                      }
+                      },
+                      "description": "Observable error signals found on this span, such as status_code_error, http_5xx, grpc_non_zero, or exception_event."
                     }
                   }
-                }
+                },
+                "description": "Representative slow spans for this service latency distribution row."
               }
             }
-          }
+          },
+          "description": "Service latency distribution aggregated across the current file using span durations."
         },
         "notes": {
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "description": "Explanatory analysis notes and caveats. Notes are hints, not final root-cause proof."
         },
         "diagnostics": {
-          "$ref": "#/$defs/diagnostics"
+          "$ref": "#/$defs/diagnostics",
+          "description": "File-level diagnostics that may affect detect candidates and confidence."
         }
-      }
+      },
+      "description": "JSON output produced by `tracelens detect` across a trace file."
     }
   }
 }

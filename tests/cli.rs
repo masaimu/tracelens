@@ -28,6 +28,56 @@ fn output_schema() -> Value {
     .expect("schema should be valid JSON")
 }
 
+fn schema_pointer<'a>(schema: &'a Value, pointer: &str) -> &'a str {
+    schema
+        .pointer(pointer)
+        .and_then(Value::as_str)
+        .unwrap_or_else(|| panic!("schema pointer should be a string: {pointer}"))
+}
+
+fn collect_schema_properties_missing_descriptions(
+    node: &Value,
+    path: &str,
+    missing: &mut Vec<String>,
+) {
+    if let Some(properties) = node.get("properties").and_then(Value::as_object) {
+        for (name, value) in properties {
+            let field_path = if path.is_empty() {
+                name.to_string()
+            } else {
+                format!("{path}.{name}")
+            };
+
+            let has_description = value
+                .get("description")
+                .and_then(Value::as_str)
+                .is_some_and(|description| !description.trim().is_empty());
+            if !has_description {
+                missing.push(field_path.clone());
+            }
+
+            collect_schema_properties_missing_descriptions(value, &field_path, missing);
+        }
+    }
+
+    if let Some(items) = node.get("items") {
+        let item_path = if path.is_empty() {
+            "[]".to_string()
+        } else {
+            format!("{path}[]")
+        };
+        collect_schema_properties_missing_descriptions(items, &item_path, missing);
+    }
+
+    for keyword in ["oneOf", "allOf", "anyOf"] {
+        if let Some(values) = node.get(keyword).and_then(Value::as_array) {
+            for value in values {
+                collect_schema_properties_missing_descriptions(value, path, missing);
+            }
+        }
+    }
+}
+
 fn assert_matches_output_schema(value: &Value) {
     let schema = output_schema();
     assert!(
@@ -58,6 +108,151 @@ fn run_json(args: &[&str]) -> Value {
         String::from_utf8_lossy(&output.stderr)
     );
     serde_json::from_slice(&output.stdout).expect("stdout should be json")
+}
+
+#[test]
+fn help_mentions_schema_discovery() {
+    let output = tracelens()
+        .arg("--help")
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("Output schema"));
+    assert!(stdout.contains("tracelens schema --output json"));
+    assert!(stdout.contains("field descriptions"));
+    assert!(stdout.contains("schema"));
+}
+
+#[test]
+fn schema_help_explains_field_descriptions() {
+    let output = tracelens()
+        .args(["schema", "--help"])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("Print the JSON output schema and field descriptions"));
+    assert!(stdout.contains("--command"));
+    assert!(stdout.contains("--output"));
+}
+
+#[test]
+fn schema_outputs_json_with_descriptions() {
+    let value = run_json(&["schema", "--output", "json"]);
+
+    assert!(
+        jsonschema::meta::is_valid(&value),
+        "schema command should print a valid JSON Schema"
+    );
+    assert_eq!(
+        schema_pointer(&value, "/$defs/schemaVersion/description"),
+        "Output contract version. Current value is \"0.1\"; the contract can change before a stable 1.0 release."
+    );
+    assert!(
+        schema_pointer(&value, "/$defs/diagnostic/properties/code/description")
+            .contains("Stable diagnostic code")
+    );
+    assert!(
+        schema_pointer(
+            &value,
+            "/$defs/serviceDuration/properties/self_time_ns/description"
+        )
+        .contains("Service self time")
+    );
+    assert!(
+        schema_pointer(
+            &value,
+            "/$defs/criticalPath/properties/segments/description"
+        )
+        .contains("Critical-path segments")
+    );
+    assert!(
+        schema_pointer(
+            &value,
+            "/$defs/timelineOutput/properties/timeline/properties/rows/description"
+        )
+        .contains("Timeline rows")
+    );
+    assert!(
+        schema_pointer(
+            &value,
+            "/$defs/detectOutput/properties/slow_traces/description"
+        )
+        .contains("Slow trace candidates")
+    );
+    assert!(
+        schema_pointer(
+            &value,
+            "/$defs/detectOutput/properties/n_plus_one_candidates/description"
+        )
+        .contains("N+1-like candidates")
+    );
+}
+
+#[test]
+fn schema_outputs_text_field_reference() {
+    let output = tracelens()
+        .args(["schema", "--output", "text"])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("tracelens JSON Output Reference"));
+    assert!(stdout.contains("schema_version"));
+    assert!(stdout.contains("diagnostics"));
+    assert!(stdout.contains("self_time_ns"));
+    assert!(stdout.contains("critical_path.segments"));
+    assert!(stdout.contains("timeline.rows"));
+    assert!(stdout.contains("slow_traces"));
+    assert!(stdout.contains("confidence"));
+    assert!(stdout.contains("n_plus_one_candidates"));
+}
+
+#[test]
+fn schema_text_filter_limits_to_selected_command() {
+    let output = tracelens()
+        .args(["schema", "--command", "detect", "--output", "text"])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("command filter: detect"));
+    assert!(stdout.contains("[detect]"));
+    assert!(stdout.contains("slow_traces"));
+    assert!(stdout.contains("n_plus_one_candidates"));
+    assert!(!stdout.contains("[timeline]"));
+}
+
+#[test]
+fn output_schema_properties_have_descriptions() {
+    let schema = output_schema();
+    let mut missing = Vec::new();
+
+    let definitions = schema["$defs"]
+        .as_object()
+        .expect("schema should contain definitions");
+    for (name, definition) in definitions {
+        let has_definition_description = definition
+            .get("description")
+            .and_then(Value::as_str)
+            .is_some_and(|description| !description.trim().is_empty());
+        assert!(
+            has_definition_description,
+            "schema definition should have description: {name}"
+        );
+        collect_schema_properties_missing_descriptions(definition, name, &mut missing);
+    }
+
+    assert!(
+        missing.is_empty(),
+        "schema properties are missing descriptions:\n{}",
+        missing.join("\n")
+    );
 }
 
 #[test]

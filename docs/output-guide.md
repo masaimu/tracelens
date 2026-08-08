@@ -533,6 +533,16 @@ The published JSON Schema is:
 schemas/tracelens-output.schema.json
 ```
 
+The installed CLI can print the same schema and its field descriptions:
+
+```bash
+tracelens schema --output json
+tracelens schema --output text
+tracelens schema --command detect --output text
+```
+
+Use `tracelens schema --output text` when you need to understand what fields such as `self_time_ns`, `critical_path.segments`, `timeline.rows`, `confidence`, or `n_plus_one_candidates` mean. Use `tracelens schema --output json` when a script or agent needs the full machine-readable contract.
+
 See [JSON Schema](json-schema.md) for Agent and automation consumption guidance.
 
 Useful top-level JSON areas:

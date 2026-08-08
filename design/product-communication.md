@@ -110,6 +110,11 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 | 新发布/安装方式 | README Installation、中文 README、release notes |
 | 新视觉资产 | README 顶部、assets 说明 |
 
+## 当前传播状态
+
+- 第十九期新增的 `tracelens schema --output text|json`、按命令字段说明和 help 发现入口，已同步进入 `README.md`、`README.zh-CN.md`、`docs/why-tracelens.md`、`docs/use-cases.md`、`docs/examples.md`、`docs/output-guide.md`、`docs/json-schema.md` 和 `docs/local-acceptance-pipeline.md`。
+- 当前传播文案只承诺本地 CLI 可输出 schema 与字段说明，不承诺 JSON Schema 已稳定到 `1.0`，也不承诺远程 schema registry。
+
 ## 文案原则
 
 传播文案应遵守：

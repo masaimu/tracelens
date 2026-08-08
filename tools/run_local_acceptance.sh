@@ -162,6 +162,8 @@ run_step "cargo build" cargo build
 run_step "cargo install local binary" cargo install --path . --force --root "$INSTALL_ROOT"
 
 run_step "installed version" "$TRACELENS_BIN" --version
+run_step "schema help" "$TRACELENS_BIN" schema --help
+run_step "schema text" "$TRACELENS_BIN" schema --command detect --output text
 run_step "validate otlp json" "$TRACELENS_BIN" --color never validate tests/fixtures/otlp-basic.json
 run_step "validate otlp jsonl" "$TRACELENS_BIN" --color never validate tests/fixtures/otlp-basic.jsonl
 run_step "summary" "$TRACELENS_BIN" --color never summary tests/fixtures/otlp-basic.json
@@ -175,6 +177,7 @@ run_step "detect" "$TRACELENS_BIN" --color never detect tests/fixtures/otlp-n-pl
 export TRACELENS_BIN
 run_shell_step "detect json smoke" '"$TRACELENS_BIN" --color always detect tests/fixtures/otlp-n-plus-one.json --limit 5 --output json >/dev/null'
 run_shell_step "timeline json smoke" '"$TRACELENS_BIN" --color always timeline tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC --output json >/dev/null'
+run_shell_step "schema json smoke" '"$TRACELENS_BIN" schema --output json >/dev/null'
 
 cat >>"$SUMMARY_FILE" <<'SUMMARY'
 

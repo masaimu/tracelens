@@ -199,6 +199,22 @@ tracelens schema --command detect --output json
 - schema description coverage 测试通过。
 - 标准检查和本地验收 Pipeline 通过。
 
+## 实施结果
+
+第十九期已按本设计落地：
+
+- 新增 `tracelens schema` 子命令，不依赖输入文件。
+- `tracelens schema --output json` 输出 bundled JSON Schema。
+- `tracelens schema --output text` 输出字段参考，并递归展开 schema `$ref` 中的字段说明。
+- `tracelens schema --command detect --output text` 等命令过滤形态已支持；JSON 形态本期按设计仍输出完整 schema。
+- `tracelens --help` 已新增 Output schema 发现路径。
+- 各业务命令 help 已补充对应 `tracelens schema --command <name> --output text` 引导。
+- `schemas/tracelens-output.schema.json` 已补齐 `$defs` 与全部 properties 的 `description`。
+- CLI 端到端测试已新增 schema help、schema JSON、schema text、command filter 和 description coverage。
+- 本地验收 Pipeline 已新增 `schema --help`、`schema --command detect --output text` 和 `schema --output json` smoke。
+
+本期没有改变既有业务命令的 JSON 输出结构，只增强 schema 说明、help 可发现性和验收覆盖。
+
 ## 后续衔接
 
 本期完成后，M7 的 JSON 自动化接口将从“有结构、有测试”推进到“有结构、有语义说明、有 CLI 自发现入口”。

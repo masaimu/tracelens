@@ -15,15 +15,15 @@
 ## 当前快照
 
 - 更新时间：2026-08-08
-- 当前基线提交：当前工作区基于 `db1d80f`，第十八期：Agent JSON Schema 与 OpenTelemetry 兼容性审计已完成，尚未提交
-- 当前阶段：第十八期 JSON Schema 与 OTLP 兼容性补齐完成后
+- 当前基线提交：当前工作区基于 `f040733`，第十九期：Schema 字段说明与 Help 可发现入口已完成，尚未提交
+- 当前阶段：第十九期 Schema 字段说明与 Help 可发现入口完成后
 - 当前整体进度：`86%`
 
 ```text
 [#################---] 86%
 ```
 
-这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、JSON Schema、OpenTelemetry 兼容性说明、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark、本地验收 Pipeline 与提交前 hook、语义化彩色终端输出、`detect` 的慢 trace 候选、错误信号候选、错误传播链、service latency distribution 和 N+1 候选、5k/50k spans JSON/JSONL 规模验证，以及 `timeline` ASCII 时间轴 MVP；但 JSON Schema 字段级 description、CLI help 中的 schema 发现入口、JSON Schema 1.0 稳定化、超大单 trace timeline 打磨、完整多 shape 性能基线、稳定退出码规范、CI integration/comparison 等传播文档和发布分发，还没有完成。
+这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、带字段级 description 的 JSON Schema、CLI 可发现的 `tracelens schema` 字段说明入口、OpenTelemetry 兼容性说明、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark、本地验收 Pipeline 与提交前 hook、语义化彩色终端输出、`detect` 的慢 trace 候选、错误信号候选、错误传播链、service latency distribution 和 N+1 候选、5k/50k spans JSON/JSONL 规模验证，以及 `timeline` ASCII 时间轴 MVP；但 JSON Schema 1.0 稳定化、超大单 trace timeline 打磨、完整多 shape 性能基线、稳定退出码规范、CI integration/comparison 等传播文档和发布分发，还没有完成。
 
 ## 计算规则
 
@@ -50,18 +50,18 @@
 | M0：范围与工程骨架 | 5% | 100% | 5.0% | Rust CLI 工程、设计文档、基础测试已具备 |
 | M1：OTLP 输入解析 | 15% | 98% | 14.7% | JSON/JSONL、canonical model、events/links、宽容/strict 基础能力已完成；已补齐 `schemaUrl`、`traceState`、`flags`、status message、dropped counts、scope attributes、nested AnyValue 和 all-zero ID diagnostics；已用 5k 和 50k spans JSON/JSONL synthetic 样本验证核心命令 |
 | M2：Trace 索引与图构建 | 15% | 75% | 11.3% | trace 分组、parent-child、root/orphan/duplicate/missing parent/时间异常 diagnostics 已完成；跨服务边尚未单独显式统计 |
-| M3：基础 CLI 分析命令 | 15% | 97% | 14.6% | `validate`、`summary`、`list-traces`、`tree`、`--output json` 已完成；当前 JSON 输出已有 schema 文件和测试覆盖，但 schema 仍处于 `0.1` 可调整阶段 |
+| M3：基础 CLI 分析命令 | 15% | 98% | 14.7% | `validate`、`summary`、`list-traces`、`tree`、`--output json` 已完成；已新增 `tracelens schema` 本地字段说明入口；当前 JSON 输出已有 schema 文件和测试覆盖，但 schema 仍处于 `0.1` 可调整阶段 |
 | M4：耗时分析与关键路径 | 18% | 90% | 16.2% | 已完成 M4-A/M4-B/M4-C：`services`、`critical-path`、串行/并发/nested/suspicious 分类，以及 client/server span pair、async work、linked span 标注；后续仍需与 timeline/report 进一步联动 |
 | M5：模式检测 | 12% | 92% | 11.0% | 已完成 M5-A/M5-B/M5-C：`detect` 包含慢 trace 候选、service candidates、错误信号候选、错误传播链、service latency distribution 和 N+1 候选；后续仅保留跨 trace 聚合、SQL AST 相似判断、p99/p999 等增强项 |
 | M6：终端可视化 | 8% | 75% | 6.0% | 已完成彩色终端输出语义层、`--color` 控制和 `timeline` ASCII 时间轴 MVP；后续可继续打磨超大单 trace 折叠/过滤、可选 flame graph 或更稳定快照基线 |
-| M7：性能、稳定性与自动化接口 | 7% | 90% | 6.3% | 已有测试、JSON 输出、本地 synthetic fixture 生成器、benchmark runner、本地验收 Pipeline 和提交前 hook；JSON Schema 已覆盖当前核心 JSON 输出并接入 CLI 测试；下一步需要补齐字段级 `description`、`tracelens schema` 命令和 `--help` 发现入口；runner 已覆盖 `critical-path` 和 `detect`，并可选支持 `timeline`；新增 CI、安全检查、自动/手动 benchmark workflows 和 Actions summary 报告，并支持脚本友好的 `--color never`；已完成 5k/50k JSON/JSONL smoke 验证和 50k detect 3 轮 benchmark；尚未完成多 shape 完整 P95 矩阵、稳定退出码规范文档 |
+| M7：性能、稳定性与自动化接口 | 7% | 94% | 6.6% | 已有测试、JSON 输出、本地 synthetic fixture 生成器、benchmark runner、本地验收 Pipeline 和提交前 hook；JSON Schema 已覆盖当前核心 JSON 输出并接入 CLI 测试，核心 properties 均有 `description` coverage；已新增 `tracelens schema --output text|json` 和 `--help` 发现入口；runner 已覆盖 `critical-path` 和 `detect`，并可选支持 `timeline`；新增 CI、安全检查、自动/手动 benchmark workflows 和 Actions summary 报告，并支持脚本友好的 `--color never`；已完成 5k/50k JSON/JSONL smoke 验证和 50k detect 3 轮 benchmark；尚未完成多 shape 完整 P95 矩阵、稳定退出码规范文档 |
 | M8：HTML 报告 | 3% | 0% | 0.0% | 未开始 |
-| M9：发布与分发 | 2% | 30% | 0.6% | CLI 有版本号，已有英文/中文 README、基础安装使用说明、产品传播规约、why/use-cases/examples/output-guide/performance/local-acceptance/json-schema/opentelemetry-compatibility 文档；尚未有 release artifact、checksum、发布流程，CI integration/comparison 文档也未补齐 |
+| M9：发布与分发 | 2% | 32% | 0.6% | CLI 有版本号，已有英文/中文 README、基础安装使用说明、产品传播规约、why/use-cases/examples/output-guide/performance/local-acceptance/json-schema/opentelemetry-compatibility 文档；已能通过安装后的二进制查看 schema 和字段说明；尚未有 release artifact、checksum、发布流程，CI integration/comparison 文档也未补齐 |
 
 当前合计：
 
 ```text
-5.0 + 14.7 + 11.3 + 14.6 + 16.2 + 11.0 + 6.0 + 6.3 + 0 + 0.6 = 85.7%
+5.0 + 14.7 + 11.3 + 14.7 + 16.2 + 11.0 + 6.0 + 6.6 + 0 + 0.6 = 86.1%
 ```
 
 四舍五入后记录为：
@@ -91,12 +91,12 @@
 | 检测 N+1 调用模式 | 75% | `detect` 已按同 parent 直接 child span 聚合相似调用，重复 `>= 5` 输出 medium candidate，重复 `>= 10` 且多数串行输出 high confidence；尚未做跨 trace 聚合或 SQL AST 级相似判断 |
 | 终端 ASCII flame graph/timeline | 70% | 已完成彩色终端输出基础设施、稳定颜色语义和 `timeline` ASCII 时间轴 MVP；尚未做 flame graph 或超大单 trace 折叠/过滤 |
 | 单页 HTML report | 0% | 未开始 |
-| 子命令式真实 CLI | 94% | `validate/summary/list-traces/tree/services/critical-path/detect/timeline` 已完成，tree/critical-path/timeline 已补充语义或可视化说明；后续还需要 `report` |
-| 核心单元测试 | 92% | 已有 37 个单元测试和 39 个 CLI 端到端测试；新增 OTLP 兼容性 fixture、all-zero ID 测试和 JSON Schema 校验测试；后续 report 和更完整性能基线还需要继续补 |
+| 子命令式真实 CLI | 95% | `validate/summary/list-traces/tree/services/critical-path/detect/timeline/schema` 已完成，tree/critical-path/timeline 已补充语义或可视化说明；`schema` 提供本地输出契约说明；后续还需要 `report` |
+| 核心单元测试 | 94% | 已有 37 个单元测试和 45 个 CLI 端到端测试；新增 OTLP 兼容性 fixture、all-zero ID 测试、JSON Schema 校验测试、schema help/schema 输出测试和 description coverage 测试；后续 report 和更完整性能基线还需要继续补 |
 | CI 检查与工程化质量门禁 | 82% | 已新增 GitHub Actions CI、安全检查、自动/手动性能 benchmark workflow、本地验收 Pipeline 和提交前 hook；Benchmark 默认覆盖 5k/50k spans 和 `detect`，会展示 Actions summary；本地 hook 需每个开发者执行 setup 后生效；尚未配置分支保护和 release workflow |
 | P95 样本处理耗时小于 2 秒 | 65% | 已有 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path` 和 `detect`；本地 50k spans `detect` 3 轮 P95 为 466.123ms；尚未跑完整多 shape 多轮 P95 矩阵 |
-| 可脚本化 JSON 输出 | 92% | 基础命令、`services`、`tree`、`critical-path`、`detect` 和 `timeline` 已有 `--output json` 与 `schema_version: "0.1"`，并输出结构化 annotations / slow_traces / service_latency_distribution / error_traces / error_propagation_chains / n_plus_one_candidates / timeline rows；`--output json` 不受彩色输出影响；已新增 JSON Schema 文件和 CLI schema 校验测试；schema 尚未补齐字段级 description，CLI help 也尚未提供 schema 发现入口；schema 尚未进入 1.0 稳定 |
-| 远程下载使用 | 14% | 有版本号、本地构建、README 安装说明、使用示例、JSON Schema、OpenTelemetry 兼容性文档和首批产品传播文档；尚未发布 release artifact |
+| 可脚本化 JSON 输出 | 96% | 基础命令、`services`、`tree`、`critical-path`、`detect` 和 `timeline` 已有 `--output json` 与 `schema_version: "0.1"`，并输出结构化 annotations / slow_traces / service_latency_distribution / error_traces / error_propagation_chains / n_plus_one_candidates / timeline rows；`--output json` 不受彩色输出影响；已新增带字段级 `description` 的 JSON Schema、CLI schema 校验测试、description coverage 测试，以及 `tracelens schema --output text|json` 本地发现入口；schema 尚未进入 1.0 稳定 |
+| 远程下载使用 | 16% | 有版本号、本地构建、README 安装说明、使用示例、JSON Schema、CLI 可发现字段说明、OpenTelemetry 兼容性文档和首批产品传播文档；尚未发布 release artifact |
 
 ## 当前已具备的能力
 
@@ -112,6 +112,7 @@ tracelens critical-path <file> --trace-id <id>
 tracelens detect <file>
 tracelens timeline <file> --trace-id <id>
 tracelens --color auto|always|never <command>
+tracelens schema [--command <name>] [--output text|json]
 ```
 
 当前输入能力：
@@ -164,7 +165,11 @@ tracelens --color auto|always|never <command>
 - JSON 输出。
 - JSON Schema：`schemas/tracelens-output.schema.json`。
 - `schema_version: "0.1"`。
-- 已规划第十九期补齐 schema 字段级 `description` 和 `tracelens schema` help 发现入口。
+- JSON Schema 核心 properties 均包含机器可读 `description`。
+- `tracelens schema --output text` 输出按命令组织的字段说明。
+- `tracelens schema --output json` 输出完整 JSON Schema。
+- `tracelens schema --command <name> --output text` 支持按命令查看字段说明。
+- `tracelens --help` 和业务命令 help 会引导用户查看 schema/字段说明。
 - trace duration 排序。
 - `list-traces --limit`。
 - `list-traces --sort duration|spans|errors`。
@@ -241,6 +246,7 @@ tracelens --color auto|always|never <command>
 - `perf-data/` 和 `perf-results/` 被 `.gitignore` 忽略。
 - `.local/` 和 `acceptance-results/` 被 `.gitignore` 忽略。
 - JSON Schema 校验已接入 CLI 端到端测试，随 `cargo test` 和本地验收 Pipeline 执行。
+- 本地验收 Pipeline 覆盖 `schema --help`、`schema --command detect --output text` 和 `schema --output json` smoke。
 
 当前自动化能力：
 
@@ -269,7 +275,7 @@ tracelens --color auto|always|never <command>
 - `docs/use-cases.md`：把典型用户问题映射到 CLI 命令。
 - `docs/examples.md`：提供基于真实 fixture 的可复制命令和输出片段。
 - `docs/output-guide.md`：解释核心输出字段、detect candidates、critical path、timeline、classification、annotations、diagnostics 和 JSON 输出。
-- `docs/json-schema.md`：解释 JSON Schema 位置、版本策略、命令分支和 Agent 消费建议。
+- `docs/json-schema.md`：解释 JSON Schema 位置、CLI schema 命令、字段 description、版本策略、命令分支和 Agent 消费建议。
 - `docs/opentelemetry-compatibility.md`：解释当前支持、部分支持和暂不支持的 OTLP 行为。
 - `docs/performance.md`：说明性能目标、benchmark runner、synthetic fixtures、Actions benchmark 和当前本地 smoke snapshot。
 - `docs/local-acceptance-pipeline.md`：说明本地提交前验收 Pipeline、hook setup、验收命令集和输出目录。
@@ -282,7 +288,7 @@ tracelens --color auto|always|never <command>
 - `cargo build`。
 - `tools/run_local_acceptance.sh`。
 - 37 个单元测试。
-- 39 个 CLI 端到端测试。
+- 45 个 CLI 端到端测试。
 
 ## 当前主要缺口
 
@@ -290,7 +296,7 @@ tracelens --color auto|always|never <command>
 
 - M5：后续增强项包括跨 trace N+1 聚合、SQL AST 相似判断、p99/p999、以及完整异步因果推断；这些不阻塞当前第一版候选检测主路径。
 - M6：超大单 trace timeline 折叠/过滤、可选 ASCII flame graph 或更稳定快照基线。
-- M7：JSON Schema 字段级 description、`tracelens schema` 命令、`--help` 发现入口、完整多 shape 多轮 P95 性能基线、JSON Schema 1.0 稳定化、退出码规范、可选分支保护规则、远端 required checks 兜底。
+- M7：完整多 shape 多轮 P95 性能基线、JSON Schema 1.0 稳定化、退出码规范、可选分支保护规则、远端 required checks 兜底。
 - M8：HTML report。
 - M9：CI integration、comparison 等传播文档，GitHub Releases、跨平台 artifact、checksum、发布流程。
 

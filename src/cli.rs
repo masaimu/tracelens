@@ -21,6 +21,7 @@ use crate::output::json::{
     format_critical_path_json, format_detect_json, format_list_traces_json, format_services_json,
     format_summary_json, format_timeline_json, format_tree_json, format_validate_json,
 };
+use crate::output::schema::{SchemaCommand, format_schema_json, format_schema_text};
 use crate::output::style::{ColorMode, TextStyle};
 use crate::output::text::{
     format_critical_path, format_detect, format_list_traces, format_services, format_summary,
@@ -31,7 +32,8 @@ use crate::output::text::{
 #[command(
     name = "tracelens",
     version,
-    about = "Local OpenTelemetry trace analysis CLI"
+    about = "Local OpenTelemetry trace analysis CLI",
+    long_about = "Local OpenTelemetry trace analysis CLI.\n\nOutput schema:\n  Run `tracelens schema --output json` for the full JSON Schema.\n  Run `tracelens schema --output text` for field descriptions."
 )]
 struct Cli {
     /// Colorize text output.
@@ -45,6 +47,9 @@ struct Cli {
 #[derive(Debug, Subcommand)]
 enum Commands {
     /// Validate an OTLP trace file and print diagnostics.
+    #[command(
+        after_help = "For JSON field descriptions, run `tracelens schema --command validate --output text`."
+    )]
     Validate {
         /// Path to an OTLP JSON trace file.
         file: PathBuf,
@@ -59,6 +64,9 @@ enum Commands {
     },
 
     /// Print a file-level trace summary.
+    #[command(
+        after_help = "For JSON field descriptions, run `tracelens schema --command summary --output text`."
+    )]
     Summary {
         /// Path to an OTLP JSON trace file.
         file: PathBuf,
@@ -69,6 +77,9 @@ enum Commands {
     },
 
     /// List traces sorted by a simple metric.
+    #[command(
+        after_help = "For JSON field descriptions, run `tracelens schema --command list-traces --output text`."
+    )]
     ListTraces {
         /// Path to an OTLP JSON trace file.
         file: PathBuf,
@@ -87,6 +98,9 @@ enum Commands {
     },
 
     /// Detect common performance and error candidates across traces.
+    #[command(
+        after_help = "For JSON field descriptions, run `tracelens schema --command detect --output text`."
+    )]
     Detect {
         /// Path to an OTLP JSON trace file.
         file: PathBuf,
@@ -101,6 +115,9 @@ enum Commands {
     },
 
     /// Print a parent-child tree for a single trace.
+    #[command(
+        after_help = "For JSON field descriptions, run `tracelens schema --command tree --output text`."
+    )]
     Tree {
         /// Path to an OTLP JSON trace file.
         file: PathBuf,
@@ -115,6 +132,9 @@ enum Commands {
     },
 
     /// Print the critical path and span execution classification for a single trace.
+    #[command(
+        after_help = "For JSON field descriptions, run `tracelens schema --command critical-path --output text`."
+    )]
     CriticalPath {
         /// Path to an OTLP JSON trace file.
         file: PathBuf,
@@ -129,6 +149,9 @@ enum Commands {
     },
 
     /// Print an ASCII timeline for a single trace.
+    #[command(
+        after_help = "For JSON field descriptions, run `tracelens schema --command timeline --output text`."
+    )]
     Timeline {
         /// Path to an OTLP JSON trace file.
         file: PathBuf,
@@ -147,6 +170,9 @@ enum Commands {
     },
 
     /// Explain service-level duration and self time for a single trace.
+    #[command(
+        after_help = "For JSON field descriptions, run `tracelens schema --command services --output text`."
+    )]
     Services {
         /// Path to an OTLP JSON trace file.
         file: PathBuf,
@@ -154,6 +180,21 @@ enum Commands {
         /// Trace ID to inspect.
         #[arg(long = "trace-id")]
         trace_id: String,
+
+        /// Output format.
+        #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+        output: OutputFormat,
+    },
+
+    /// Print the JSON output schema and field descriptions.
+    #[command(
+        long_about = "Print the JSON output schema and field descriptions.\n\nUse this command when an AI agent, script, CI job, or human needs to understand what `--output json` means without reading repository files directly.",
+        after_help = "Examples:\n  tracelens schema --output text\n  tracelens schema --output json\n  tracelens schema --command detect --output text\n\nJSON output always prints the full schema in this version; use `$defs.<command>Output` for a command branch."
+    )]
+    Schema {
+        /// Limit the text field reference to one command.
+        #[arg(long = "command", value_enum, default_value_t = SchemaCommandFilter::All)]
+        command: SchemaCommandFilter,
 
         /// Output format.
         #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
@@ -189,6 +230,35 @@ enum TraceSort {
     Duration,
     Spans,
     Errors,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+enum SchemaCommandFilter {
+    All,
+    Validate,
+    Summary,
+    ListTraces,
+    Tree,
+    Services,
+    CriticalPath,
+    Timeline,
+    Detect,
+}
+
+impl From<SchemaCommandFilter> for SchemaCommand {
+    fn from(value: SchemaCommandFilter) -> Self {
+        match value {
+            SchemaCommandFilter::All => Self::All,
+            SchemaCommandFilter::Validate => Self::Validate,
+            SchemaCommandFilter::Summary => Self::Summary,
+            SchemaCommandFilter::ListTraces => Self::ListTraces,
+            SchemaCommandFilter::Tree => Self::Tree,
+            SchemaCommandFilter::Services => Self::Services,
+            SchemaCommandFilter::CriticalPath => Self::CriticalPath,
+            SchemaCommandFilter::Timeline => Self::Timeline,
+            SchemaCommandFilter::Detect => Self::Detect,
+        }
+    }
 }
 
 pub fn run() -> Result<ExitCode> {
@@ -405,6 +475,14 @@ pub fn run() -> Result<ExitCode> {
                     format_services(&analysis, &trace.diagnostics, text_style)
                 ),
                 OutputFormat::Json => print!("{}", format_services_json(&analysis, trace)),
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        Commands::Schema { command, output } => {
+            let command = SchemaCommand::from(command);
+            match output {
+                OutputFormat::Text => print!("{}", format_schema_text(command)?),
+                OutputFormat::Json => print!("{}", format_schema_json()),
             }
             Ok(ExitCode::SUCCESS)
         }

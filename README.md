@@ -37,7 +37,7 @@ The project is still early. The current codebase is a local analysis CLI, not a 
 - **Local-first:** inspect OTLP JSON or JSONL files directly from disk.
 - **Explainable:** understand service self time, critical path segments, timeline overlap, concurrency, suspicious timing, and semantic annotations.
 - **Proactive triage:** surface slow trace, service latency distribution, error propagation, and N+1 candidates with confidence markers.
-- **Automation-friendly:** use `--output json` and `--color never` in scripts, CI, and agent workflows.
+- **Automation-friendly:** use `--output json`, `--color never`, and `tracelens schema` in scripts, CI, and agent workflows.
 - **Conservative semantics:** client/server pairs are annotated, not merged; span links are not converted into parent-child edges.
 
 ## Why It Exists
@@ -80,7 +80,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - Text output for humans.
 - Semantic colored text output with `--color auto|always|never`.
 - JSON output for scripts and agents with `--output json`.
-- A published JSON Schema for current `--output json` structures.
+- A published JSON Schema and CLI-discoverable field reference for current `--output json` structures.
 - Basic trace listing and sorting.
 
 Current commands:
@@ -94,6 +94,7 @@ tracelens services <file> --trace-id <id>
 tracelens critical-path <file> --trace-id <id>
 tracelens timeline <file> --trace-id <id>
 tracelens detect <file>
+tracelens schema
 ```
 
 ## Installation
@@ -176,8 +177,10 @@ tracelens detect tests/fixtures/otlp-n-plus-one.json --output json
 
 Read the output schema:
 
-```text
-schemas/tracelens-output.schema.json
+```bash
+tracelens schema --output text
+tracelens schema --output json
+tracelens schema --command detect --output text
 ```
 
 Control terminal colors:
@@ -235,7 +238,7 @@ Implemented:
 - Async work, messaging, and linked span annotation.
 - Validation diagnostics.
 - Semantic colored text output and JSON output.
-- JSON Schema for agent and automation consumers.
+- JSON Schema and CLI-discoverable field descriptions for agent and automation consumers.
 - OpenTelemetry compatibility documentation.
 
 Not implemented yet:

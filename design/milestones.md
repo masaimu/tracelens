@@ -390,6 +390,7 @@ crates/
 - JSON Schema 的核心字段必须包含机器可读 `description`，让 Agent 不只知道类型，也能理解字段语义。
 - CLI 必须提供本地可发现的 schema/字段说明入口，例如 `tracelens schema --output text|json`。
 - `tracelens --help` 必须能引导用户和 Agent 找到完整 JSON Schema 与字段 description。
+- 第十九期已落地：`tracelens schema --output text|json`、`tracelens schema --command <name> --output text`、顶层/业务命令 help 发现入口，以及 schema property description coverage 测试。
 - 错误码和退出码规范。
 - 核心模块单元测试。
 - 端到端 CLI 测试。

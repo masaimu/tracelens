@@ -37,7 +37,7 @@
 - **本地优先**：直接读取磁盘上的 OTLP JSON 或 JSONL 文件。
 - **可解释**：帮助理解服务 self time、关键路径片段、timeline 重叠关系、并发关系、可疑时间关系和语义标注。
 - **主动提示**：用 confidence 标记提示慢 trace、服务耗时分布、错误传播链和 N+1 候选。
-- **适合自动化**：通过 `--output json` 和 `--color never` 接入脚本、CI 和 Agent 工作流。
+- **适合自动化**：通过 `--output json`、`--color never` 和 `tracelens schema` 接入脚本、CI 和 Agent 工作流。
 - **语义保守**：client/server pair 只标注不合并；span links 不会被转换成 parent-child 边。
 
 ## 为什么需要它？
@@ -82,7 +82,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - 面向人的文本输出。
 - 语义化彩色文本输出：`--color auto|always|never`。
 - 面向脚本和 Agent 的 JSON 输出：`--output json`。
-- 当前 JSON 输出结构的 JSON Schema。
+- 当前 JSON 输出结构的 JSON Schema，以及 CLI 可发现的字段说明。
 - 基础 trace 列表和排序。
 
 当前命令：
@@ -96,6 +96,7 @@ tracelens services <file> --trace-id <id>
 tracelens critical-path <file> --trace-id <id>
 tracelens timeline <file> --trace-id <id>
 tracelens detect <file>
+tracelens schema
 ```
 
 ## 安装
@@ -178,8 +179,10 @@ tracelens detect tests/fixtures/otlp-n-plus-one.json --output json
 
 查看输出 schema：
 
-```text
-schemas/tracelens-output.schema.json
+```bash
+tracelens schema --output text
+tracelens schema --output json
+tracelens schema --command detect --output text
 ```
 
 控制终端颜色：
@@ -237,7 +240,7 @@ tracelens validate tests/fixtures/otlp-basic.json --strict
 - async work、messaging 和 linked span 标注。
 - validation diagnostics。
 - 语义化彩色文本输出和 JSON 输出。
-- 面向 Agent 和自动化消费的 JSON Schema。
+- 面向 Agent 和自动化消费的 JSON Schema 与 CLI 可发现字段说明。
 - OpenTelemetry 兼容性说明文档。
 
 尚未实现：

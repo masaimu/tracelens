@@ -12,6 +12,21 @@ The schema is meant for AI agents, CI jobs, scripts, and downstream tools that c
 tracelens <command> <file> --output json
 ```
 
+The installed CLI can also print the same contract directly:
+
+```bash
+tracelens schema --output json
+```
+
+For a human-readable field reference, use:
+
+```bash
+tracelens schema --output text
+tracelens schema --command detect --output text
+```
+
+`tracelens --help` points to these commands, so an agent can discover the output contract from the binary without knowing the repository layout.
+
 ## Version
 
 Current output schema version:
@@ -43,11 +58,14 @@ The top-level `command` field selects the matching schema branch.
 
 Recommended flow:
 
-1. Run the command with `--output json`.
-2. Check `schema_version`.
-3. Check `command`.
-4. Read command-specific sections such as `summary`, `trace`, `nodes`, `services`, `critical_path`, `timeline`, `annotations`, `slow_traces`, or `diagnostics`.
-5. Treat unknown fields as forward-compatible additions.
+1. Run `tracelens --help` and discover the `schema` command.
+2. Run `tracelens schema --output text` to read field descriptions.
+3. Run `tracelens schema --output json` when machine validation is needed.
+4. Run the analysis command with `--output json`.
+5. Check `schema_version`.
+6. Check `command`.
+7. Read command-specific sections such as `summary`, `trace`, `nodes`, `services`, `critical_path`, `timeline`, `annotations`, `slow_traces`, or `diagnostics`.
+8. Treat unknown fields as forward-compatible additions.
 
 Example:
 
@@ -94,6 +112,8 @@ The local acceptance pipeline also runs `cargo test`, so schema drift is checked
 tools/setup_local_hooks.sh
 tools/run_local_acceptance.sh
 ```
+
+The test suite also fails when schema properties lose their `description`, so the schema remains useful as a semantic contract rather than only a shape validator.
 
 ## Span Metadata
 

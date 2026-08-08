@@ -39,7 +39,7 @@ It gives you a terminal-first view of the trace:
 - slow/error/N+1 candidates with confidence markers
 - serial, concurrent, nested, and suspicious span classification
 - client/server, async work, messaging, and linked span annotations
-- schema-backed JSON output for scripts, CI, and agents
+- CLI-discoverable, schema-backed JSON output for scripts, CI, and agents
 
 ## What Makes It Useful
 
@@ -86,9 +86,12 @@ Most commands support:
 
 The current JSON output is documented by:
 
-```text
-schemas/tracelens-output.schema.json
+```bash
+tracelens schema --output text
+tracelens schema --output json
 ```
+
+The checked-in schema still lives at `schemas/tracelens-output.schema.json`, but the installed binary can now print the same contract and a text field reference. That matters for agents, because they can discover field meanings from `tracelens --help` without knowing the repository layout.
 
 Text commands also support:
 

@@ -40,6 +40,8 @@ Then it executes the installed binary:
 
 ```text
 .local/tracelens/bin/tracelens --version
+.local/tracelens/bin/tracelens schema --help
+.local/tracelens/bin/tracelens schema --command detect --output text
 .local/tracelens/bin/tracelens validate tests/fixtures/otlp-basic.json
 .local/tracelens/bin/tracelens validate tests/fixtures/otlp-basic.jsonl
 .local/tracelens/bin/tracelens summary tests/fixtures/otlp-basic.json
@@ -51,7 +53,7 @@ Then it executes the installed binary:
 .local/tracelens/bin/tracelens detect tests/fixtures/otlp-n-plus-one.json --limit 5
 ```
 
-It also runs JSON smoke checks for `detect` and `timeline`.
+It also runs JSON smoke checks for `detect`, `timeline`, and `schema`.
 
 `cargo test` includes JSON Schema validation for every supported `--output json` command, so schema drift is covered by the same local pipeline.
 

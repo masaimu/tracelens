@@ -224,3 +224,16 @@ B 层 tag 验收指引（需你在 GitHub 操作；Agent 无法在本地终端�
 - 本地验收 Pipeline 32 步仍全过（release smoke 改为传显式 `aarch64-apple-darwin`，走 target 代码路径）。
 
 下一步由你在 GitHub 操作：取消那条仍卡在 `macos-13` 排队的旧 run；我会把本修复提交、push main，并把 `v0.1.0` tag 重新指到修复后的 commit（delete+recreate 必触发）让 Release workflow 用新 matrix 重跑。
+
+
+### B 层最终验收结果（首版 v0.1.0 已发布）
+
+- 用户在 GitHub 取消了首条卡在 `macos-13` 排队的旧 run；新 run（commit `61adb40`，修复后 matrix）4 个 build job 全绿，`release` job 把四平台二进制 + `.sha256` + `CHANGELOG.md` 发布到 `v0.1.0` GitHub Releases（`prerelease=false`，8 个资产）。
+- Agent 独立走陌生用户全链路自验证（用 GitHub Releases API + 直链下载，免装 `gh`、免 auth）：
+  - `GET /repos/masaimu/tracelens/releases/tags/v0.1.0`（带 `User-Agent` 头）返回 release 元数据，资产齐全：`tracelens-0.1.0-aarch64-apple-darwin` + `.sha256`、`...-x86_64-apple-darwin` + `.sha256`、`...-x86_64-unknown-linux-gnu` + `.sha256`、`...-x86_64-pc-windows-msvc.exe` + `.sha256`。
+  - 下载 mac arm64 二进制与 `.sha256` -> `shasum -a 256 -c` 输出 `OK`。
+  - `chmod +x` + `xattr -d com.apple.quarantine` -> `./tracelens-0.1.0-aarch64-apple-darwin --version` 输出 `tracelens 0.1.0`；`--help` 退出 0。
+  - 真实分析：`summary tests/fixtures/otlp-basic.json` 与 `detect tests/fixtures/otlp-n-plus-one.json --limit 2` 正常输出，`detect` 命中 high-confidence N+1（`repeated=10 confidence=high`）。
+- B 层验收通过。M9 收口到 `100%`，整体 `96%`，第一版需求闭环；首版 `v0.1.0` 可被任意平台用户从 GitHub Releases 下载并使用。
+- 收尾联动：`progress.md` M9/远程下载使用 升到 100%、`milestones.md` M9 收口、`CHANGELOG.md` `0.1.0` 转为已发布、`README`/中文 README 去除 首个 tag 前用本地构建 注脚并补入下载校验与 Gatekeeper 提示、`product-communication.md` 状态条目更新。
+- 关于 `gh`：本机未安装；`gh` 装上后仍需交互式 `gh auth login`（token/浏览器），在 Agent 会话内不便自动化。Release 公开，故用 Releases API + 直链完成等价自验证；`gh` 是否安装留待用户决定，不影响已完成的发布与验收。

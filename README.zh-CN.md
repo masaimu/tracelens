@@ -111,13 +111,16 @@ tracelens schema
 
 ### 从 GitHub Releases 下载
 
-每个版本 tag（例如 `v0.1.0`）会在 GitHub Releases 发布 macOS arm64/x86_64、Linux x86_64、Windows x86_64 的预编译二进制，均附带 sha256 校验文件。**在首个 tag 发布之前**，请用下面的本地构建方式。
+最新预编译二进制在 [Releases](https://github.com/masaimu/tracelens/releases) 页，覆盖 macOS arm64/x86_64、Linux x86_64、Windows x86_64。
 
-已发布 tag 后：
+以 macOS arm64 为例：
 
-1. 下载对应平台的 `tracelens-<version>-<host>`（Windows 为 `.exe`）与同名 `.sha256`。
-2. 校验（macOS）：`shasum -a 256 -c tracelens-<version>-<host>.sha256`（Linux 用 `sha256sum -c`；Windows PowerShell 用 `Get-FileHash -Algorithm SHA256` 比对）。
-3. 运行：`./tracelens --version`（Windows：`tracelens.exe --version`）。
+1. 下载 `tracelens-<version>-aarch64-apple-darwin` 与同名 `.sha256`。
+2. 校验：`shasum -a 256 -c tracelens-<version>-aarch64-apple-darwin.sha256`
+   （Linux 用 `sha256sum -c`；Windows PowerShell 用 `Get-FileHash -Algorithm SHA256` 比对）。
+3. 赋予执行权限并运行：`chmod +x tracelens-<version>-aarch64-apple-darwin`，然后 `./tracelens-<version>-aarch64-apple-darwin --version`（Windows：`tracelens.exe --version`）。
+
+> macOS Gatekeeper 可能隔离未签名的下载二进制；如运行被拦，执行 `xattr -d com.apple.quarantine <binary>` 清除隔离属性。
 
 ### 本机构建 release artifact
 

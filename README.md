@@ -109,13 +109,16 @@ tracelens schema
 
 ### From GitHub Releases
 
-Each version tag (for example `v0.1.0`) publishes prebuilt binaries to GitHub Releases for macOS arm64/x86_64, Linux x86_64, and Windows x86_64. **Until the first tagged release is published**, use one of the local build paths below.
+The latest prebuilt binaries are on the [Releases](https://github.com/masaimu/tracelens/releases) page for macOS arm64/x86_64, Linux x86_64, and Windows x86_64.
 
-Once a tagged release exists:
+For example, on macOS arm64:
 
-1. Download `tracelens-<version>-<host>` for your platform (Windows: the `.exe`) and the matching `.sha256`.
-2. Verify the checksum (macOS): `shasum -a 256 -c tracelens-<version>-<host>.sha256` (Linux: `sha256sum -c`; Windows PowerShell: compare `Get-FileHash -Algorithm SHA256`).
-3. Run: `./tracelens --version` (Windows: `tracelens.exe --version`).
+1. Download `tracelens-<version>-aarch64-apple-darwin` and the matching `.sha256`.
+2. Verify the checksum: `shasum -a 256 -c tracelens-<version>-aarch64-apple-darwin.sha256`
+   (Linux uses `sha256sum -c`; Windows PowerShell: compare `Get-FileHash -Algorithm SHA256`).
+3. Make it executable and run: `chmod +x tracelens-<version>-aarch64-apple-darwin` then `./tracelens-<version>-aarch64-apple-darwin --version` (Windows: `tracelens.exe --version`).
+
+> macOS Gatekeeper may quarantine downloaded, unsigned binaries. Clear it with `xattr -d com.apple.quarantine <binary>` if execution is blocked.
 
 ### Build a local release artifact
 

@@ -567,7 +567,7 @@ crates/
 - 打首个 `v0.1.0`（或先 `v0.1.0-rc.1`）tag：CI 四平台产出 + 发布到对应 tag 的 GitHub Releases。
 - 从 Releases 下载并校验（mac arm64 端到端：`shasum -c` + `--version`/`--help`；linux/win 校验 checksum 与产物存在）后，M9 收口到 `100%`。
 
-因此第二十六期实现层完成后 M9 约 `88%`、整体约 `96%`，已具备发布能力但首个公开 release 尚未由 tag 触发产出；待你打 tag 完成跨平台下载验收后，M9 收口到 `100%`。包管理器分发（Homebrew/crates.io/npm）列为 M9 后续增强项，不阻塞远端下载。
+B 层验收已通过：首版 `v0.1.0` tag 已触发跨平台 release workflow 并发布到 GitHub Releases（mac arm64/x86_64、linux x86_64、windows x86_64 四平台二进制 + 各自 `.sha256`，release note 源自 `CHANGELOG.md`）。Agent 独立走陌生用户全链路：Releases API 拉资产元数据（8 资产、prerelease=false）→ 下载 mac arm64 产物 → `shasum -a 256 -c` OK → `--version` 出 `tracelens 0.1.0` → `--help` 退出 0 → `summary`/`detect` 实测分析通过。M9 收口到 `100%`、整体 `96%`，第一版分发闭环。包管理器分发（Homebrew/crates.io/npm）列为 M9 后续增强项，不阻塞第一版分发。
 
 ## 暂不进入里程碑的范围
 

@@ -129,7 +129,7 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 - 当前传播文案只承诺本地 CLI 可输出 schema 与字段说明，不承诺 JSON Schema 已稳定到 `1.0`，也不承诺远程 schema registry。
 - 第二十期新增的退出码规范与 CI 集成说明，已同步进入 `README.md`、`README.zh-CN.md`、`docs/ci-integration.md`、`docs/use-cases.md`、`docs/examples.md`、`docs/output-guide.md` 和 `docs/local-acceptance-pipeline.md`。
 - 第二十五期新增的发布准备内容，已同步进入 `README.md`、`README.zh-CN.md` 的 Installation 段（双路径：本机 artifact + cargo install）、`docs/comparison.md`、`docs/versioning.md` 和 `CHANGELOG.md`；`tools/build_release.sh` 的本机 release 产物（stripped 二进制 + sha256）已在本地验收 Pipeline 中加入 smoke。当前传播文案只承诺本机 artifact 与源码安装，**不**承诺从远端下载预编译二进制，也不承诺跨平台 artifact（均属第二十六期）。
-- 第二十六期新增的发布分发内容，已同步进入 `README.md`、`README.zh-CN.md` 的 Installation 段（三路径：GitHub Releases 下载 + 本机 artifact + cargo install，附跨平台校验示例）、`docs/versioning.md`（tag 命名与 prerelease 规则）、`CHANGELOG.md`（0.1.0 段标注 workflow 已就位待首个 tag）。`.github/workflows/release.yml` 是新增载体。当前传播文案承诺版本 tag 会发布跨平台预编译二进制 + checksum 到 GitHub Releases，不承诺包管理器分发（Homebrew/crates.io/npm，为后续增强项）；在首个 `v0.1.0` tag 实际发布前，README 仍标注首个 tag 发布前用本地构建，保持诚实。
+- 第二十六期新增的发布分发内容，已同步进入 `README.md`、`README.zh-CN.md` 的 Installation 段（三路径：GitHub Releases 下载 + 本机 artifact + cargo install，附跨平台校验示例）、`docs/versioning.md`（tag 命名与 prerelease 规则）、`CHANGELOG.md`（0.1.0 段标注 workflow 已就位待首个 tag）。.github/workflows/release.yml 是新增载体。传播文案承诺版本 tag 发布跨平台预编译二进制 + checksum 到 GitHub Releases，不承诺包管理器分发（Homebrew/crates.io/npm，为后续增强项）。首版 `v0.1.0` 已于 2026-08-08 发布到 GitHub Releases（四平台二进制 + checksum + CHANGELOG release note），README 那条 首个 tag 发布前用本地构建 的注脚已去除，并补入下载校验步骤与 macOS Gatekeeper 隔离提示；Agent 独立下载 mac arm64 走陌生用户全链路（API 拉资产→下载→`shasum -c`→`--version`/`--help`→`summary`/`detect`）验证通过。
 
 ## 文案原则
 

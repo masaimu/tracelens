@@ -17,7 +17,7 @@ use crate::analysis::detect::{
 use crate::analysis::duration::{ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
 use crate::analysis::timeline::{TimelineAnalysis, TimelineMode, TimelineRow};
-use crate::graph::trace_graph::{TraceCollection, TraceGraph};
+use crate::graph::trace_graph::{CrossServiceEdge, TraceCollection, TraceGraph};
 use crate::model::diagnostic::{Diagnostic, Severity};
 use crate::model::span::CanonicalSpan;
 use crate::output::style::TextStyle;
@@ -239,6 +239,9 @@ pub fn format_tree(trace: &TraceGraph, annotations: &TraceAnnotations, style: Te
         write_annotations_summary(&mut output, annotations, style);
     }
 
+    writeln!(output).expect("write to string");
+    write_cross_service_edges(&mut output, &trace.cross_service_edges, "跨服务边", style);
+
     if !trace.diagnostics.is_empty() {
         writeln!(output).expect("write to string");
         write_diagnostics(&mut output, &trace.diagnostics, style);
@@ -250,6 +253,7 @@ pub fn format_tree(trace: &TraceGraph, annotations: &TraceAnnotations, style: Te
 pub fn format_services(
     analysis: &TraceDurationAnalysis,
     diagnostics: &[Diagnostic],
+    cross_service_edges: &[CrossServiceEdge],
     style: TextStyle,
 ) -> String {
     let mut output = String::new();
@@ -323,6 +327,9 @@ pub fn format_services(
     )
     .expect("write to string");
     write_service_table(&mut output, &analysis.services, style);
+
+    writeln!(output).expect("write to string");
+    write_cross_service_edges(&mut output, cross_service_edges, "跨服务调用边", style);
 
     writeln!(output).expect("write to string");
     writeln!(output, "{}", style.section("字段说明：")).expect("write to string");
@@ -1693,6 +1700,36 @@ fn write_service_table(output: &mut String, services: &[ServiceDuration], style:
         )
         .expect("write to string");
     }
+}
+
+fn write_cross_service_edges(
+    output: &mut String,
+    edges: &[CrossServiceEdge],
+    title: &str,
+    style: TextStyle,
+) {
+    writeln!(output, "{}", style.section(title)).expect("write to string");
+    if edges.is_empty() {
+        writeln!(output, "(no cross-service edges)").expect("write to string");
+        return;
+    }
+    for edge in edges {
+        writeln!(
+            output,
+            "{}  →  {}  calls={}  (client/server pair: {})",
+            style.service(&edge.from_service),
+            style.service(&edge.to_service),
+            edge.span_count,
+            edge.client_server_pair_count,
+        )
+        .expect("write to string");
+    }
+    writeln!(
+        output,
+        "{}",
+        style.muted("说明：跨服务边按 parent → child 方向聚合；同方向多次调用合并为一条边。client/server pair 仅在 parent kind=client → child kind=server 时计数。")
+    )
+    .expect("write to string");
 }
 
 fn write_span_tree(

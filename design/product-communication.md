@@ -27,6 +27,7 @@ Understand slow OpenTelemetry traces locally, without running a trace backend.
 - critical path
 - ASCII timeline (bar + flame layouts, large-trace folding)
 - service self time
+- cross-service edges
 - slow/error candidates
 - service latency distribution
 - error propagation chains

@@ -250,6 +250,25 @@ Why it matters:
 
 Async traces can be easy to over-interpret. `tracelens` annotates related work without turning span links into parent-child blocking edges.
 
+## 11. Inspect Cross-service Call Edges
+
+Use this when the trace spans multiple services and you want the call topology between them.
+
+```bash
+tracelens services traces.json --trace-id <trace-id>
+tracelens tree traces.json --trace-id <trace-id> --output json | jq '.cross_service_edges'
+```
+
+What to look for:
+
+- each `service_from → service_to` edge and its `calls` count
+- `client/server pair` subset per edge
+- the busiest cross-service edge on top (sorted by `calls`)
+
+Why it matters:
+
+Edge-level topology complements service-level self time. A service can look cheap per span while still issuing many repeated cross-service calls (a common N+1 shape); `calls` makes the relational cost visible even when no span by itself is slow. The `client/server pair` count also lets you compare graph-level hop detection against the explicit `span.kind`-declared client/server pairs under Semantic Annotations.
+
 ## Picking the Right Command
 
 | Question | Command |
@@ -259,6 +278,7 @@ Async traces can be easy to over-interpret. `tracelens` annotates related work w
 | Which traces look slow, erroneous, or N+1-like? | `detect` |
 | What is the parent-child shape? | `tree` |
 | Which service spent the most own time? | `services` |
+| What are the cross-service call edges? | `tree` / `services` (跨服务务边段) |
 | What blocked the root span? | `critical-path` |
 | Where do spans sit on the time axis? | `timeline` |
 | Do I need script-friendly output? | add `--output json` |

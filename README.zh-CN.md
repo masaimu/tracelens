@@ -78,6 +78,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - 单条 trace 的 ASCII timeline 输出，标记关键路径、错误、orphan 和时间重叠，支持两种布局：横向时间条（`--mode bar`，默认）和纵向火焰图（`--mode flame`）。超大 trace 可用 `--max-rows` 折叠，保持终端可读。
 - `detect` 输出：慢 trace 候选、服务耗时分布、错误传播链、错误信号候选和 N+1 候选。
 - 在 tree 和 critical-path 输出中标注 client/server、async work、messaging 和 linked span。
+- 在 `tree` 和 `services` 输出里汇总跨服务调用边：按 parent_service → child_service 方向各聚合成一条边，带调用次数和 client/server pair 数。
 - 保留 OpenTelemetry 元数据：schema URL、trace state、flags、status message、dropped counts 和 nested attribute values。
 - 识别 root span、孤儿 span、缺失 parent、重复 span ID、多 root、无 root、可疑时间关系等问题。
 - 面向人的文本输出。
@@ -243,6 +244,7 @@ tracelens detect traces.json --limit 5 --output json > tracelens-detect.json
 - 服务维度 self time 分析。
 - 基于 parent-child 拓扑和时间区间的关键路径分析。
 - 单条 trace 的 ASCII timeline 输出，含横向时间条与纵向火焰图两种布局，并支持超大 trace 折叠。
+- 在 `tree` 和 `services` 输出里聚合跨服务调用边。
 - 串行、并发、nested、suspicious span 分类。
 - `detect` 输出：慢 trace 候选、服务耗时分布、错误传播链、错误信号候选和 N+1 候选。
 - client/server span pair 标注。

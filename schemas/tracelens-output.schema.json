@@ -774,6 +774,45 @@
       },
       "description": "Service-level duration contribution calculated for one trace."
     },
+    "crossServiceEdge": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "from_service",
+        "to_service",
+        "span_count",
+        "client_server_pair_count",
+        "sample_span_id",
+        "sample_parent_span_id"
+      ],
+      "properties": {
+        "from_service": {
+          "type": "string",
+          "description": "Service name of the parent span on the cross-service edge (the caller service)."
+        },
+        "to_service": {
+          "type": "string",
+          "description": "Service name of the child span on the cross-service edge (the callee service)."
+        },
+        "span_count": {
+          "$ref": "#/$defs/uint",
+          "description": "Number of parent->child calls aggregated into this cross-service edge direction."
+        },
+        "client_server_pair_count": {
+          "$ref": "#/$defs/uint",
+          "description": "Number of calls on this edge where the parent is a client span and the child is a server span."
+        },
+        "sample_span_id": {
+          "$ref": "#/$defs/spanId",
+          "description": "Sample child span ID retained from the first call observed on this edge."
+        },
+        "sample_parent_span_id": {
+          "$ref": "#/$defs/spanId",
+          "description": "Sample parent span ID retained from the first call observed on this edge."
+        }
+      },
+      "description": "Aggregated cross-service call edge (parent service -> child service) within one trace."
+    },
     "criticalPathSegment": {
       "type": "object",
       "additionalProperties": true,
@@ -1364,6 +1403,7 @@
         "trace",
         "nodes",
         "annotations",
+        "cross_service_edges",
         "diagnostics"
       ],
       "properties": {
@@ -1433,6 +1473,13 @@
         "diagnostics": {
           "$ref": "#/$defs/diagnostics",
           "description": "Diagnostics attached to the selected trace tree."
+        },
+        "cross_service_edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/crossServiceEdge"
+          },
+          "description": "Aggregated cross-service call edges (parent service -> child service) for the selected trace."
         }
       },
       "description": "JSON output produced by `tracelens tree` for one trace."
@@ -1445,6 +1492,7 @@
         "command",
         "trace",
         "services",
+        "cross_service_edges",
         "diagnostics"
       ],
       "properties": {
@@ -1512,6 +1560,13 @@
         "diagnostics": {
           "$ref": "#/$defs/diagnostics",
           "description": "Diagnostics attached to the selected trace service-duration analysis."
+        },
+        "cross_service_edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/crossServiceEdge"
+          },
+          "description": "Aggregated cross-service call edges (parent service -> child service) for the selected trace."
         }
       },
       "description": "JSON output produced by `tracelens services` for one trace."

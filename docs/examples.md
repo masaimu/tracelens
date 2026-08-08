@@ -301,6 +301,59 @@ async / linked span：
 
 `tracelens` annotates these spans without merging client/server spans or converting span links into parent-child edges.
 
+## Inspect Cross-service Edges
+
+`tree` and `services` print a cross-service edge summary per trace.
+
+```bash
+tracelens tree tests/fixtures/otlp-n-plus-one.json --trace-id 77777777777777777777777777777777
+```
+
+Useful output:
+
+```text
+跨服务边
+checkout-service  →  postgres-service  calls=10  (client/server pair: 0)
+```
+
+One row per direction, `calls` aggregated:
+
+```bash
+tracelens services tests/fixtures/otlp-semantic-annotations.json \
+  --trace-id DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+```
+
+Useful output:
+
+```text
+跨服务调用边
+frontend-service  →  inventory-service  calls=1  (client/server pair: 1)
+```
+
+`calls` counts every `parent -> child` cross-service span, while `client/server pair` is the subset declared with `span.kind` client/server. When a hop is a genuine client/server call, the two numbers match; when the services differ without an explicit kind pair, `client/server pair` stays `0`.
+
+The JSON form gives one representative parent/child span id per edge:
+
+```bash
+tracelens tree tests/fixtures/otlp-semantic-annotations.json \
+  --trace-id DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD --output json | jq '.cross_service_edges'
+```
+
+```json
+[
+  {
+    "from_service": "frontend-service",
+    "to_service": "inventory-service",
+    "span_count": 1,
+    "client_server_pair_count": 1,
+    "sample_parent_span_id": "1000000000000002",
+    "sample_span_id": "1000000000000003"
+  }
+]
+```
+
+Single-service traces print `(no cross-service edges)` and emit an empty `cross_service_edges` array.
+
 ## Produce JSON for Scripts
 
 ```bash

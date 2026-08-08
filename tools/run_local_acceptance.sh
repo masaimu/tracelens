@@ -174,6 +174,9 @@ run_step "summary" "$TRACELENS_BIN" --color never summary tests/fixtures/otlp-ba
 run_step "list traces" "$TRACELENS_BIN" --color never list-traces tests/fixtures/otlp-basic.json --limit 2
 run_step "tree" "$TRACELENS_BIN" --color never tree tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D269B633813FC60C
 run_step "services" "$TRACELENS_BIN" --color never services tests/fixtures/otlp-basic.json --trace-id 5B8EFFF798038103D269B633813FC60C
+run_shell_step "tree cross-service edges" '"$TRACELENS_BIN" --color never tree tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 2>&1 | grep -q "跨服务边"'
+run_shell_step "services cross-service edges" '"$TRACELENS_BIN" --color never services tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 2>&1 | grep -q "跨服务调用边"'
+run_shell_step "tree json cross-service edges" '"$TRACELENS_BIN" --color never tree tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC --output json 2>&1 | grep -q cross_service_edges'
 run_step "critical path" "$TRACELENS_BIN" --color never critical-path tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 run_step "timeline" "$TRACELENS_BIN" --color never timeline tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 run_step "timeline flame" "$TRACELENS_BIN" --color never timeline tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC --mode flame

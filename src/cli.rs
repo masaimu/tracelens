@@ -508,7 +508,12 @@ pub fn run() -> Result<ExitCode> {
             match output {
                 OutputFormat::Text => print!(
                     "{}",
-                    format_services(&analysis, &trace.diagnostics, text_style)
+                    format_services(
+                        &analysis,
+                        &trace.diagnostics,
+                        &trace.cross_service_edges,
+                        text_style
+                    )
                 ),
                 OutputFormat::Json => print!("{}", format_services_json(&analysis, trace)),
             }

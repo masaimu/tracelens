@@ -320,6 +320,51 @@ If a span has `messaging.*` attributes, it is marked as messaging-related.
 
 Messaging spans are not automatically treated as blocking causal paths because messaging semantics vary by system and instrumentation.
 
+## Cross-service Edges
+
+`tracelens tree` and `tracelens services` print a cross-service edge summary for a trace.
+
+A cross-service edge is a direct `parent -> child` relationship where the parent span's `service` differs from the child span's `service`. Same-direction repeated calls collapse into one edge, and `span_count` is accumulated.
+
+```text
+跨服务边
+checkout-service  →  postgres-service  calls=10  (client/server pair: 0)
+frontend-service  →  inventory-service  calls=1  (client/server pair: 1)
+```
+
+The edge list is sorted by `span_count` descending, with a stable `(from_service, to_service)` tie-breaker, so the busiest cross-service call sits on top.
+
+### `calls`
+
+The number of `parent -> child` spans aggregated into this directional edge. Multiple calls between the same two services in the same direction collapse into one row.
+
+### `client/server pair`
+
+A subset of `calls` where the parent span kind is `client` and the child span kind is `server`. This is stricter than the example-implementation annotations pair: it only counts edges whose instrumentation already declares a client/server boundary in `span.kind`.
+
+When the same trace records a genuine client/server hop, the graph-level pair count equals the annotations pair count. When spans cross service boundaries without an explicit client/server kind, `client/server pair` stays `0` while `calls` still reflects the relational hop.
+
+`(no cross-service edges)` is printed when every span in the trace belongs to the same service.
+
+### JSON
+
+Both `tree --output json` and `services --output json` expose the same top-level `cross_service_edges` array:
+
+```json
+"cross_service_edges": [
+  {
+    "from_service": "frontend-service",
+    "to_service": "inventory-service",
+    "span_count": 1,
+    "client_server_pair_count": 1,
+    "sample_parent_span_id": "1000000000000002",
+    "sample_span_id": "1000000000000003"
+  }
+]
+```
+
+`sample_parent_span_id` and `sample_span_id` point to one representative parent/child pair, so you can jump back into `tree` for the exact spans behind an edge.
+
 ## Detect Candidates
 
 `detect` suggests where to look first across a trace file.
@@ -580,6 +625,7 @@ Useful top-level JSON areas:
 - `service_latency_distribution`
 - `error_traces`
 - `error_propagation_chains`
+- `cross_service_edges`
 - `n_plus_one_candidates`
 - `notes`
 - `diagnostics`

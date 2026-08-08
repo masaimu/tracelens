@@ -76,6 +76,7 @@ trace file -> parse -> normalize -> build graph -> analyze -> report
 - ASCII timeline output for a single trace, including critical path, error, orphan, and overlap markers, with two layouts: a horizontal time bar (`--mode bar`, default) and a vertical flame view (`--mode flame`). Large traces can be folded with `--max-rows` so the terminal stays readable.
 - Detect output for slow trace candidates, service latency distribution, error propagation chains, error-signal candidates, and N+1 candidates.
 - Client/server, async work, messaging, and linked span annotations in tree and critical-path output.
+- Cross-service edge summary in `tree` and `services` output: one aggregated edge per parent_service → child_service direction, with call count and client/server pair count.
 - OpenTelemetry metadata preservation for schema URLs, trace state, flags, status messages, dropped counts, and nested attribute values.
 - Root span, orphan span, missing parent, duplicate span ID, multiple root, no root, and suspicious timing diagnostics.
 - Text output for humans.
@@ -248,6 +249,7 @@ Implemented:
 - Service-level self time analysis.
 - Critical path analysis based on parent-child topology and time intervals.
 - ASCII timeline output for trace time structure, in horizontal bar and vertical flame layouts, with large-trace folding.
+- Cross-service edge aggregation in `tree` and `services` output.
 - Serial, concurrent, nested, and suspicious span classification.
 - Detect output for slow trace candidates, service latency distribution, error propagation chains, error-signal candidates, and N+1 candidates.
 - Client/server span pair annotation.

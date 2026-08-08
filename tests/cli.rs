@@ -1615,3 +1615,188 @@ fn tree_json_preserves_otlp_compatibility_metadata() {
     .expect("request.tags should parse as JSON");
     assert_eq!(request_tags, serde_json::json!(["vip", 42, false]));
 }
+
+#[test]
+fn tree_outputs_cross_service_edges_section() {
+    let fixture = fixture("otlp-concurrent.json");
+    let output = tracelens()
+        .args([
+            "--color",
+            "never",
+            "tree",
+            fixture.as_str(),
+            "--trace-id",
+            "cccccccccccccccccccccccccccccccc",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("跨服务边"));
+    assert!(stdout.contains("checkout-service  →  cart-service  calls=1"));
+    assert!(stdout.contains("payment-service  →  postgres  calls=1"));
+    assert!(!contains_ansi(&stdout));
+}
+
+#[test]
+fn services_outputs_cross_service_edges_section() {
+    let fixture = fixture("otlp-concurrent.json");
+    let output = tracelens()
+        .args([
+            "--color",
+            "never",
+            "services",
+            fixture.as_str(),
+            "--trace-id",
+            "cccccccccccccccccccccccccccccccc",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("跨服务调用边"));
+    assert!(stdout.contains("checkout-service  →  cart-service  calls=1"));
+    assert!(stdout.contains("payment-service  →  redis  calls=1"));
+    assert!(!contains_ansi(&stdout));
+}
+
+#[test]
+fn tree_json_outputs_cross_service_edges() {
+    let fixture = fixture("otlp-concurrent.json");
+    let json = run_json(&[
+        "tree",
+        fixture.as_str(),
+        "--trace-id",
+        "cccccccccccccccccccccccccccccccc",
+        "--output",
+        "json",
+    ]);
+
+    let edges = json["cross_service_edges"]
+        .as_array()
+        .expect("cross_service_edges should be an array");
+    assert!(
+        !edges.is_empty(),
+        "concurrent trace should have cross-service edges"
+    );
+    for edge in edges {
+        assert!(edge["from_service"].is_string());
+        assert!(edge["to_service"].is_string());
+        assert!(edge["span_count"].is_u64());
+        assert!(edge["client_server_pair_count"].is_u64());
+        assert!(edge["sample_span_id"].is_string());
+        assert!(edge["sample_parent_span_id"].is_string());
+    }
+
+    let checkout_cart = edges
+        .iter()
+        .find(|edge| {
+            edge["from_service"] == "checkout-service" && edge["to_service"] == "cart-service"
+        })
+        .expect("checkout-service -> cart-service edge should be present");
+    assert_eq!(checkout_cart["span_count"], 1);
+    assert_eq!(checkout_cart["client_server_pair_count"], 0);
+    assert_eq!(checkout_cart["sample_parent_span_id"], "0000000000000001");
+    assert_eq!(checkout_cart["sample_span_id"], "0000000000000002");
+
+    assert_matches_output_schema(&json);
+}
+
+#[test]
+fn services_json_outputs_cross_service_edges() {
+    let fixture = fixture("otlp-concurrent.json");
+    let json = run_json(&[
+        "services",
+        fixture.as_str(),
+        "--trace-id",
+        "cccccccccccccccccccccccccccccccc",
+        "--output",
+        "json",
+    ]);
+
+    let edges = json["cross_service_edges"]
+        .as_array()
+        .expect("cross_service_edges should be an array");
+    assert!(!edges.is_empty());
+    assert!(
+        edges.iter().any(|edge| {
+            edge["from_service"] == "payment-service" && edge["to_service"] == "redis"
+        }),
+        "payment-service -> redis edge should be present"
+    );
+
+    assert_matches_output_schema(&json);
+}
+
+#[test]
+fn tree_cross_service_edges_empty_for_single_service_trace() {
+    let fixture = fixture("otlp-basic.json");
+    let output = tracelens()
+        .args([
+            "--color",
+            "never",
+            "tree",
+            fixture.as_str(),
+            "--trace-id",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        ])
+        .output()
+        .expect("command should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("跨服务边"));
+    assert!(stdout.contains("(no cross-service edges)"));
+    assert!(!stdout.contains("calls="));
+
+    let json = run_json(&[
+        "tree",
+        fixture.as_str(),
+        "--trace-id",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "--output",
+        "json",
+    ]);
+    let edges = json["cross_service_edges"]
+        .as_array()
+        .expect("cross_service_edges should be an array");
+    assert!(edges.is_empty());
+    assert_matches_output_schema(&json);
+}
+
+#[test]
+fn tree_cross_service_edge_counts_client_server_pair() {
+    let fixture = fixture("otlp-semantic-annotations.json");
+    let json = run_json(&[
+        "tree",
+        fixture.as_str(),
+        "--trace-id",
+        "dddddddddddddddddddddddddddddddd",
+        "--output",
+        "json",
+    ]);
+
+    let edges = json["cross_service_edges"]
+        .as_array()
+        .expect("cross_service_edges should be an array");
+    let pair = edges
+        .iter()
+        .find(|edge| {
+            edge["from_service"] == "frontend-service" && edge["to_service"] == "inventory-service"
+        })
+        .expect("frontend-service -> inventory-service edge should be present");
+    assert_eq!(pair["span_count"], 1);
+    assert_eq!(pair["client_server_pair_count"], 1);
+    assert_eq!(pair["sample_parent_span_id"], "1000000000000002");
+    assert_eq!(pair["sample_span_id"], "1000000000000003");
+
+    // The graph-layer client/server pair count matches the annotations
+    // client_server_pairs count on this trace: both arrive at 1 because the only
+    // client(kind=3) -> server(kind=2) parent-child pair happens to be
+    // cross-service (frontend-service -> inventory-service).
+    assert_eq!(json["annotations"]["counts"]["client_server_pairs"], 1);
+
+    assert_matches_output_schema(&json);
+}

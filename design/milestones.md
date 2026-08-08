@@ -202,7 +202,7 @@ crates/
 - 识别孤儿 span。
 - 识别缺失 parent。
 - 识别重复 span ID。
-- 识别跨服务边。
+- 识别跨服务边（第二十二期 `design/iteration-22-cross-service-edges.md`：`TraceGraph.cross_service_edges` 聚合 + `tree` / `services` 文本与 JSON 汇总输出）。
 - 识别 child span 超出 parent 时间范围等可疑时间关系。
 
 ### 验收标准

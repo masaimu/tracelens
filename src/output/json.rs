@@ -16,7 +16,7 @@ use crate::analysis::detect::{
 use crate::analysis::duration::{RootSpanDuration, ServiceDuration, TraceDurationAnalysis};
 use crate::analysis::summary::{FileSummary, TraceSummary};
 use crate::analysis::timeline::{TimelineAnalysis, TimelineRow};
-use crate::graph::trace_graph::{TraceCollection, TraceGraph};
+use crate::graph::trace_graph::{CrossServiceEdge, TraceCollection, TraceGraph};
 use crate::model::diagnostic::Diagnostic;
 use crate::model::span::{CanonicalSpan, SpanEvent, SpanLink};
 
@@ -92,6 +92,11 @@ pub fn format_tree_json(trace: &TraceGraph, annotations: &TraceAnnotations) -> S
         },
         "nodes": tree_nodes_to_json(trace, annotations),
         "annotations": trace_annotations_to_json(annotations),
+        "cross_service_edges": trace
+            .cross_service_edges
+            .iter()
+            .map(cross_service_edge_to_json)
+            .collect::<Vec<_>>(),
         "diagnostics": diagnostics_to_json(&trace.diagnostics),
     }))
 }
@@ -112,6 +117,11 @@ pub fn format_services_json(analysis: &TraceDurationAnalysis, trace: &TraceGraph
             .services
             .iter()
             .map(service_duration_to_json)
+            .collect::<Vec<_>>(),
+        "cross_service_edges": trace
+            .cross_service_edges
+            .iter()
+            .map(cross_service_edge_to_json)
             .collect::<Vec<_>>(),
         "diagnostics": diagnostics_to_json(&trace.diagnostics),
     }))
@@ -618,6 +628,17 @@ fn service_duration_to_json(service: &ServiceDuration) -> Value {
         "child_covered_time_ns": service.child_covered_time_ns,
         "span_count": service.span_count,
         "error_span_count": service.error_span_count,
+    })
+}
+
+fn cross_service_edge_to_json(edge: &CrossServiceEdge) -> Value {
+    json!({
+        "from_service": edge.from_service,
+        "to_service": edge.to_service,
+        "span_count": edge.span_count,
+        "client_server_pair_count": edge.client_server_pair_count,
+        "sample_span_id": edge.sample_span_id,
+        "sample_parent_span_id": edge.sample_parent_span_id,
     })
 }
 

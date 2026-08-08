@@ -4,7 +4,7 @@ This file records user-visible changes to `tracelens`. It is the source for rele
 
 The JSON output `schema_version` is tracked separately and remains at `0.1` until the JSON contract is declared stable at `1.0`.
 
-## 0.1.0 (unreleased — pending GitHub Releases workflow)
+## 0.1.0 (unreleased — release workflow is wired; awaiting the first `v0.1.0` tag to publish)
 
 Local OpenTelemetry trace analysis CLI. The first focused release line covers everything needed to understand a single exported trace file on your machine.
 
@@ -60,7 +60,7 @@ Local OpenTelemetry trace analysis CLI. The first focused release line covers ev
 - `tracelens --version` aligns with `Cargo.toml` (`0.1.0`).
 - `tools/build_release.sh` produces a local stripped binary plus a sha256 checksum for the current host.
 - Installation documentation, comparison document, and this changelog.
-- Remote download from GitHub Releases and cross-platform artifacts are pending.
+- GitHub Releases workflow (`.github/workflows/release.yml`) is wired: a `v*` tag publishes cross-platform prebuilt binaries with sha256 checksums. The first `v0.1.0` tag cut by the maintainer will publish the first public release.
 
 ### Known limits in 0.1.0
 - No remote download of prebuilt binaries yet; local artifact build or `cargo install` only.

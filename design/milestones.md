@@ -551,7 +551,23 @@ crates/
 - 跨平台 artifact（linux x86_64 / windows x86_64 / macOS x86_64）：必须靠 CI runner 产出与验证，本机无法产出。
 - CI 自动发布流程与 git tag 触发。
 
-因此第二十五期完成后 M9 约 `60%`，"从远端下载可执行命令"尚未落地；待第二十六期 M9 收口到 `100%`。包管理器分发（Homebrew/crates.io/npm）列为 M9 后续增强项，不阻塞远端下载。
+因此第二十五期完成后 M9 约 `60%`，"从远端下载可执行命令"尚未落地；待第二十六期 M9 收口到 `100%`。
+
+### 当前推进状态（第二十六期）
+
+第二十六期已落地的 M9 交付物（A 工程层，已本地验收）：
+
+- `Cargo.toml` 新增 `[profile.release] strip = "symbols"`，release 二进制由 cargo 在所有平台统一 strip，CI 不再依赖平台 `strip` 命令。
+- `tools/build_release.sh` 跨平台化：`cargo build --release --locked`；checksum 兼容 `shasum`/`sha256sum`/Windows `Get-FileHash`；Windows 产物带 `.exe`；本地 mac arm64 smoke 仍过。
+- 新增 `.github/workflows/release.yml`：mac arm64 / mac x86_64 / linux x86_64 / windows x86_64 四平台 matrix 原生构建 + per-artifact checksum；`push: tags: [v*]` 触发发布到 GitHub Releases，`workflow_dispatch` 仅构建不发布（预演）；发布 job `if: github.ref_type == 'tag'` 守卫；release note body 源自 `CHANGELOG.md`；使用默认 `GITHUB_TOKEN`，无额外 secret。
+- README/中文 README：远端下载改为已交付口径（标注首个 tag 发布前用本地构建以保证诚实），补三平台校验示例；`docs/versioning.md` 补 tag 命名与 prerelease 规则；`CHANGELOG.md` 0.1.0 段标注 workflow 已就位、待首个 tag 发布。
+
+第二十六期仍待（B 发布层，需在 GitHub 操作，非本地可验）：
+
+- 打首个 `v0.1.0`（或先 `v0.1.0-rc.1`）tag：CI 四平台产出 + 发布到对应 tag 的 GitHub Releases。
+- 从 Releases 下载并校验（mac arm64 端到端：`shasum -c` + `--version`/`--help`；linux/win 校验 checksum 与产物存在）后，M9 收口到 `100%`。
+
+因此第二十六期实现层完成后 M9 约 `88%`、整体约 `96%`，已具备发布能力但首个公开 release 尚未由 tag 触发产出；待你打 tag 完成跨平台下载验收后，M9 收口到 `100%`。包管理器分发（Homebrew/crates.io/npm）列为 M9 后续增强项，不阻塞远端下载。
 
 ## 暂不进入里程碑的范围
 

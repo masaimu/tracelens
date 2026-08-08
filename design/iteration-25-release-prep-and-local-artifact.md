@@ -139,7 +139,7 @@
 - `.gitignore`：新增 `dist/`（release 产物目录不入库）。
 - `tests/cli.rs`：新增端到端测试 `version_command_reports_pkg_version`，断言 `tracelens --version` 输出 `tracelens {CARGO_PKG_VERSION}`（trim 后比较），钉死口径一致。
 - `tools/run_local_acceptance.sh`：在 `installed version` 步骤后新增 `local release artifact` smoke——运行脚本、断言产物二进制存在、`shasum -a 256 -c` 通过、`--version` 符合 `tracelens <semver>` 形态。复用 `cargo install` 已构建的 release target，增量构建成本低。
-- 顺带修一处措辞合规：将 `README.md`、`README.zh-CN.md`、`design/introduction.md` 中“面试”相关措辞改为“录屏说明 / recorded walkthroughs”，符合本项目对外文案不出现该词的约定。
+- 顺带修一处措辞合规：将 `README.md`、`README.zh-CN.md`、`design/introduction.md` 中一处敏感措辞改为“录屏说明 / recorded walkthroughs”，符合本项目对外文案不出现该词的约定。
 - `design/milestones.md`：M9 增补“当前推进状态（第二十五期）”小节，列明本期落地项与本期不做项。
 - `design/progress.md`：当前整体进度 `94% → 95%`；M9 `34% → 60%`（加权 `0.7% → 1.2%`，合计 `94.7% → 95.2%`）；原始需求满足度「远程下载使用」`16% → 40%`；新增“当前发布与分发能力”段，验证能力测试计数更新为 `52 单元 / 67 端到端`，M9 缺口更新。
 - `design/product-communication.md`：传播关键词补 release artifact/checksum、CHANGELOG、comparison、versioning；`docs/comparison.md` 从“后续”迁移到“必须维护”并已落地；资产表补 versioning、CHANGELOG 行；传播状态补第二十五期条目（明确不承诺远端下载与跨平台 artifact）。

@@ -1,0 +1,109 @@
+name: Release
+
+# Tag push (v*) builds the per-platform artifacts and publishes a GitHub
+# Release. A manual workflow_dispatch run only builds and uploads run artifacts
+# for rehearsal, without creating a public release.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target: aarch64-apple-darwin
+          - os: macos-13
+            target: x86_64-apple-darwin
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}-${{ hashFiles('Cargo.lock') }}
+
+      - name: Build release artifact + checksum
+        run: bash tools/build_release.sh
+        env:
+          # Hint for diagnostics only; the script detects the host itself.
+          RELEASE_TARGET: ${{ matrix.target }}
+
+      - name: Verify artifact runs
+        run: |
+          bin="$(ls dist/tracelens-* | grep -v '\.sha256$' | head -1)"
+          test -n "$bin"
+          ./"$bin" --version
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tracelens-${{ matrix.target }}
+          path: dist/tracelens-*
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: ${{ github.ref_type == 'tag' }}
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Verify expected artifacts present
+        run: |
+          set -e
+          echo "Downloaded release files:"
+          ls -1 dist/tracelens-*
+          for target in aarch64-apple-darwin x86_64-apple-darwin x86_64-unknown-linux-gnu x86_64-pc-windows-msvc; do
+            echo "checking $target"
+            ls dist/tracelens-*"$target"* >/dev/null
+          done
+
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: CHANGELOG.md
+          files: |
+            dist/tracelens-*
+            dist/*.sha256
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -105,22 +105,34 @@ tracelens schema
 
 ## Installation
 
-The project does not publish prebuilt binaries for remote download yet. From a local checkout, you can get a runnable `tracelens` two ways.
+`tracelens` ships prebuilt binaries per platform. Pick the path that fits you.
 
-Build a local release artifact (a stripped binary plus a sha256 checksum) for the current host:
+### From GitHub Releases
+
+Each version tag (for example `v0.1.0`) publishes prebuilt binaries to GitHub Releases for macOS arm64/x86_64, Linux x86_64, and Windows x86_64. **Until the first tagged release is published**, use one of the local build paths below.
+
+Once a tagged release exists:
+
+1. Download `tracelens-<version>-<host>` for your platform (Windows: the `.exe`) and the matching `.sha256`.
+2. Verify the checksum (macOS): `shasum -a 256 -c tracelens-<version>-<host>.sha256` (Linux: `sha256sum -c`; Windows PowerShell: compare `Get-FileHash -Algorithm SHA256`).
+3. Run: `./tracelens --version` (Windows: `tracelens.exe --version`).
+
+### Build a local release artifact
+
+A stripped binary plus a sha256 checksum for the current host:
 
 ```bash
 tools/build_release.sh
 ```
 
-The command prints the artifact path and produces `dist/tracelens-0.1.0-<host>` with a matching `.sha256`. Verify and run it:
+It prints the artifact path and produces `dist/tracelens-0.1.0-<host>` with a matching `.sha256`. Verify and run it:
 
 ```bash
 ( cd dist && shasum -a 256 -c *.sha256 )
 ./dist/tracelens-0.1.0-<host> --version
 ```
 
-Or install from source with cargo:
+### Install from source
 
 ```bash
 cargo install --path .
@@ -140,7 +152,7 @@ cargo build
 ./target/debug/tracelens --help
 ```
 
-See [Versioning](docs/versioning.md) for the version rule. Remote download of prebuilt binaries from GitHub Releases is planned for a later iteration.
+See [Versioning](docs/versioning.md) for the version rule and tag naming convention.
 
 ## Quick Start
 
@@ -288,11 +300,12 @@ Implemented:
 - JSON Schema and CLI-discoverable field descriptions for agent and automation consumers.
 - OpenTelemetry compatibility documentation.
 - Exit-code and CI integration documentation.
-- Local release artifact build script (`tools/build_release.sh`) producing a stripped binary and a sha256 checksum for the current host.
+- Cross-platform release workflow (`.github/workflows/release.yml`): a version tag publishes prebuilt binaries with sha256 checksums to GitHub Releases for macOS arm64/x86_64, Linux x86_64, and Windows x86_64.
+- Local release artifact build script (`tools/build_release.sh`, also used by CI) producing a stripped binary and a sha256 checksum for the current host.
 
 Not implemented yet:
 
-- Prebuilt binaries published to GitHub Releases for remote download.
+- Package-manager distribution (Homebrew tap, crates.io, npm wrapper) is not provided yet. GitHub Releases is the distribution channel.
 
 See:
 

@@ -14,13 +14,13 @@
 
 ## 当前快照
 
-- 更新时间：2026-08-08（第二十五期）
-- 当前基线提交：本期实施后待提交 第二十五期（详见 `design/iteration-25-release-prep-and-local-artifact.md`）的实现
-- 当前阶段：第二十五期 发布准备、对比文档与本地 release artifact 完成后
-- 当前整体进度：`95%`
+- 更新时间：2026-08-08（第二十六期）
+- 当前基线提交：本期实施后待提交 第二十六期（详见 `design/iteration-26-cross-platform-release-workflow.md`）的实现
+- 当前阶段：第二十六期 跨平台 release workflow 与 GitHub Releases 自动发布 完成后（A 工程层已过；B 发布层待打 tag 验收）
+- 当前整体进度：`96%`
 
 ```text
-[####################] 95%
+[####################] 96%
 ```
 
 这个进度不是代码行数比例，而是按第一版需求的重要性加权计算。当前已经完成了本地 CLI、OTLP 输入、基础 graph、基础浏览命令、JSON 输出、带字段级 description 的 JSON Schema、CLI 可发现的 `tracelens schema` 字段说明入口、退出码 `0/1/2` 规范、CI integration 文档、OpenTelemetry 兼容性说明、开源 README 展示文档、产品传播内容维护规约、首批产品传播文档、服务维度 self time 分析、本地性能测试机、关键路径计算、串行/并发/nested/suspicious 分类、client/server 与 async/link 语义标注、GitHub Actions CI 质量门禁、依赖安全检查、自动/手动性能 smoke benchmark、本地验收 Pipeline 与提交前 hook、语义化彩色终端输出、`detect` 的慢 trace 候选、错误信号候选、错误传播链、service latency distribution 和 N+1 候选、5k/50k spans JSON/JSONL 规模验证、`timeline` 横向时间轴与纵向火焰图双布局（`--mode bar|flame`）以及超大单 trace `--max-rows` 折叠、跨服务调用边汇总（`tree`/`services` 文本与 JSON 输出）、单页离线 HTML 报告（`report --html`：Trace 概览/服务耗时/关键路径/跨服务边/错误传播链/N+1 候选/diagnostics 全区块，含慢服务热力、错误红色、关键路径强调、N+1 高 calls 强调、diagnostics severity 着色与报告内导航）；但 JSON Schema 1.0 稳定化、完整多 shape 性能基线、comparison 文档和发布分发，还没有完成。
@@ -56,12 +56,12 @@
 | M6：终端可视化 | 8% | 95% | 7.6% | 已完成 M6-A（彩色终端输出语义层、`--color` 控制、`timeline` 横向时间轴 MVP）和 M6-B-1/M6-B-2：`timeline --mode flame` 纵向火焰图与 `--max-rows` 超大 trace 折叠（第二十一期）；复用现有 `TimelineRow` 分析模型，`* ! ?` 标记语义与横向布局一致；仅保留 M6-B-3 更稳定快照测试基线作为可选打磨项 |
 | M7：性能、稳定性与自动化接口 | 7% | 97% | 6.8% | 已有测试、JSON 输出、本地 synthetic fixture 生成器、benchmark runner、本地验收 Pipeline 和提交前 hook；JSON Schema 已覆盖当前核心 JSON 输出并接入 CLI 测试，核心 properties 均有 `description` coverage；已新增 `tracelens schema --output text|json` 和 `--help` 发现入口；已固定退出码 `0/1/2` 规范并新增端到端测试和本地验收 smoke；runner 已覆盖 `critical-path` 和 `detect`，并可选支持 `timeline`；新增 CI、安全检查、自动/手动 benchmark workflows 和 Actions summary 报告，并支持脚本友好的 `--color never`；已完成 5k/50k JSON/JSONL smoke 验证和 50k detect 3 轮 benchmark；尚未完成多 shape 完整 P95 矩阵、JSON Schema 1.0 稳定化和远端 required checks 兜底 |
 | M8：HTML 报告 | 3% | 100% | 3.0% | `report --html` 单页离线 HTML 报告完整落地：Trace 概览/服务耗时/关键路径/跨服务边/错误传播链/N+1 候选/diagnostics 全区块，含热力配色与报告内导航（第二十三期骨架 + 第二十四期补全），复用 services/critical-path/tree/detect 分析，不重复计算；M8 收口 |
-| M9：发布与分发 | 2% | 60% | 1.2% | 第二十五期补齐版本号规则文档化（`--version` 与 `Cargo.toml` 口径一致并加测试）、`docs/comparison.md`、`CHANGELOG.md`、安装说明打磨、本机 release 构建脚本 `tools/build_release.sh`（产出 stripped 二进制 + sha256）；远端 GitHub Releases 下载、跨平台 artifact 与 CI 自动发布流程仍未做（第二十六期） |
+| M9：发布与分发 | 2% | 88% | 1.8% | 第二十五期补齐版本号规则、comparison、CHANGELOG、安装说明、本机 release artifact + checksum；第二十六期补齐跨平台 release workflow（`.github/workflows/release.yml` 四平台 matrix + tag 发布 + `workflow_dispatch` 预演）、`[profile.release] strip`、`build_release.sh` 跨平台化、README 远端下载说明。仅缺打 tag 触发并完成远端跨平台下载验收（B 层）后收口到 100% |
 
 当前合计：
 
 ```text
-5.0 + 14.7 + 15.0 + 14.7 + 16.2 + 11.0 + 7.6 + 6.8 + 3.0 + 1.2 = 95.2%
+5.0 + 14.7 + 15.0 + 14.7 + 16.2 + 11.0 + 7.6 + 6.8 + 3.0 + 1.8 = 95.8%
 ```
 
 四舍五入后记录为：
@@ -96,7 +96,7 @@
 | CI 检查与工程化质量门禁 | 86% | 已新增 GitHub Actions CI、安全检查、自动/手动性能 benchmark workflow、本地验收 Pipeline、提交前 hook、退出码规范和 CI integration 文档；Benchmark 默认覆盖 5k/50k spans 和 `detect`，会展示 Actions summary；本地 hook 需每个开发者执行 setup 后生效；尚未配置分支保护、远端 required checks 和 release workflow |
 | P95 样本处理耗时小于 2 秒 | 65% | 已有 synthetic fixture 生成器和 benchmark runner，runner 已覆盖 `critical-path` 和 `detect`；本地 50k spans `detect` 3 轮 P95 为 466.123ms；尚未跑完整多 shape 多轮 P95 矩阵 |
 | 可脚本化 JSON 输出 | 96% | 基础命令、`services`、`tree`、`critical-path`、`detect` 和 `timeline` 已有 `--output json` 与 `schema_version: "0.1"`，并输出结构化 annotations / slow_traces / service_latency_distribution / error_traces / error_propagation_chains / n_plus_one_candidates / timeline rows；`--output json` 不受彩色输出影响；已新增带字段级 `description` 的 JSON Schema、CLI schema 校验测试、description coverage 测试，以及 `tracelens schema --output text|json` 本地发现入口；schema 尚未进入 1.0 稳定 |
-| 远程下载使用 | 40% | 有版本号口径一致并加测试、本机 release 构建脚本（stripped 二进制 + sha256）、双路径安装说明（本地 artifact + cargo install）、comparison、CHANGELOG、versioning、产品传播文档；尚未从远端下载预编译二进制、跨平台 artifact 未发布（第二十六期） |
+| 远程下载使用 | 80% | 第二十五期：版本号口径 + 测试、本机 release artifact + checksum、双路径安装说明、comparison、CHANGELOG、versioning。第二十六期：跨平台 release workflow 已交付（四平台 matrix、tag→GitHub Releases、per-artifact checksum、release note 源 CHANGELOG）。仅缺打首个 `v0.1.0` tag 完成远端跨平台下载验收后升至 100% |
 
 ## 当前已具备的能力
 
@@ -292,10 +292,11 @@ tracelens schema [--command <name>] [--output text|json]
 当前发布与分发能力：
 
 - `tracelens --version` 输出 `tracelens 0.1.0`，与 `Cargo.toml` 一致，且有端到端测试钉死。
-- 本机 release 构建脚本 `tools/build_release.sh`：产出当前 host 的 stripped 二进制 + `.sha256` 校验文件，可重复运行；本地验收 Pipeline 含 release smoke。
-- 安装双路径：本机构建 artifact + `cargo install --path .`。
-- `CHANGELOG.md`：M0–M8 能力归档，作 release note 来源。
-- 尚未从远端下载预编译二进制、未发布跨平台 artifact、未接入 GitHub Releases 自动发布流程。
+- 本机 release 构建脚本 `tools/build_release.sh`（跨平台化）：产出当前 host 的 stripped 二进制 + `.sha256`，兼容 `shasum`/`sha256sum`/Windows `Get-FileHash`，Windows 产物带 `.exe`；`cargo build --release --locked` + `[profile.release] strip` 统一 strip。本地验收 Pipeline 含 release smoke。
+- 跨平台 release workflow `.github/workflows/release.yml`：mac arm64/x64、linux x64、win x64 四平台 matrix 原生构建 + per-artifact checksum；`push: tags: [v*]` 触发发布到 GitHub Releases，`workflow_dispatch` 只构建不发布（预演）；release note body 源自 `CHANGELOG.md`；使用默认 `GITHUB_TOKEN` 无需额外 secret。
+- 安装三路径：GitHub Releases 下载（首个 tag 发布后）、本机构建 artifact、`cargo install --path .`。
+- `CHANGELOG.md`：M0–M8 能力归档，作 release note 来源；0.1.0 段为 release note 模板。
+- 仍待：打首个 `v0.1.0` tag 触发并完成远端跨平台下载验收（B 层）后，M9 收口到 100%。
 
 当前验证能力：
 
@@ -316,7 +317,7 @@ tracelens schema [--command <name>] [--output text|json]
 - M6：仅保留 M6-B-3 更稳定的快照测试基线作为可选打磨项；flame graph 与超大 trace 折叠已在第二十一期落地。
 - M7：完整多 shape 多轮 P95 性能基线、JSON Schema 1.0 稳定化、可选分支保护规则、远端 required checks 兜底。
 - M8：HTML 报告已在第二十三、第二十四期收口（骨架 + 补全 + 配色 + 导航），M8 进入已收口状态，无主要缺口。
-- M9：comparison 文档、版本号规则、CHANGELOG、安装说明、本机 release artifact + checksum 已在第二十五期落地；剩余缺口为远端 GitHub Releases 下载、跨平台 artifact（linux/win/mac x64）、CI 自动发布流程（第二十六期）。包管理器发布为后续增强项。
+- M9：第二十六期已交付跨平台 release workflow（四平台 matrix、tag→GitHub Releases、per-artifact checksum、release note 源 CHANGELOG、`[profile.release] strip`、`build_release.sh` 跨平台化）。仅缺打首个 `v0.1.0`（或 `v0.1.0-rc.1`）tag 触发并完成远端跨平台下载验收这一动作（B 层，需在 GitHub 操作），完成后 M9 收口到 100%。包管理器发布（Homebrew/crates.io/npm）为后续增强项，不阻塞第一版分发。
 
 ## 更新规则
 

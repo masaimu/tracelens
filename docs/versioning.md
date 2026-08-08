@@ -31,3 +31,12 @@ Once `tracelens` reaches `1.0`:
 - The crate version will follow stricter semver: incompatible changes require a major bump.
 - The JSON `schema_version` will graduate to `1.0` and then follow its own semver line, decoupled from the crate version.
 - Cross-platform release artifacts and GitHub Releases are expected by that point (see [Project milestones](../design/milestones.md)).
+
+
+## Tag and release naming
+
+- A version is published by pushing a git tag `v<major>.<minor>.<patch>`, for example `v0.1.0`.
+- Pre-release tags use a hyphenated suffix, for example `v0.1.0-rc.1` or `v0.1.0-beta.1`. The release workflow marks any tag whose name contains `-` as a GitHub prerelease.
+- Pushing a `v*` tag triggers `.github/workflows/release.yml`, which builds per-platform artifacts (macOS arm64/x86_64, Linux x86_64, Windows x86_64) and publishes them, plus sha256 checksums, to the corresponding GitHub Release. The release notes body comes from `CHANGELOG.md`.
+- `workflow_dispatch` runs the build matrix and uploads run artifacts without publishing a public release, for rehearsal.
+- Release artifacts are named `tracelens-<version>-<host>` (Windows: with `.exe`) and ship with a `<artifact>.sha256` sidecar.

@@ -107,9 +107,21 @@ tracelens schema
 
 ## 安装
 
-项目目前还没有发布可远程下载的预编译二进制。从本地源码，你可以用两种方式得到可运行的 `tracelens`。
+`tracelens` 为各平台提供预编译二进制，按需选择获取方式。
 
-为本机构建一份本地 release artifact（stripped 二进制 + sha256 校验文件）：
+### 从 GitHub Releases 下载
+
+每个版本 tag（例如 `v0.1.0`）会在 GitHub Releases 发布 macOS arm64/x86_64、Linux x86_64、Windows x86_64 的预编译二进制，均附带 sha256 校验文件。**在首个 tag 发布之前**，请用下面的本地构建方式。
+
+已发布 tag 后：
+
+1. 下载对应平台的 `tracelens-<version>-<host>`（Windows 为 `.exe`）与同名 `.sha256`。
+2. 校验（macOS）：`shasum -a 256 -c tracelens-<version>-<host>.sha256`（Linux 用 `sha256sum -c`；Windows PowerShell 用 `Get-FileHash -Algorithm SHA256` 比对）。
+3. 运行：`./tracelens --version`（Windows：`tracelens.exe --version`）。
+
+### 本机构建 release artifact
+
+为本机构建一份 stripped 二进制 + sha256 校验文件：
 
 ```bash
 tools/build_release.sh
@@ -122,7 +134,7 @@ tools/build_release.sh
 ./dist/tracelens-0.1.0-<host> --version
 ```
 
-或用 cargo 从源码安装：
+### 用 cargo 从源码安装
 
 ```bash
 cargo install --path .
@@ -142,7 +154,7 @@ cargo build
 ./target/debug/tracelens --help
 ```
 
-版本号规则见 [Versioning](docs/versioning.md)。从 GitHub Releases 远端下载预编译二进制会在后续迭代落地。
+版本号规则与 tag 命名约定见 [Versioning](docs/versioning.md)。
 
 ## 快速开始
 
@@ -284,11 +296,12 @@ tracelens report tests/fixtures/otlp-concurrent.json --trace-id CCCCCCCCCCCCCCCC
 - 面向 Agent 和自动化消费的 JSON Schema 与 CLI 可发现字段说明。
 - OpenTelemetry 兼容性说明文档。
 - 退出码与 CI 集成说明文档。
-- 本地 release artifact 构建脚本（`tools/build_release.sh`），为本机产出 stripped 二进制与 sha256 校验文件。
+- 跨平台 release workflow（`.github/workflows/release.yml`）：版本 tag 会在 GitHub Releases 发布 macOS arm64/x86_64、Linux x86_64、Windows x86_64 的预编译二进制与 sha256 校验文件。
+- 本地 release artifact 构建脚本（`tools/build_release.sh`，同时被 CI 复用），为本机产出 stripped 二进制与 sha256 校验文件。
 
 尚未实现：
 
-- 从 GitHub Releases 远端下载的预编译二进制。
+- 包管理器分发（Homebrew tap、crates.io、npm wrapper）暂未提供；分发渠道为 GitHub Releases。
 
 参考：
 

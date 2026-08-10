@@ -86,7 +86,7 @@ cd /Users/masaimu/RustroverProjects/tracelens
 ## 6. JD 三件硬指标落点
 
 - **prompt**：S2 的"开始第 15 期，按文档执行…"短 prompt；S3 的"修 release 404、改幂等 gh release create"触发返工 prompt。
-- **返工片段**：S3 整段——真实 GitHub Actions run（v0.1.1 红 `failure` + `Error: Not Found - delete-a-release-asset`）→ 根因（release workflow 的 `files:` glob 冗余枚举 `.sha256`，且 softprops 删旧传新的 reconcile 不可幂等）→ 修复（整步换成幂等 `gh release create`，发布前先清掉同名残留 release）→ 重推 `v0.1.1` 绿、四平台八份产物齐。AI 第一版照搬 softprops 常见写法、看着就对；我用真实红→绿两份 run 把它验出来、焊死。
+- **返工片段**：S3 整段——真实 GitHub Actions run（v0.1.1 红 `failure` + `Error: Not Found - delete-a-release-asset`）→ 根因（release workflow 的 `files:` glob 冗余枚举 `.sha256`，且 softprops 删旧传新的 reconcile 不可幂等）→ 修复（整步换成幂等 `gh release create`，发布前先清掉同名残留 release）→ 重推 `v0.1.1` 绿、四平台八份产物齐。AI 第一版照搬 softprops 常见写法、看似正确；我用真实红→绿两份 run 把它验出来、验住。
 - **验收过程**：S4——AGENTS.md 规矩（实施报告 + 验收结论）+ 四件套（fmt/test/clippy/build）真实跑 + iteration-15 实施结果文档化。
 
 ## 7. 画面窗与提词器窗的布局建议

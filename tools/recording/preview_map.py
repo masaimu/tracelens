@@ -11,7 +11,7 @@ LABEL = {
  "progress_bar":"97% 进度条(progress)",
  "segintro_s2b":"预告页·一句话 prompt 闭环", "prompt_short":"一句话短 prompt",
  "iter_doc":"iteration-15 本期目标", "iter_report":"iteration-15 实施报告",
- "segintro_s3":"预告页·验收钉返工", "release_fail":"v0.1.1 发布红(failure)",
+ "segintro_s3":"预告页·验收修返工", "release_fail":"v0.1.1 发布红(failure)",
  "release_why":"release.yml 根因注释","release_fix":"release.yml 幂等修复",
  "release_green":"重跑 v0.1.1 绿·8 产物",
  "segintro_s4":"预告页·AGENTS.md 门禁", "agents_rules":"AGENTS 四规则+四件套",

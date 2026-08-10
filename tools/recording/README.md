@@ -74,19 +74,19 @@ cd /Users/masaimu/RustroverProjects/tracelens
 | 镜 | 时间码 | 画面窗动作 | JD 三件覆盖 |
 | --- | --- | --- | --- |
 | S1 | 0:00 | `timeline` 彩色输出（关键路径/并发横条） | — |
-| S2 | 0:22 | 预告页 → `design/` 目录 → introduction 能力清单 → 里程碑权重表(progress) → 暂不做清单(milestones) → 83% 进度条 | — |
+| S2 | 0:22 | 预告页 → `design/` 目录 → introduction 能力清单 → 里程碑权重表(progress) → 暂不做清单(milestones) → 97% 进度条 | — |
 | S2b | 0:59 | 预告页 → 一句话短 prompt → **prompt 调起的 iteration-15 开工文档** → **该期实施报告**（闭环：一句 prompt → 完整文档 → 交付物） | **prompt ①** |
-| S3 | 1:43 | 预告页 → 重复 spanId fixture(高亮) → 触发返工的 prompt → `critical_path.rs:517` 测试 → `cargo test --bin tracelens ... ok`（显示 **1 passed**） | **prompt ② / 返工** |
-| S4 | 2:28 | 预告页 → AGENTS.md 四规则+四件套代码块 → `cargo fmt` → `cargo test`(37 passed) → `cargo clippy` → `cargo build` | **验收** |
+| S3 | 1:43 | 预告页 → v0.1.1 发布红(`delete-a-release-asset 404`) → release.yml 根因注释 → release.yml 幂等修复(`gh release create`) → 重跑 v0.1.1 绿·8 产物 | **prompt ② / 返工** |
+| S4 | 2:28 | 预告页 → AGENTS.md 四规则+四件套代码块 → `cargo fmt` → `cargo test`(125 passed) → `cargo clippy` → `cargo build` | **验收** |
 | S5 | 3:15 | 预告页 → `summary` → `timeline` → `detect` N+1 high confidence → P95=466ms 行 | — |
-| S6 | 4:00 | 83% 进度条 → `git log` 21 提交 → 收尾卡 → 4:30 停 | — |
+| S6 | 4:00 | 97% 进度条 → `git log` 27 提交 → 收尾卡 → 4:30 停 | — |
 
 注：画面步与字幕都从 `subtitle_player.py` 的 `STORYBOARD` 派生（单一真相），`preview_map.py` 可一键打印对位预览；改文案时同步改 `STORYBOARD` 字幕列即可，时间码零漂移自动对齐。
 
 ## 6. JD 三件硬指标落点
 
-- **prompt**：S2 的"开始第 15 期，按文档执行…"短 prompt；S3 的"给 critical-path 加 span 汇总"触发返工 prompt。
-- **返工片段**：S3 整段——真实 fixture `tests/fixtures/otlp-duplicate-span.json`（同 spanId 两个实例）+ 真实测试 `duplicate_span_ids_are_not_merged_in_totals`（绿）。AI 第一版按 spanId 去重把两个不同服务实例合并成一个 → self time 错；返工约束为"按内部 span 实例聚合、不去重"，并补 fixture + 测试钉死。
+- **prompt**：S2 的"开始第 15 期，按文档执行…"短 prompt；S3 的"修 release 404、改幂等 gh release create"触发返工 prompt。
+- **返工片段**：S3 整段——真实 GitHub Actions run（v0.1.1 红 `failure` + `Error: Not Found - delete-a-release-asset`）→ 根因（release workflow 的 `files:` glob 冗余枚举 `.sha256`，且 softprops 删旧传新的 reconcile 不可幂等）→ 修复（整步换成幂等 `gh release create`，发布前先清掉同名残留 release）→ 重推 `v0.1.1` 绿、四平台八份产物齐。AI 第一版照搬 softprops 常见写法、看着就对；我用真实红→绿两份 run 把它验出来、焊死。
 - **验收过程**：S4——AGENTS.md 规矩（实施报告 + 验收结论）+ 四件套（fmt/test/clippy/build）真实跑 + iteration-15 实施结果文档化。
 
 ## 7. 画面窗与提词器窗的布局建议
@@ -102,7 +102,6 @@ cd /Users/masaimu/RustroverProjects/tracelens
 | `无法创建画面窗口` 报错退出 | 没给自动化权限。系统设置 → 隐私与安全性 → 自动化，允许终端控制 Terminal 后重跑。 |
 | 画面窗口不推进 | 检查画面窗是否被关闭或失焦；重跑即可。`osascript` 通过窗口 id 寻址，关窗会丢地址。 |
 | 字号/窗口太小看不清 | 改 `record-tracelens.sh` 里 `set font size of front window to 15` 与 `set bounds ...`。 |
-| S3 测试显示 `0 passed / 37 filtered` | 已修：S3 改用 `cargo test --bin tracelens ...`，只跑单元测试二进制，屏幕现在显示 `running 1 test ... ok / 1 passed`。别再改回 `cargo test ... | tail`，否则又会被 `tests/cli.rs` 集成段盖掉。 |
 | 想预文本不改时长 | 改 `S1..S6` 变量文案时保持字数接近，否则会顶不住 `at()` 的硬时间码。 |
 
 ## 9. 裁剪到 ≤ 5 分钟
